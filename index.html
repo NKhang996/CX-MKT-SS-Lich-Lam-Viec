@@ -87,6 +87,8 @@
   .btn-refresh:hover{background:#4c4182;}
   .btn-excel{background:#1e3a29; color:#4ade80; border:1px solid #166534; padding:7px 12px; border-radius:7px; font-size:12px; font-weight:600; display:inline-flex; gap:6px; align-items:center;}
   .btn-excel:hover{background:#166534;}
+  .btn-danger{background:var(--coral-dim); color:var(--coral); border:1px solid #8b2828; padding:7px 12px; border-radius:7px; font-size:12px; font-weight:600; display:inline-flex; gap:6px; align-items:center;}
+  .btn-danger:hover{background:#8b2828; color:#fff;}
   .btn-info{background:var(--surface-3); color:var(--amber); border:1px solid var(--amber-dim); padding:6px 10px; border-radius:8px; font-size:12px; font-weight:600; display:inline-flex; gap:6px; align-items:center;}
   .btn-info:hover{background:var(--amber-dim); color:#fff;}
 
@@ -421,7 +423,7 @@ function openTopicLogic(topicKey){
 
     'nhansu': `<div class="logic-section">
       <h3>🔑 Logic Ẩn Nhân Viên Offboard</h3>
-      <p>• <b>Ẩn Nhân viên Offboard:</b> Nếu nhân viên nghỉ việc (có <i>Offboard Date</i>), họ vẫn hiển thị trên lịch của tháng hiện tại. <b>Từ tháng sau trở đi (Month > Offboard Month)</b>, hệ thống sẽ <b>TỰ ĐỰNG ẨN HOÀN TOÀN</b> nhân viên đó khỏi danh sách.</p>
+      <p>• <b>Ẩn Nhân viên Offboard:</b> Nếu nhân viên nghỉ việc (có <i>Offboard Date</i>), họ vẫn hiển thị trên lịch của tháng hiện tại. <b>Từ tháng sau trở đi (Month > Offboard Month)</b>, hệ thống sẽ <b>TỰ ĐỘNG ẨN HOÀN TOÀN</b> nhân viên đó khỏi danh sách.</p>
     </div>`,
 
     'cauhinh': `<div class="logic-section">
@@ -897,7 +899,8 @@ function renderLich(){
     </div>
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px">
         <div style="display:flex; gap:8px">
-          <button class="btn-primary" onclick="autoFillSmart()">✨ Auto-Fill (Dàn trải Lịch OFF & Workload)</button>
+          <button class="btn-primary" onclick="autoFillSmart()">✨ Auto-Fill (Dàn trải Lịch OFF & Lễ HOL)</button>
+          <button class="btn-danger" onclick="clearMonthSchedule()">🗑️ Xóa hết lịch tháng này</button>
           <button class="btn-refresh" onclick="renderAll()" title="Refresh lại Workload và các trường chỉ số">🔄 Refresh Toàn Bộ Dữ Liệu</button>
           <button class="btn-excel" onclick="copyToClipboardGSheet()">📋 Copy sang Google Sheet</button>
         </div>
@@ -1256,22 +1259,52 @@ function checkConsecutiveOffThreshold(empId, day, totalDaysInMonth) {
   return (left + 1 + right);
 }
 
-// 🎯 SMART AUTO-FILL DÀN TRẢI & CHỐNG NGHỈ 3 NGÀY
+// 🎯 XÓA TẤT CẢ LỊCH THÁNG HIỆN TẠI VỀ TRỐNG
+function clearMonthSchedule(){
+  const k = monthKey();
+  if(!confirm(`⚠️ Bạn có chắc muốn XÓA TRỐNG toàn bộ lịch xếp của Tháng ${state.month}/${state.year} không?`)) {
+    return;
+  }
+  
+  if(state.marks && state.marks[k]){
+    delete state.marks[k];
+  }
+  
+  saveLocalState();
+  renderAll();
+  alert(`✅ Đã xóa sạch lịch trực Tháng ${state.month}/${state.year} về trống!`);
+}
+
+// 🎯 SMART AUTO-FILL DÀN TRẢI & CHỐNG NGHỈ 3 NGÀY + BÁO LỄ & AUTO-FILL HOL
 function autoFillSmart(){
   const n = daysInMonth(state.month, state.year);
   const { dailyForecast } = calculateMonthlyForecast();
   const visibleEmps = getVisibleEmployeesForCurrentMonth();
 
-  // Reset ca OFF & S2 hiện tại (giữ lại AL/SL/WFH/HOL/OT)
+  // Reset ca OFF & S2 hiện tại (giữ lại AL/SL/WFH/OT)
   visibleEmps.forEach(e => {
     for(let d=1; d<=n; d++){
       if(!isEmpActiveOnDate(e, dateOf(d))) continue;
       let cell = getCellData(e.id, d);
-      if(cell.status === "OFF" || cell.status === "S2") {
+      if(cell.status === "OFF" || cell.status === "S2" || cell.status === "HOL") {
         setCellData(e.id, d, null, undefined, true);
       }
     }
   });
+
+  // 0. AUTO FILL NGÀY LỄ (HOL) NẾU CÓ NGÀY LỄ TRONG THÁNG
+  let foundHolidays = [];
+  for(let d=1; d<=n; d++){
+    let holInfo = getHolidayInfo(d);
+    if(holInfo){
+      foundHolidays.push({ day: d, name: holInfo.name });
+      visibleEmps.forEach(e => {
+        if(isEmpActiveOnDate(e, dateOf(d))){
+          setCellData(e.id, d, "HOL", undefined, true);
+        }
+      });
+    }
+  }
 
   // 1. Chia ca Chủ Nhật
   let currentMonthSunCount = {};
@@ -1413,6 +1446,14 @@ function autoFillSmart(){
 
   saveLocalState();
   renderAll();
+
+  // BÁO POPUP THÔNG BÁO AUTO-FILL & NGÀY LỄ
+  if(foundHolidays.length > 0){
+    let holListText = foundHolidays.map(h => `• Ngày ${h.day}/${state.month}: ${h.name}`).join("\n");
+    alert(`🎉 Phát hiện ${foundHolidays.length} ngày lễ trong Tháng ${state.month}/${state.year}:\n${holListText}\n\n✅ Đã tự động điền mã HOL cho toàn bộ nhân sự và hoàn tất xếp lịch!`);
+  } else {
+    alert(`✨ Đã tự động xếp lịch xong cho Tháng ${state.month}/${state.year}! (Không có ngày lễ trong tháng này)`);
+  }
 }
 
 function renderAllUIOnly(){
