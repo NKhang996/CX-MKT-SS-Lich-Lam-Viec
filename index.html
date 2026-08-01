@@ -1,0 +1,1490 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hệ thống Quản lý Lịch & Forecast Workload HCM Pro (Final Combined)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
+<style>
+  :root{
+    --bg:#0F1417; --surface:#171E23; --surface-2:#1F2830; --surface-3:#26323C; --border:#2A3540;
+    --text:#E8EDF0; --text-dim:#8A97A0; --text-faint:#586570;
+    --amber:#E8A33D; --amber-dim:#4A3B22; --teal:#4FB3A9; --teal-dim:#1D3E3A;
+    --coral:#E8615D; --coral-dim:#4A2323; --violet:#8B7FD6; --violet-dim:#332E52;
+    --pink:#E85d9e; --pink-dim:#4a1e35; --green:#10b981; --green-dim:#164e3d;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  button{font-family:inherit;cursor:pointer;}
+  input,select{font-family:inherit;}
+  #app{display:flex; min-height:100vh;}
+
+  /* SIDEBAR */
+  #sidebar{width:220px; flex:none; background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; padding:18px 12px; position:sticky; top:0; height:100vh; z-index:100;}
+  .brand{display:flex; align-items:center; gap:9px; padding:4px 8px 20px 8px;}
+  .brand-mark{width:28px;height:28px;border-radius:7px; background:linear-gradient(135deg,var(--teal),var(--violet)); flex:none; display:flex;align-items:center;justify-content:center; font-weight:700; font-size:13px; color:#12181f;}
+  .brand-text{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:14px; line-height:1.2;}
+  .brand-text span{display:block; font-size:10px; font-weight:400; color:var(--text-dim); font-family:'Inter';}
+  .navgroup{display:flex; flex-direction:column; gap:3px; margin-top:6px;}
+  .navbtn{display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:8px; border:none; background:transparent; color:var(--text-dim); font-size:13px; font-weight:500; text-align:left; transition:background .15s, color .15s;}
+  .navbtn:hover{background:var(--surface-2); color:var(--text);}
+  .navbtn.active{background:var(--surface-3); color:var(--teal);}
+  .navbtn .ic{width:16px; text-align:center; flex:none; font-size:13px;}
+
+  /* MAIN */
+  #main{flex:1; min-width:0; padding:24px 30px 60px 30px;}
+  .topbar{display:flex; align-items:center; justify-content:space-between; gap:20px; margin-bottom:20px; flex-wrap:wrap;}
+  .topbar h1{font-family:'Space Grotesk',sans-serif; font-size:20px; font-weight:700; margin:0 0 3px 0;}
+  .topbar .sub{color:var(--text-dim); font-size:12px;}
+  .month-picker{display:flex; align-items:center; gap:8px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:6px 8px;}
+  .month-picker button{background:var(--surface-2); border:1px solid var(--border); color:var(--text); width:26px;height:26px;border-radius:7px; font-size:13px; display:flex;align-items:center;justify-content:center;}
+  .month-picker button:hover{background:var(--surface-3);}
+  .month-picker .mval{font-family:'Space Grotesk'; font-weight:700; font-size:14px; min-width:96px; text-align:center;}
+
+  .status-badge{display:inline-flex; align-items:center; gap:6px; font-size:11px; padding:4px 8px; border-radius:20px; background:var(--surface-2); border:1px solid var(--border);}
+  .status-dot{width:8px; height:8px; border-radius:50%; background:#e8a33d;}
+  .status-dot.online{background:#4ade80;}
+
+  .panel{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px; margin-bottom:18px;}
+  .panel h2{font-family:'Space Grotesk',sans-serif; font-size:15px; margin:0 0 12px 0; display:flex; align-items:center; gap:8px;}
+  
+  .info-icon-btn{background:var(--surface-2); border:1px solid var(--border); color:var(--teal); width:20px; height:20px; border-radius:50%; font-size:11px; font-weight:bold; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.2s;}
+  .info-icon-btn:hover{background:var(--teal); color:#000; transform:scale(1.1);}
+
+  .sticky-panel {
+    position: sticky;
+    top: 10px;
+    z-index: 50;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+
+  label.f{display:flex; flex-direction:column; gap:4px; font-size:11.5px; color:var(--text-dim); font-weight:600;}
+  label.f input, label.f select{background:var(--surface-2); border:1px solid var(--border); color:var(--text); border-radius:7px; padding:6px 9px; font-size:12.5px;}
+
+  table{border-collapse:collapse; width:100%;}
+  .grid-wrap{overflow-x:auto; border-radius:8px; border:1px solid var(--border);}
+
+  /* TABLES */
+  .emp-table th, .cal-table th, .wl-table th, .hol-table th{background:var(--surface-2); color:var(--text-dim); font-size:10.5px; text-transform:uppercase; padding:8px 6px; border:1px solid var(--border); text-align:left;}
+  .emp-table td, .cal-table td, .wl-table td, .hol-table td{padding:5px 6px; border:1px solid var(--border); font-size:12px; vertical-align:middle;}
+  .emp-table input, .emp-table select, .hol-table input{background:var(--surface-2); border:1px solid var(--border); color:var(--text); border-radius:5px; padding:4px 6px; font-size:11.5px; width:100%;}
+  .icon-btn{background:none;border:none;color:var(--text-faint); font-size:13px; padding:3px 5px; border-radius:5px;}
+  .icon-btn:hover{color:var(--coral); background:var(--coral-dim);}
+  
+  .btn-primary{background:var(--teal-dim); color:var(--teal); border:1px solid #235952; padding:7px 12px; border-radius:7px; font-size:12px; font-weight:600; display:inline-flex; gap:6px; align-items:center;}
+  .btn-primary:hover{background:#235952;}
+  .btn-refresh{background:var(--violet-dim); color:var(--violet); border:1px solid #4c4182; padding:7px 12px; border-radius:7px; font-size:12px; font-weight:600; display:inline-flex; gap:6px; align-items:center;}
+  .btn-refresh:hover{background:#4c4182;}
+  .btn-excel{background:#1e3a29; color:#4ade80; border:1px solid #166534; padding:7px 12px; border-radius:7px; font-size:12px; font-weight:600; display:inline-flex; gap:6px; align-items:center;}
+  .btn-excel:hover{background:#166534;}
+  .btn-info{background:var(--surface-3); color:var(--amber); border:1px solid var(--amber-dim); padding:6px 10px; border-radius:8px; font-size:12px; font-weight:600; display:inline-flex; gap:6px; align-items:center;}
+  .btn-info:hover{background:var(--amber-dim); color:#fff;}
+
+  /* CALENDAR HEADER FIXES */
+  .cal-table th.day-header { min-width: 46px; text-align: center; padding: 6px 3px; line-height: 1.25; white-space: nowrap; font-size: 10.5px; font-weight: 600; cursor: pointer; }
+  .cal-table th.hol-col { background: #4a1e35 !important; color: #f472b6 !important; border-bottom: 2px solid #f472b6; }
+
+  .cal-table td.daycell{ min-width: 46px; height: 34px; text-align: center; padding: 0; cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-weight: 700; font-size: 11px; transition: all .1s; }
+  .cal-table td.daycell:hover{opacity:0.8; filter:brightness(1.2);}
+  .cal-table td.daycell.disabled{background:#171E23 !important; color:#4A5568 !important; cursor:not-allowed; font-weight:400;}
+
+  /* CROSSHAIR HIGHLIGHT FOR DARK MODE */
+  .cal-table tr:hover td { background-color: rgba(255, 255, 255, 0.05) !important; }
+  .cal-table td.col-hover, .cal-table th.col-hover { background-color: rgba(79, 179, 169, 0.12) !important; }
+  .cal-table td.cell-active { background-color: rgba(232, 163, 61, 0.3) !important; outline: 2px solid var(--amber); }
+
+  /* TOOLBAR & PALETTE */
+  .toolbar{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; background:var(--surface-2); padding:8px 12px; border-radius:8px; border:1px solid var(--border); align-items:center;}
+  .tool-group{display:flex; gap:4px; align-items:center; flex-wrap:wrap;}
+  .tool-btn{background:var(--surface-3); border:1px solid var(--border); color:var(--text-dim); border-radius:5px; padding:5px 8px; font-size:11px; font-weight:600;}
+  .tool-btn.active{border-color:var(--teal); color:var(--teal); background:var(--teal-dim);}
+  
+  .palette-wrap{display:flex; gap:5px; align-items:center; border-left:1px solid var(--border); padding-left:10px; margin-left:5px;}
+  .color-dot{width:18px; height:18px; border-radius:50%; cursor:pointer; border:2px solid transparent; transition:transform 0.1s;}
+  .color-dot:hover{transform:scale(1.2);}
+  .color-dot.active{border-color:#fff; transform:scale(1.25); box-shadow:0 0 8px rgba(255,255,255,0.4);}
+
+  .cal-table .name-col{min-width:140px; position:sticky; left:0; background:var(--surface); z-index:2;}
+  .cal-table th.name-col{background:var(--surface-2); z-index:3;}
+
+  /* COLOR CODING TEAMS */
+  .row-team-chao-bau td.name-col { border-left: 4px solid var(--teal) !important; background: #142323; }
+  .row-team-ca-nuong td.name-col { border-left: 4px solid var(--violet) !important; background: #1d1b2e; }
+  .row-team-chung td.name-col { border-left: 4px solid var(--amber) !important; background: #262018; }
+
+  /* HIGHLIGHT STYLES */
+  .cal-table th.sun-col{background:#321d22 !important; color:var(--coral) !important; border-bottom:2px solid var(--coral);}
+  .cal-table td.sun-cell{background:rgba(232, 97, 93, 0.05);}
+  .cal-table th.spike-sale{background:#3b1f35 !important; color:var(--pink) !important; border-bottom:2px solid var(--pink);}
+  .cal-table th.spike-double{background:#4a1e35 !important; color:#f472b6 !important; border-bottom:2px solid #f472b6;}
+  .cal-table th.spike-payday{background:#2a3b1e !important; color:#4ade80 !important; border-bottom:2px solid #4ade80;}
+
+  /* WORKLOAD & KPIS */
+  .wl-table td, .wl-table th{text-align:center; padding:5px 4px; min-width:54px;}
+  .wl-table .rowlabel{text-align:left; position:sticky; left:0; background:var(--surface); z-index:2; min-width:180px; font-weight:600;}
+  .wl-table input.override-inp{background:var(--surface-3); border:1px solid var(--border); color:var(--amber); font-weight:700; text-align:center; width:48px; font-size:11px; border-radius:4px; padding:2px;}
+  
+  /* CẢNH BÁO MÀU */
+  .alert-under{background:rgba(232, 97, 93, 0.25) !important; color:#fca5a5 !important; font-weight:700;}
+  .alert-over{background:rgba(232, 163, 61, 0.25) !important; color:#fde047 !important; font-weight:700;}
+  .alert-ok{background:rgba(79, 179, 169, 0.15) !important; color:#6ee7b7 !important;}
+
+  .kpi-row{display:flex; gap:12px; margin-bottom:14px; flex-wrap:wrap;}
+  .kpi{background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:10px 14px; min-width:140px; flex:1;}
+  .kpi .lbl{font-size:10px; color:var(--text-dim); text-transform:uppercase; margin-bottom:3px;}
+  .kpi .val{font-family:'Space Grotesk'; font-size:18px; font-weight:700;}
+
+  .tag{padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700; display:inline-block;}
+  .tag-lead{background:#3b82f620; color:#60a5fa;}
+  .tag-fte{background:#10b98120; color:#34d399;}
+  .tag-bpo{background:#f59e0b20; color:#fbbf24;}
+  
+  .overall-row td{background:var(--surface-3); font-weight:700; font-family:'IBM Plex Mono'; border-top:2px solid var(--border);}
+  .alert-sun{background:var(--coral-dim) !important; color:var(--coral) !important;}
+  .ok-sun{color:var(--teal) !important;}
+
+  /* MODAL STYLES */
+  .modal-overlay{position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.75); backdrop-filter:blur(4px); display:none; justify-content:center; align-items:center; z-index:999; padding:20px;}
+  .modal-overlay.active{display:flex;}
+  .modal-card{background:var(--surface); border:1px solid var(--border); border-radius:12px; max-width:850px; width:100%; max-height:85vh; overflow-y:auto; padding:24px; position:relative; box-shadow:0 10px 30px rgba(0,0,0,0.5);}
+  .modal-close{position:absolute; top:18px; right:20px; background:none; border:none; color:var(--text-dim); font-size:20px; cursor:pointer;}
+  .modal-close:hover{color:var(--coral);}
+  .logic-section{background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:14px; margin-bottom:14px;}
+  .logic-section h3{margin:0 0 8px 0; color:var(--teal); font-size:14px; font-family:'Space Grotesk'; display:flex; align-items:center; gap:6px;}
+  .logic-section p, .logic-section ul{font-size:12.5px; color:var(--text-dim); margin:4px 0; line-height:1.5;}
+  .logic-section ul{padding-left:18px;}
+</style>
+</head>
+<body>
+<div id="app">
+  <nav id="sidebar">
+    <div class="brand">
+      <div class="brand-mark">SPX</div>
+      <div class="brand-text">Workload Planner<span>HCM Team Pro</span></div>
+    </div>
+    <div class="navgroup" id="navgroup"></div>
+  </nav>
+  <main id="main">
+    <div class="topbar">
+      <div>
+        <h1 id="pageTitle">—</h1>
+        <div class="sub" id="pageSub">Hệ thống cân đối lịch & định mức năng suất WFM</div>
+      </div>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <button class="btn-info" onclick="openLogicModal()">ℹ️ Logic & Công thức WFM</button>
+        <div class="status-badge">
+          <div class="status-dot" id="cloudStatusDot"></div>
+          <span id="cloudStatusTxt">Local Browser Saved</span>
+        </div>
+        <div class="month-picker">
+          <button id="prevMonth">‹</button>
+          <div class="mval mono" id="monthLabel">—</div>
+          <button id="nextMonth">›</button>
+        </div>
+      </div>
+    </div>
+    <div id="content"></div>
+  </main>
+</div>
+
+<!-- MODAL POPUP GLOBAL -->
+<div class="modal-overlay" id="logicModal">
+  <div class="modal-card">
+    <button class="modal-close" onclick="closeLogicModal()">✕</button>
+    <h2 id="modalTitle" style="font-family:'Space Grotesk'; font-size:18px; margin-top:0; color:var(--text); border-bottom:1px solid var(--border); padding-bottom:10px;">
+      📘 Giải thích Logic & Công thức WFM System
+    </h2>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+// ==========================================
+// 🔴 FIREBASE CONFIG (TÙY CHỌN)
+// ==========================================
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+let db = null;
+try {
+  if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+  }
+} catch(e) { console.error("Firebase init:", e); }
+
+const VN_SHORT_WEEKDAY = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+const uid = () => Math.random().toString(36).slice(2,10);
+
+// BẢNG TỪ ĐIỂN MÃ CA (ĐÃ BAO GỒM CA OT VÀ LỄ HOL)
+const STATUS_DICT = {
+  "S2":    { val: 1,   color:"var(--teal)",       bg:"var(--teal-dim)" },
+  "OT":    { val: 1,   color:"#f97316",           bg:"#431407" },
+  "WFH":   { val: 1,   color:"var(--violet)",     bg:"var(--violet-dim)" },
+  "OFF":   { val: 0,   color:"var(--text-faint)", bg:"transparent" },
+  "OFF/2": { val: 0.5, color:"var(--text-dim)",   bg:"transparent" },
+  "AL":    { val: 0,   color:"var(--amber)",      bg:"var(--amber-dim)" },
+  "AL1/2": { val: 0.5, color:"var(--amber)",      bg:"var(--amber-dim)" },
+  "SL":    { val: 0,   color:"var(--coral)",      bg:"var(--coral-dim)" },
+  "HOL":   { val: 0,   color:"#f472b6",           bg:"#4a1e35" }
+};
+
+const CUSTOM_COLORS = [
+  { id: "red",    hex: "#e8615d", bg: "#4A2323" },
+  { id: "yellow", hex: "#e8a33d", bg: "#4A3B22" },
+  { id: "green",  hex: "#10b981", bg: "#164e3d" },
+  { id: "blue",   hex: "#3b82f6", bg: "#1e3a5f" },
+  { id: "purple", hex: "#8b7fd6", bg: "#332e52" },
+  { id: "pink",   hex: "#e85d9e", bg: "#4a1e35" }
+];
+
+const INITIAL_EMPLOYEES = [
+  { name:"Nguyễn Tấn Khang", mail:"khang.nguyentan@spxexpress.com", role:"Leader", team:"Chung", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Trần Hoàng Minh", mail:"hoangminh.tran@spxexpress.com", role:"SubLead", team:"Cháo Bầu", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Nguyễn Huỳnh Anh Thư", mail:"anhthu.nguyenhuynh@spxexpress.com", role:"FTE", team:"Cháo Bầu", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Lê Thị Hoàng Nguyên", mail:"hoangnguyen.lethi01@spxexpress.com", role:"FTE", team:"Cháo Bầu", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Phan Thị Linh", mail:"linh.phanthi@spxexpress.com", role:"FTE", team:"Cháo Bầu", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Trần Thị Thu Thủy", mail:"thuthuy.tranthi@spxexpress.com", role:"FTE", team:"Cháo Bầu", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Tô Nguyên Bảo", mail:"nguyenbao.to@spx-sales.com", role:"FTE", team:"Cháo Bầu", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Trần Đăng Khoa", mail:"dangkhoa.tran07@spx-sales.com", role:"BPO", team:"Cháo Bầu", type:"BPO", onboarding:"2026-05-01", offboardDate:"", earlyPass: true },
+  { name:"Mai Trọng Nghĩa", mail:"trongnghia.mai@spx-sales.com", role:"BPO", team:"Cháo Bầu", type:"BPO", onboarding:"2026-08-15", offboardDate:"", earlyPass: false },
+  { name:"Nguyễn Hữu Nghĩa", mail:"nghia.nguyenhuu@spxexpress.com", role:"SubLead", team:"Cá Nướng", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Dương Minh Phương", mail:"phuong.duongminh@spxexpress.com", role:"FTE", team:"Cá Nướng", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Lê Nguyễn Thanh Vy", mail:"vy.lethanh@spxexpress.com", role:"FTE", team:"Cá Nướng", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Huỳnh Mỹ Loan Anh", mail:"loananh.huynhmy@spxexpress.com", role:"FTE", team:"Cá Nướng", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Nhan Bích Tâm", mail:"bichtam.nhan01@spxexpress.com", role:"FTE", team:"Cá Nướng", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Châu Hiệp Phát", mail:"hiepphat.chau01@spx-sales.com", role:"BPO", team:"Cá Nướng", type:"BPO", onboarding:"2026-05-01", offboardDate:"", earlyPass: true },
+  { name:"Nguyễn Quỳnh Cẩm Tú", mail:"camtu.nguyenquynh@spx-sales.com", role:"BPO", team:"Cá Nướng", type:"BPO", onboarding:"2026-08-01", offboardDate:"", earlyPass: false }
+].map(e => ({ ...e, id: uid() }));
+
+const DEFAULT_CONFIG = {
+  offFTE: 7, offBPO: 5,
+  maxSundayHC: 4,
+  lastMonthWL: 100000,
+  growthRate: 10,
+  fteTarget: 750,
+  bpoTarget: 600,
+  claimPct: 20,
+  sundayWL: 0,
+  underThreshold: 85,
+  overThreshold: 125,
+  doubleDayAdj: 1.20,
+  saleDayAdj: 1.15,
+  payDayAdj: 1.10,
+  dayWeights: { 1: 1.15, 2: 1.05, 3: 1.0, 4: 0.98, 5: 0.97, 6: 0.95, 0: 0.90 }
+};
+
+let state = {
+  month: 8, year: 2026,
+  cfg: { ...DEFAULT_CONFIG },
+  employees: INITIAL_EMPLOYEES,
+  marks: {},
+  spikeDays: {},
+  overrideWL: {},
+  // 📅 HOLIDAY CONFIGURATION (Từ File 2)
+  holidaysFixed: [
+    { id: "h1", date: "01-01", name: "Tết Dương Lịch" },
+    { id: "h2", date: "04-30", name: "Ngày Giải Phóng" },
+    { id: "h3", date: "05-01", name: "Quốc Tế Lao Động" },
+    { id: "h4", date: "09-02", name: "Quốc Khánh" }
+  ],
+  holidaysDynamic: [
+    { id: "hd1", year: 2026, date: "2026-02-16", name: "Tết Nguyên Đán 1" },
+    { id: "hd2", year: 2026, date: "2026-02-17", name: "Tết Nguyên Đán 2" },
+    { id: "hd3", year: 2026, date: "2026-02-18", name: "Tết Nguyên Đán 3" },
+    { id: "hd4", year: 2027, date: "2027-02-06", name: "Tết Nguyên Đán Đinh Mùi" }
+  ]
+};
+
+let tab = "lich";
+let activeTool = "S2";       
+let activeColor = null;      
+
+// TỰ ĐỘNG KHẮC PHỤC DỮ LIỆU THIẾU/RỖNG
+function syncStateAndConfig(){
+  if(!state.cfg) state.cfg = { ...DEFAULT_CONFIG };
+  
+  state.cfg.lastMonthWL = Number(state.cfg.lastMonthWL) || 100000;
+  state.cfg.growthRate = Number(state.cfg.growthRate) ?? 10;
+  state.cfg.fteTarget = Number(state.cfg.fteTarget) || 750;
+  state.cfg.bpoTarget = Number(state.cfg.bpoTarget) || 600;
+  state.cfg.claimPct = Number(state.cfg.claimPct) ?? 20;
+  state.cfg.sundayWL = Number(state.cfg.sundayWL) || 0;
+  state.cfg.underThreshold = Number(state.cfg.underThreshold) || 85;
+  state.cfg.overThreshold = Number(state.cfg.overThreshold) || 125;
+  state.cfg.doubleDayAdj = Number(state.cfg.doubleDayAdj) || 1.20;
+  state.cfg.saleDayAdj = Number(state.cfg.saleDayAdj) || 1.15;
+  state.cfg.payDayAdj = Number(state.cfg.payDayAdj) || 1.10;
+
+  if(!state.cfg.dayWeights) {
+    state.cfg.dayWeights = { ...DEFAULT_CONFIG.dayWeights };
+  } else {
+    for(let i=0; i<=6; i++){
+      if(state.cfg.dayWeights[i] === undefined || state.cfg.dayWeights[i] === null) {
+        state.cfg.dayWeights[i] = DEFAULT_CONFIG.dayWeights[i];
+      }
+    }
+  }
+
+  if(!state.employees || state.employees.length === 0) {
+    state.employees = INITIAL_EMPLOYEES;
+  } else {
+    state.employees.forEach(e => {
+      if(!e.id) e.id = uid();
+      if(!e.onboarding) e.onboarding = "2024-01-01";
+      if(e.offboardDate === undefined) e.offboardDate = "";
+      if(e.earlyPass === undefined) e.earlyPass = false;
+    });
+  }
+
+  if(!state.marks) state.marks = {};
+  if(!state.spikeDays) state.spikeDays = {};
+  if(!state.overrideWL) state.overrideWL = {};
+  if(!state.holidaysFixed) state.holidaysFixed = [];
+  if(!state.holidaysDynamic) state.holidaysDynamic = [];
+}
+
+// KIỂM TRA NGÀY LỄ
+function getHolidayInfo(day, m = state.month, y = state.year){
+  const mm = String(m).padStart(2, '0');
+  const dd = String(day).padStart(2, '0');
+  const dateStrShort = `${mm}-${dd}`;
+  const dateStrFull = `${y}-${mm}-${dd}`;
+
+  const f = state.holidaysFixed.find(h => h.date === dateStrShort);
+  if(f) return f;
+
+  const d = state.holidaysDynamic.find(h => h.date === dateStrFull);
+  if(d) return d;
+
+  return null;
+}
+
+function openTopicLogic(topicKey){
+  const titles = {
+    'palette': '🎨 Hướng Dẫn Sử Dụng Cọ Tô Màu & Chọn Ca',
+    'forecast_cfg': '⚙️ Logic Tham Số Forecast Workload',
+    'forecast_kpi': '📈 Logic Tính Toán Chỉ Số Workload Tổng Quan',
+    'forecast_detail': '⚖️ Logic Chi Tiết Cân Đối Năng Lực & SLA Coverage',
+    'nhansu': '👤 Logic Quản Lý Offboard & Ramp-up',
+    'cauhinh': '⚙️ Logic Cấu Hình Trọng Số, Quy Tắc Off & Ngày Lễ'
+  };
+
+  const bodies = {
+    'palette': `<div class="logic-section">
+      <h3>Thao tác Tô Màu / Chọn Ca</h3>
+      <p>• <b>Chọn Ca (S2, OT, OFF, WFH, AL, HOL...):</b> Nhấp chọn nút tên ca, sau đó nhấp vào ô ngày của nhân viên tương ứng.</p>
+      <p>• <b>Ca OT (Overtime):</b> Nhân viên trực ca OT sẽ tính thêm 100% định mức năng lực làm việc trong ngày đó.</p>
+      <p>• <b>Chuyển đổi loại ngày đặc biệt:</b> Nhấp chuột trực tiếp vào tiêu đề cột ngày để xoay vòng: <i>Mặc định ➔ Sale (🔥) ➔ Ngày đôi (🔥🔥) ➔ Ngày lương (💰) ➔ Mặc định</i>.</p>
+      <p>• <b>Tô Màu Thủ Công:</b> Chọn màu ở dải Palette bên phải, sau đó nhấp vào ô ngày để làm nổi bật ca đặc biệt.</p>
+    </div>`,
+    
+    'forecast_cfg': `<div class="logic-section">
+      <h3>Quy tắc tính toán Tham số Forecast</h3>
+      <p>• <b>Workload Tháng Trước:</b> Tổng số case thực tế của tháng liền kề trước đó.</p>
+      <p>• <b>Tỷ lệ Tăng trưởng (%):</b> Dự báo mức độ tăng trưởng case tháng này.</p>
+      <p>• <b>Target FTE & BPO:</b> Định mức năng suất bàn giao (case/người/ngày) cho nhân viên FTE và BPO.</p>
+      <p>• <b>Tỉ lệ điều chỉnh Ngày đôi / Sale / Lương:</b> Hệ số nhân áp dụng cho các ngày được đánh dấu đặc biệt trên tiêu đề cột.</p>
+    </div>`,
+    
+    'forecast_kpi': `<div class="logic-section">
+      <h3>Công thức KPI</h3>
+      <p>• <b>Total WL = </b> Workload Tháng Trước × (1 + Tỷ lệ Tăng trưởng %)</p>
+      <p>• <b>WL Trung bình/Ngày = </b> Total WL ÷ Số ngày trong tháng</p>
+      <p>• <b>Max Trực CN:</b> Hạn mức số lượng HC đi làm trong ngày Chủ Nhật để bảo vệ sức khỏe đội ngũ.</p>
+    </div>`,
+
+    'forecast_detail': `<div class="logic-section">
+      <h3>Công thức SLA & Workload Gap</h3>
+      <p>• <b>Tổng Năng Lực (Capacity) = </b> (FTE Active × Target FTE) + (BPO Active × Target BPO × % Ramp-up)</p>
+      <p>• <b>Net Case Gap = </b> Tổng Năng Lực - Daily Workload</p>
+      <p>• <b>HC Gap Quy Đổi = </b> Net Case Gap ÷ Target FTE</p>
+      <p>• <b>SLA Coverage Tổng thể = </b> (Tổng Năng Lực ÷ Daily Workload) × 100%</p>
+    </div>`,
+
+    'nhansu': `<div class="logic-section">
+      <h3>🔑 Logic Ẩn Nhân Viên Offboard</h3>
+      <p>• <b>Ẩn Nhân viên Offboard:</b> Nếu nhân viên nghỉ việc (có <i>Offboard Date</i>), họ vẫn hiển thị trên lịch của tháng hiện tại. <b>Từ tháng sau trở đi (Month > Offboard Month)</b>, hệ thống sẽ <b>TỰ ĐỰNG ẨN HOÀN TOÀN</b> nhân viên đó khỏi danh sách.</p>
+    </div>`,
+
+    'cauhinh': `<div class="logic-section">
+      <h3>Cấu hình Day Weights, Quy Tắc Ngày Nghỉ & Ngày Lễ</h3>
+      <p>• <b>Day Weight (Hệ số Ngày):</b> Điều chỉnh tỷ trọng case dự kiến giữa các ngày trong tuần (T2..CN).</p>
+      <p>• <b>Quy tắc Ngày Nghỉ:</b> Phép năm (AL) tính riêng biệt với OFF hàng tuần. Giới hạn tối đa 2 OFF/team/ngày. Thuật toán tự động giãn cách ca OFF, cấm xếp dồn 3 ngày nghỉ liên tiếp.</p>
+      <p>• <b>Quản lý Ngày Lễ (Holidays):</b> Tự động nhận diện và làm nổi bật cột Ngày Lễ Cố Định & Âm Lịch Linh Hoạt trên Lịch Trực.</p>
+    </div>`
+  };
+
+  document.getElementById("modalTitle").innerHTML = titles[topicKey] || "ℹ️ Thông Tin Logic WFM";
+  document.getElementById("modalBody").innerHTML = bodies[topicKey] || "<p>Chưa có mô tả chi tiết.</p>";
+  document.getElementById("logicModal").classList.add("active");
+}
+
+function openLogicModal(){ openTopicLogic('nhansu'); }
+function closeLogicModal(){ document.getElementById("logicModal").classList.remove("active"); }
+
+function loadLocalState(){
+  try {
+    const s = localStorage.getItem("spx_wfm_state_combined");
+    if(s) {
+      const parsed = JSON.parse(s);
+      state = { ...state, ...parsed };
+    }
+  } catch(e) { console.error("Load local error:", e); }
+  syncStateAndConfig();
+}
+
+function saveLocalState(){
+  syncStateAndConfig();
+  try {
+    localStorage.setItem("spx_wfm_state_combined", JSON.stringify(state));
+  } catch(e) { console.error("Save local error:", e); }
+  pushStateToCloud();
+}
+
+function monthKey(m = state.month, y = state.year){ return `${y}-${String(m).padStart(2,"0")}`; }
+function daysInMonth(m = state.month, y = state.year){ return new Date(y,m,0).getDate(); }
+function dateOf(day, m = state.month, y = state.year){ return new Date(y, m-1, day); }
+
+function ensureMonthData(m = state.month, y = state.year){
+  const k = monthKey(m, y);
+  if(!state.marks[k]) state.marks[k] = {};
+  if(!state.spikeDays[k]) state.spikeDays[k] = {}; 
+  if(!state.overrideWL[k]) state.overrideWL[k] = {};
+}
+
+function pushStateToCloud() {
+  if (!db) return;
+  db.ref("spx_workload_app_combined").set(state);
+}
+
+function listenCloudChanges() {
+  if (!db) return;
+  db.ref("spx_workload_app_combined").on("value", (snapshot) => {
+    const val = snapshot.val();
+    if (val) {
+      state = val;
+      syncStateAndConfig();
+      renderAllUIOnly();
+    }
+    document.getElementById("cloudStatusDot").classList.add("online");
+    document.getElementById("cloudStatusTxt").textContent = "Cloud & Local Synced";
+  });
+}
+
+function getVisibleEmployeesForCurrentMonth(){
+  const monthStart = new Date(state.year, state.month - 1, 1);
+  monthStart.setHours(0,0,0,0);
+
+  return state.employees.filter(emp => {
+    if(!emp.offboardDate) return true;
+    const offb = new Date(emp.offboardDate);
+    offb.setHours(0,0,0,0);
+    const hideFromMonth = new Date(offb.getFullYear(), offb.getMonth() + 1, 1);
+    return monthStart < hideFromMonth;
+  });
+}
+
+function isEmpActiveOnDate(emp, curDate){
+  const cur = new Date(curDate); cur.setHours(0,0,0,0);
+  if(emp.onboarding) {
+    const onb = new Date(emp.onboarding); onb.setHours(0,0,0,0);
+    if(cur < onb) return false;
+  }
+  if(emp.offboardDate) {
+    const offb = new Date(emp.offboardDate); offb.setHours(0,0,0,0);
+    if(cur >= offb) return false;
+  }
+  return true;
+}
+
+function isBPOPassedProbation(emp, curDate){
+  if(emp.type !== "BPO") return true;
+  if(emp.earlyPass) return true;
+  if(!emp.onboarding) return false;
+  const onb = new Date(emp.onboarding);
+  const cur = new Date(curDate);
+  return Math.floor((cur - onb) / (1000 * 60 * 60 * 24)) >= 60;
+}
+
+function getBPOPerformancePct(emp, currentDate){
+  if(!isEmpActiveOnDate(emp, currentDate)) return 0;
+  if(emp.type !== "BPO") return 1.0;
+  if(isBPOPassedProbation(emp, currentDate)) return 1.0;
+  if(!emp.onboarding) return 1.0;
+  
+  const onb = new Date(emp.onboarding);
+  const cur = new Date(currentDate);
+  const diffDays = Math.floor((cur - onb) / (1000 * 60 * 60 * 24));
+  if(diffDays < 0) return 0;
+  if(diffDays < 7) return 0.20;
+  if(diffDays < 14) return 0.50;
+  if(diffDays < 21) return 0.75;
+  return 1.0;
+}
+
+function getCellData(empId, day, m = state.month, y = state.year){
+  const mkKey = monthKey(m, y);
+  const mData = state.marks[mkKey]?.[empId]?.[day];
+  if(!mData) return { status: null, colorBg: null };
+  if(typeof mData === 'object') return mData;
+  return { status: mData, colorBg: null };
+}
+
+function setCellData(empId, day, status, colorBg, skipSave=false){
+  const k = monthKey();
+  if(!state.marks[k]) state.marks[k] = {};
+  if(!state.marks[k][empId]) state.marks[k][empId] = {};
+
+  const current = getCellData(empId, day);
+  const newStatus = (status !== undefined) ? status : current.status;
+  const newBg = (colorBg !== undefined) ? colorBg : current.colorBg;
+
+  if(!newStatus && !newBg) {
+    delete state.marks[k][empId][day];
+  } else {
+    state.marks[k][empId][day] = { status: newStatus, colorBg: newBg };
+  }
+
+  if(!skipSave) saveLocalState();
+}
+
+function toggleSpikeDay(day){
+  const k = monthKey();
+  if(!state.spikeDays[k]) state.spikeDays[k] = {};
+  
+  const currentVal = state.spikeDays[k][day];
+  let currentType = "NONE";
+  if(typeof currentVal === "string") currentType = currentVal;
+  else if(typeof currentVal === "number" && currentVal > 1.0) currentType = "SALE";
+
+  const nextTypeMap = { "NONE": "SALE", "SALE": "DOUBLE", "DOUBLE": "PAYDAY", "PAYDAY": "NONE" };
+  const nextType = nextTypeMap[currentType] || "NONE";
+
+  state.spikeDays[k][day] = nextType;
+  saveLocalState();
+  renderAll();
+}
+
+function getDaySpikeFactor(day){
+  const k = monthKey();
+  const dayVal = state.spikeDays[k]?.[day];
+  
+  if(!dayVal || dayVal === "NONE") return 1.0;
+  if(dayVal === "DOUBLE") return Number(state.cfg.doubleDayAdj) || 1.20;
+  if(dayVal === "SALE" || dayVal === 1.15) return Number(state.cfg.saleDayAdj) || 1.15;
+  if(dayVal === "PAYDAY") return Number(state.cfg.payDayAdj) || 1.10;
+  
+  return 1.0;
+}
+
+function setOverrideWL(day, val){
+  const k = monthKey();
+  if(!state.overrideWL[k]) state.overrideWL[k] = {};
+  if(val === "" || val === null || isNaN(val)) {
+    delete state.overrideWL[k][day];
+  } else {
+    state.overrideWL[k][day] = Number(val);
+  }
+  saveLocalState();
+  renderAll();
+}
+
+function countSundayDutyInMonth(empId, m, y){
+  const k = monthKey(m, y);
+  const n = daysInMonth(m, y);
+  let count = 0;
+  const emp = state.employees.find(e => e.id === empId);
+  if(!emp) return 0;
+
+  for(let d=1; d<=n; d++){
+    const curD = dateOf(d, m, y);
+    if(curD.getDay() === 0){
+      const cell = getCellData(empId, d, m, y);
+      const isWorking = (cell.status === "S2" || cell.status === "OT" || cell.status === "WFH" || (!cell.status && isEmpActiveOnDate(emp, curD)));
+      if(isWorking && isEmpActiveOnDate(emp, curD)) count++;
+    }
+  }
+  return count;
+}
+
+const NAV = [
+  { id:"lich",    ic:"▦", label:"Chia Lịch Trực" },
+  { id:"forecast",ic:"📊", label:"Dự báo Workload" },
+  { id:"nhansu",  ic:"👤", label:"Quản lý Nhân sự" },
+  { id:"cauhinh", ic:"⚙", label:"Cấu hình Quy tắc & Ngày Lễ" }
+];
+
+function renderNav(){
+  const el = document.getElementById("navgroup"); el.innerHTML = "";
+  NAV.forEach(i=>{
+    const b = document.createElement("button");
+    b.className = "navbtn" + (tab===i.id ? " active":"");
+    b.innerHTML = `<span class="ic">${i.ic}</span><span>${i.label}</span>`;
+    b.onclick = ()=>{ tab=i.id; renderAll(); };
+    el.appendChild(b);
+  });
+}
+
+function renderTopbar(){
+  const titles = { forecast:"Dự báo & Cân đối Workload", lich:"Chia Lịch Trực & Thống Kê", nhansu:"Quản lý Nhân sự", cauhinh:"Cấu hình Quy tắc & Ngày Lễ" };
+  document.getElementById("pageTitle").textContent = titles[tab];
+  document.getElementById("monthLabel").textContent = `Th ${state.month}/${state.year}`;
+}
+
+function calculateMonthlyForecast(){
+  syncStateAndConfig();
+  const n = daysInMonth(state.month, state.year);
+  const totalWL = Math.round(state.cfg.lastMonthWL * (1 + state.cfg.growthRate / 100));
+  const mkKey = monthKey();
+  const visibleEmps = getVisibleEmployeesForCurrentMonth();
+  
+  let totalWeight = 0;
+  for(let d=1; d<=n; d++){
+    const wd = dateOf(d).getDay();
+    const spike = getDaySpikeFactor(d);
+    const w = state.cfg.dayWeights[wd] !== undefined ? Number(state.cfg.dayWeights[wd]) : 1.0;
+    totalWeight += w * spike;
+  }
+
+  let dailyForecast = [];
+  for(let d=1; d<=n; d++){
+    const curDate = dateOf(d);
+    const wd = curDate.getDay();
+    const isSun = (wd === 0);
+    const spike = getDaySpikeFactor(d);
+
+    let dayTotalWL = 0;
+    if(state.overrideWL[mkKey]?.[d] !== undefined){
+      dayTotalWL = Number(state.overrideWL[mkKey][d]);
+    } else if(isSun && state.cfg.sundayWL > 0){
+      dayTotalWL = Number(state.cfg.sundayWL);
+    } else {
+      const w = state.cfg.dayWeights[wd] !== undefined ? Number(state.cfg.dayWeights[wd]) : 1.0;
+      const dayWeight = w * spike;
+      dayTotalWL = Math.round((totalWL / (totalWeight || 1)) * dayWeight);
+    }
+
+    const claimWL = Math.round(dayTotalWL * (state.cfg.claimPct / 100));
+    const supportWL = dayTotalWL - claimWL;
+
+    let fteCapacity = 0, bpoCapacity = 0;
+    let hcChaoBau = 0, hcCaNuong = 0, hcChung = 0;
+    let totalWorkingHC = 0;
+    
+    visibleEmps.forEach(e => {
+      if(!isEmpActiveOnDate(e, curDate)) return;
+
+      const cell = getCellData(e.id, d);
+      const mk = cell.status;
+      const isWorking = (mk === "S2" || mk === "OT" || mk === "WFH" || !mk);
+
+      if(isWorking){
+        totalWorkingHC++;
+        if(e.team === "Cháo Bầu") hcChaoBau++;
+        else if(e.team === "Cá Nướng") hcCaNuong++;
+        else hcChung++;
+
+        if(e.type === "FTE"){
+          fteCapacity += state.cfg.fteTarget;
+        } else {
+          const rampPct = getBPOPerformancePct(e, curDate);
+          bpoCapacity += state.cfg.bpoTarget * rampPct;
+        }
+      }
+    });
+
+    const totalCapacity = fteCapacity + bpoCapacity;
+    const overallCoverage = dayTotalWL > 0 ? (totalCapacity / dayTotalWL) * 100 : 100;
+
+    const netGapWL = totalCapacity - dayTotalWL;
+    const hcGap = state.cfg.fteTarget > 0 ? (netGapWL / state.cfg.fteTarget).toFixed(1) : 0;
+
+    dailyForecast.push({
+      day: d, weekday: VN_SHORT_WEEKDAY[wd], dayTotalWL, claimWL, supportWL,
+      fteCapacity, bpoCapacity, totalCapacity,
+      netGapWL, hcGap,
+      overallCoverage,
+      totalWorkingHC, hcChaoBau, hcCaNuong, hcChung,
+      spikeFactor: spike, isOverride: state.overrideWL[mkKey]?.[d] !== undefined
+    });
+  }
+  return { totalWL, dailyForecast };
+}
+
+function renderLich(){
+  const n = daysInMonth(state.month, state.year);
+  const visibleEmps = getVisibleEmployeesForCurrentMonth();
+  
+  const mList = [
+    { m: state.month-3 < 1 ? state.month+9 : state.month-3, y: state.month-3 < 1 ? state.year-1 : state.year, label: "CN M-3" },
+    { m: state.month-2 < 1 ? state.month+10 : state.month-2, y: state.month-2 < 1 ? state.year-1 : state.year, label: "CN M-2" },
+    { m: state.month-1 < 1 ? state.month+11 : state.month-1, y: state.month-1 < 1 ? state.year-1 : state.year, label: "CN M-1" },
+    { m: state.month+1 > 12 ? state.month-11 : state.month+1, y: state.month+1 > 12 ? state.year+1 : state.year, label: "CN M+1" }
+  ];
+
+  let head1 = `<th class="name-col">NAME</th><th>TEAM</th><th>CHỨC VỤ</th>`;
+  mList.forEach(item => {
+    head1 += `<th style="text-align:center; color:var(--violet); font-size:10px;" title="Tháng ${item.m}/${item.y}">${item.label}</th>`;
+  });
+  head1 += `<th>AL/SL</th><th>OFF DAY</th><th>CN THÁNG NÀY</th><th>WFH</th><th>OFF T7</th>`;
+  
+  for(let d=1; d<=n; d++){
+    const wd = dateOf(d).getDay();
+    const isSun = (wd === 0);
+    const holInfo = getHolidayInfo(d);
+    const daySpikeType = state.spikeDays[monthKey()]?.[d] || "NONE";
+    
+    let thClass = isSun ? "sun-col" : "";
+    if(holInfo) thClass = "hol-col"; 
+
+    let spikeTag = "";
+    if(daySpikeType === "SALE" || daySpikeType === 1.15) { thClass = "spike-sale"; spikeTag = "🔥"; }
+    else if(daySpikeType === "DOUBLE") { thClass = "spike-double"; spikeTag = "🔥🔥"; }
+    else if(daySpikeType === "PAYDAY") { thClass = "spike-payday"; spikeTag = "💰"; }
+
+    let dayStr = String(d).padStart(2, '0');
+    let monthStr = String(state.month).padStart(2, '0');
+    let holTitle = holInfo ? ` [${holInfo.name}]` : '';
+    
+    head1 += `<th class="${thClass} day-header col-idx-${d}" onclick="toggleSpikeDay(${d})" title="${holTitle} Nhấp để xoay vòng Ngày Đặc Biệt (Sale / Đôi / Lương)">
+                ${VN_SHORT_WEEKDAY[wd]} ${dayStr}/${monthStr}${spikeTag}${holInfo?'🎉':''}
+              </th>`;
+  }
+
+  const tools = Object.keys(STATUS_DICT).map(k=>`<button class="tool-btn ${activeTool===k && activeColor===null?'active':''}" onclick="activeTool='${k}';activeColor=null;renderAll()">${k}</button>`).join("");
+  
+  const palette = CUSTOM_COLORS.map(c=>`
+    <div class="color-dot ${activeColor===c.bg?'active':''}" style="background:${c.hex}" onclick="activeColor='${c.bg}';renderAll()" title="Tô màu ${c.id}"></div>
+  `).join("") + `<button class="tool-btn ${activeColor==='REMOVE'?'active':''}" onclick="activeColor='REMOVE';renderAll()">Xóa màu</button>`;
+
+  let dailyWorkingHC = Array(n + 1).fill(0);
+  let dailySundayFTE = Array(n + 1).fill(0);
+  let teamSunCounts = { "Cháo Bầu": 0, "Cá Nướng": 0, "Chung": 0 };
+
+  const rows = visibleEmps.map(e=>{
+    let counts = { AL_SL:0, OFF:0, CN_Working:0, WFH:0, OFF_T7:0 };
+    let dayCells = "";
+    let consecutiveOff = 0; 
+    let has3ConsecutiveOff = false;
+
+    for(let d=1; d<=n; d++){
+      const curDate = dateOf(d);
+      const isActive = isEmpActiveOnDate(e, curDate);
+      const wd = curDate.getDay();
+      const isSun = (wd === 0);
+
+      if(!isActive){
+        dayCells += `<td class="daycell disabled col-idx-${d}" title="Chưa Onboarding hoặc Đã Offboard">-</td>`;
+        consecutiveOff = 0;
+        continue;
+      }
+
+      const cell = getCellData(e.id, d);
+      const mk = cell.status;
+      const customBg = cell.colorBg;
+      const isWorking = (mk === "S2" || mk === "OT" || mk === "WFH" || !mk);
+
+      if(!isWorking) {
+        consecutiveOff++;
+        if(consecutiveOff >= 3) has3ConsecutiveOff = true;
+      } else {
+        consecutiveOff = 0;
+      }
+
+      if(isWorking) {
+        dailyWorkingHC[d]++;
+        if(isSun) {
+          counts.CN_Working++;
+          dailySundayFTE[d]++;
+          teamSunCounts[e.team] = (teamSunCounts[e.team] || 0) + 1;
+        }
+      }
+
+      if(mk === "AL" || mk === "AL1/2" || mk === "SL") counts.AL_SL += (mk==="AL"||mk==="SL"?1:0.5);
+      if(mk === "OFF" || mk === "OFF/2") {
+        counts.OFF += (mk==="OFF"?1:0.5);
+        if(wd===6) counts.OFF_T7++;
+      }
+      if(mk === "WFH") counts.WFH++;
+
+      let cellStyle = "";
+      let cellClass = isSun ? "sun-cell" : "";
+
+      if(customBg) {
+        cellStyle = `background:${customBg} !important; border:1px solid rgba(255,255,255,0.2);`;
+      } else if(mk && STATUS_DICT[mk]){ 
+        cellStyle = `background:${STATUS_DICT[mk].bg}; color:${STATUS_DICT[mk].color}; border:1px solid ${STATUS_DICT[mk].color};`; 
+      }
+
+      dayCells += `<td class="daycell ${cellClass} col-idx-${d}" style="${cellStyle}" onclick="handleCellClick('${e.id}',${d})">${mk||""}</td>`;
+    }
+
+    const tagClass = e.role === "Leader" ? "tag-lead" : (e.type==="FTE"?"tag-fte":"tag-bpo");
+    let teamRowClass = e.team === "Cháo Bầu" ? "row-team-chao-bau" : (e.team === "Cá Nướng" ? "row-team-ca-nuong" : "row-team-chung");
+    
+    let sundayMultiMonthCells = "";
+    mList.forEach(item => {
+      const cnt = countSundayDutyInMonth(e.id, item.m, item.y);
+      sundayMultiMonthCells += `<td style="text-align:center; font-weight:700;" class="mono">${cnt}</td>`;
+    });
+
+    let warnBadge = has3ConsecutiveOff ? `<span title="⚠️ Nhân sự nghỉ 3 ngày liên tiếp!" style="color:var(--coral); cursor:help;">⚠️</span>` : '';
+
+    let meta = `<td class="name-col" style="font-weight:600">${warnBadge} ${e.name} ${e.offboardDate ? '<span style="color:var(--coral); font-size:10px;" title="Nghỉ việc trong tháng">(Offboard)</span>':''}</td>
+                <td style="text-align:center;font-weight:600">${e.team}</td>
+                <td style="text-align:center"><span class="tag ${tagClass}">${e.role}</span></td>
+                ${sundayMultiMonthCells}
+                <td style="text-align:center; color:var(--amber)" class="mono">${counts.AL_SL}</td>
+                <td style="text-align:center" class="mono">${counts.OFF}</td>
+                <td style="text-align:center; color:var(--teal); font-weight:700" class="mono">${counts.CN_Working}</td>
+                <td style="text-align:center" class="mono">${counts.WFH}</td>
+                <td style="text-align:center" class="mono">${counts.OFF_T7}</td>`;
+
+    return `<tr class="${teamRowClass}">${meta}${dayCells}</tr>`;
+  }).join("");
+
+  let overallCells = "";
+  for(let d=1; d<=n; d++){
+    const wd = dateOf(d).getDay();
+    const isSun = (wd === 0);
+    const isSunExceeded = (isSun && dailySundayFTE[d] > state.cfg.maxSundayHC);
+    const alertClass = isSunExceeded ? "alert-sun" : (isSun ? "ok-sun" : "");
+    const cellVal = isSun ? `${dailySundayFTE[d]}/${state.cfg.maxSundayHC}` : dailyWorkingHC[d];
+    
+    overallCells += `<td style="text-align:center; font-size:10.5px" class="${alertClass} col-idx-${d}">${cellVal}</td>`;
+  }
+
+  const numMCols = mList.length;
+  const overallRow = `<tr class="overall-row">
+    <td class="name-col" style="color:var(--teal)">📊 OVERALL HC ĐI LÀM</td>
+    <td colspan="${2 + numMCols + 5}" style="text-align:right; font-size:11px; color:var(--text-dim)">Tổng làm / (CN: Trực/Max):</td>
+    ${overallCells}
+  </tr>`;
+
+  const totalSunChaoBau = teamSunCounts["Cháo Bầu"] || 0;
+  const totalSunCaNuong = teamSunCounts["Cá Nướng"] || 0;
+
+  return `
+  <div class="panel sticky-panel">
+    <h2>🎨 Chọn ca & Tô màu thủ công <button class="info-icon-btn" onclick="openTopicLogic('palette')" title="Xem hướng dẫn">i</button></h2>
+    <div class="toolbar">
+      <div class="tool-group">
+        <button class="tool-btn ${activeTool==='(Xóa)' && activeColor===null?'active':''}" onclick="activeTool='(Xóa)';activeColor=null;renderAll()">Trống (Xóa)</button>
+        ${tools}
+      </div>
+      <div class="palette-wrap">
+        <span style="font-size:11px; color:var(--text-dim); font-weight:600">🎨 Cọ tô màu:</span>
+        ${palette}
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px">
+        <div style="display:flex; gap:8px">
+          <button class="btn-primary" onclick="autoFillSmart()">✨ Auto-Fill (Dàn trải Lịch OFF & Workload)</button>
+          <button class="btn-refresh" onclick="renderAll()" title="Refresh lại Workload và các trường chỉ số">🔄 Refresh Toàn Bộ Dữ Liệu</button>
+          <button class="btn-excel" onclick="copyToClipboardGSheet()">📋 Copy sang Google Sheet</button>
+        </div>
+        <div style="font-size:12px; background:var(--surface-2); padding:6px 12px; border-radius:8px; border:1px solid var(--border)">
+          ☀️ <b>Tỉ lệ Trực CN Tháng này:</b> 
+          <span style="color:var(--teal); font-weight:700">Cháo Bầu (${totalSunChaoBau} ca)</span> vs 
+          <span style="color:var(--violet); font-weight:700">Cá Nướng (${totalSunCaNuong} ca)</span>
+        </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="grid-wrap"><table class="cal-table" id="calendarTable"><thead><tr>${head1}</tr></thead><tbody>${rows}${overallRow}</tbody></table></div>
+  </div>`;
+}
+
+function bindCrosshairEvents(){
+  const table = document.getElementById("calendarTable");
+  if(!table) return;
+
+  table.addEventListener("mouseover", (e) => {
+    const td = e.target.closest("td, th");
+    if (!td) return;
+    
+    table.querySelectorAll(".col-hover, .cell-active").forEach(el => el.classList.remove("col-hover", "cell-active"));
+
+    const colClass = Array.from(td.classList).find(c => c.startsWith("col-idx-"));
+    if (colClass) {
+      table.querySelectorAll("." + colClass).forEach(el => el.classList.add("col-hover"));
+    }
+    if(td.tagName === 'TD' && td.classList.contains('daycell')) {
+      td.classList.add("cell-active");
+    }
+  });
+
+  table.addEventListener("mouseleave", () => {
+    table.querySelectorAll(".col-hover, .cell-active").forEach(el => el.classList.remove("col-hover", "cell-active"));
+  });
+}
+
+function handleCellClick(empId, day){
+  const emp = state.employees.find(e => e.id === empId);
+  if(!isEmpActiveOnDate(emp, dateOf(day))) return;
+
+  if(activeColor !== null){
+    if(activeColor === 'REMOVE'){
+      setCellData(empId, day, undefined, null);
+    } else {
+      setCellData(empId, day, undefined, activeColor);
+    }
+  } else {
+    const statusVal = activeTool === '(Xóa)' ? null : activeTool;
+    setCellData(empId, day, statusVal, undefined);
+  }
+  renderAll();
+}
+
+function renderForecast(){
+  const { totalWL, dailyForecast } = calculateMonthlyForecast();
+  const n = daysInMonth(state.month, state.year);
+
+  let head = `<tr><th class="rowlabel">Chỉ số / Ngày</th>`;
+  let rHC = `<tr><td class="rowlabel" style="color:var(--teal)">Overall HC Đi Làm</td>`;
+  let rHCDetail = `<tr><td class="rowlabel" style="font-size:10px; color:var(--text-dim)">HC (Cháo Bầu / Cá Nướng / Leader)</td>`;
+  let rTotal = `<tr><td class="rowlabel">Workload Dự kiến (Daily WL)</td>`;
+  let rOverride = `<tr><td class="rowlabel" style="color:var(--amber)">✏️ Override Workload (Thủ công)</td>`;
+  let rClaim = `<tr><td class="rowlabel">Workload Claim (Khiếu nại)</td>`;
+  let rSupp = `<tr><td class="rowlabel">Workload Support (Hỗ trợ)</td>`;
+  let rCapTotal = `<tr><td class="rowlabel" style="font-weight:700">Tổng Năng Lực Team (Total Cap)</td>`;
+  let rGapWL = `<tr><td class="rowlabel" style="font-weight:700">Dư/Thiếu WL (Net Case Gap)</td>`;
+  let rGapHC = `<tr><td class="rowlabel">Thừa/Thiếu HC Quy Đổi</td>`;
+  let rOverallCov = `<tr><td class="rowlabel" style="font-weight:700">⭐ SLA Coverage Tổng thể (%)</td>`;
+
+  dailyForecast.forEach(f => {
+    let dayStr = String(f.day).padStart(2, '0');
+    let alertClass = "alert-ok";
+    if(f.overallCoverage < state.cfg.underThreshold) alertClass = "alert-under";
+    else if(f.overallCoverage > state.cfg.overThreshold) alertClass = "alert-over";
+
+    let spikeTag = f.spikeFactor > 1.15 ? '🔥🔥' : (f.spikeFactor > 1.0 ? '🔥' : '');
+
+    head += `<th class="${alertClass}">${dayStr}<br><span style="font-size:9px;">${f.weekday}</span>${spikeTag}</th>`;
+    rHC += `<td class="mono ${alertClass}" style="font-weight:700">${f.totalWorkingHC}</td>`;
+    rHCDetail += `<td class="mono" style="font-size:10px">${f.hcChaoBau}/${f.hcCaNuong}/${f.hcChung}</td>`;
+    rTotal += `<td class="mono">${f.dayTotalWL.toLocaleString()}</td>`;
+    
+    const overrideVal = state.overrideWL[monthKey()]?.[f.day] ?? '';
+    rOverride += `<td><input class="override-inp mono" type="number" placeholder="—" value="${overrideVal}" onchange="setOverrideWL(${f.day}, this.value)"></td>`;
+
+    rClaim += `<td class="mono" style="color:var(--teal)">${f.claimWL}</td>`;
+    rSupp += `<td class="mono" style="color:var(--amber)">${f.supportWL}</td>`;
+    rCapTotal += `<td class="mono" style="font-weight:700; color:var(--teal)">${Math.round(f.totalCapacity)}</td>`;
+
+    rGapWL += `<td class="mono" style="font-weight:700; color:${f.netGapWL<0?'var(--coral)':'var(--teal)'}">${f.netGapWL>0?'+':''}${Math.round(f.netGapWL)}</td>`;
+    rGapHC += `<td class="mono" style="color:${f.hcGap<0?'var(--coral)':'var(--teal)'}">${f.hcGap>0?'+':''}${f.hcGap} HC</td>`;
+
+    rOverallCov += `<td class="mono ${alertClass}" style="font-weight:700">${Math.round(f.overallCoverage)}%</td>`;
+  });
+
+  head += `</tr>`; rHC += `</tr>`; rHCDetail += `</tr>`; rTotal += `</tr>`; rOverride += `</tr>`; rClaim += `</tr>`; rSupp += `</tr>`;
+  rCapTotal += `</tr>`; rGapWL += `</tr>`; rGapHC += `</tr>`; rOverallCov += `</tr>`;
+
+  return `
+  <div class="panel">
+    <h2>⚙ Tham số Forecast Workload & Ngưỡng Cảnh báo SLA <button class="info-icon-btn" onclick="openTopicLogic('forecast_cfg')" title="Xem công thức">i</button></h2>
+    <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:center;">
+      <label class="f">Workload Tháng Trước<input type="number" id="cfg-lastWL" value="${state.cfg.lastMonthWL}"></label>
+      <label class="f">Tỷ lệ Tăng trưởng (%)<input type="number" id="cfg-growth" value="${state.cfg.growthRate}"></label>
+      <label class="f">Target FTE (case/ngày)<input type="number" id="cfg-fteT" value="${state.cfg.fteTarget}"></label>
+      <label class="f">Target BPO (case/ngày)<input type="number" id="cfg-bpoT" value="${state.cfg.bpoTarget}"></label>
+      <label class="f">% Ticket Khiếu nại<input type="number" id="cfg-claimPct" value="${state.cfg.claimPct}"></label>
+      <label class="f">Ghi đè Workload CN<input type="number" id="cfg-sunWL" placeholder="Tự động" value="${state.cfg.sundayWL || ''}"></label>
+      <label class="f" style="color:var(--coral)">Ngưỡng Thiếu (Alert Đỏ)<input type="number" id="cfg-underTh" value="${state.cfg.underThreshold}"></label>
+      <label class="f" style="color:var(--amber)">Ngưỡng Thừa (Alert Vàng)<input type="number" id="cfg-overTh" value="${state.cfg.overThreshold}"></label>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>📈 Tổng Quan Workload Tháng ${state.month}/${state.year} <button class="info-icon-btn" onclick="openTopicLogic('forecast_kpi')" title="Xem công thức">i</button></h2>
+    <div class="kpi-row">
+      <div class="kpi"><div class="lbl">TỔNG WORKLOAD DỰ KIẾN</div><div class="val" style="color:var(--amber)">${totalWL.toLocaleString()} case</div></div>
+      <div class="kpi"><div class="lbl">WORKLOAD TRUNG BÌNH/NGÀY</div><div class="val" style="color:var(--teal)">${Math.round(totalWL/n).toLocaleString()} case</div></div>
+      <div class="kpi"><div class="lbl">HẠN MỨC TRỰC CN</div><div class="val" style="color:var(--violet)">Max ${state.cfg.maxSundayHC} HC/CN</div></div>
+      <div class="kpi"><div class="lbl">NGƯỠNG CẢNH BÁO SLA</div><div class="val" style="font-size:14px; color:var(--text-dim)">Alert Đỏ: &lt;${state.cfg.underThreshold}% | Vàng: &gt;${state.cfg.overThreshold}%</div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>⚖ Cân đối Workload & Số HC Thực tế Đi làm (WFM Details) <button class="info-icon-btn" onclick="openTopicLogic('forecast_detail')" title="Xem công thức">i</button></h2>
+    <div class="grid-wrap"><table class="wl-table"><thead>${head}</thead><tbody>
+      ${rHC}${rHCDetail}${rTotal}${rOverride}${rClaim}${rSupp}
+      ${rCapTotal}
+      ${rGapWL}${rGapHC}${rOverallCov}
+    </tbody></table></div>
+  </div>`;
+}
+
+function renderNhanSu(){
+  const visibleEmps = getVisibleEmployeesForCurrentMonth();
+
+  const rows = visibleEmps.map(e=>{
+    const autoRampPct = Math.round(getBPOPerformancePct(e, dateOf(1)) * 100);
+    const isPassed = isBPOPassedProbation(e, dateOf(1));
+
+    return `
+    <tr data-emp="${e.id}">
+      <td><input data-f="name" value="${e.name}"></td>
+      <td><input data-f="mail" value="${e.mail||''}"></td>
+      <td><select data-f="team"><option ${e.team==="Cháo Bầu"?"selected":""}>Cháo Bầu</option><option ${e.team==="Cá Nướng"?"selected":""}>Cá Nướng</option><option ${e.team==="Chung"?"selected":""}>Chung</option></select></td>
+      <td><select data-f="role"><option ${e.role==="Leader"?"selected":""}>Leader</option><option ${e.role==="SubLead"?"selected":""}>SubLead</option><option ${e.role==="FTE"?"selected":""}>FTE</option><option ${e.role==="BPO"?"selected":""}>BPO</option></select></td>
+      <td><select data-f="type"><option ${e.type==="FTE"?"selected":""}>FTE</option><option ${e.type==="BPO"?"selected":""}>BPO</option></select></td>
+      <td><input type="date" data-f="onboarding" value="${e.onboarding||'2024-01-01'}"></td>
+      <td><input type="date" data-f="offboardDate" value="${e.offboardDate||''}" style="color:var(--coral)"></td>
+      <td style="text-align:center">
+        ${e.type==='BPO'?`<input type="checkbox" data-f="earlyPass" ${e.earlyPass?'checked':''}>`: '—'}
+      </td>
+      <td style="text-align:center; font-weight:700" class="mono">
+        ${e.type==='BPO'?(isPassed?'100% (Passed)':autoRampPct+'%'):'100%'}
+      </td>
+      <td><button class="icon-btn" data-del="${e.id}" title="Xóa nhân viên khỏi hệ thống">✕</button></td>
+    </tr>`;
+  }).join("");
+
+  return `<div class="panel">
+    <h2>Danh sách Nhân sự HCM, Onboarding & Ramp-up Performance <button class="info-icon-btn" onclick="openTopicLogic('nhansu')" title="Xem hướng dẫn Offboard">i</button></h2>
+    <div class="grid-wrap"><table class="emp-table">
+      <thead><tr><th>Họ tên</th><th>Mail</th><th>Team</th><th>Chức vụ</th><th>Loại</th><th>Onboarding</th><th>Offboard</th><th>Pass Thử Việc Sớm</th><th>Hiệu suất Thực</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+    <br><button class="btn-primary" onclick="addEmp()">＋ Thêm Nhân viên</button>
+  </div>`;
+}
+
+function addEmp(){ 
+  state.employees.push({ id:uid(), name:"Nhân viên mới", mail:"", team:"Cháo Bầu", role:"FTE", type:"FTE", onboarding:"2026-08-01", offboardDate:"", earlyPass: false }); 
+  saveLocalState();
+  renderAll(); 
+}
+
+function renderCauHinh(){
+  syncStateAndConfig();
+  const dw = state.cfg.dayWeights;
+
+  const holFixedRows = state.holidaysFixed.map(h => `
+    <tr data-hol-f="${h.id}">
+      <td><input data-hf="date" value="${h.date}" placeholder="MM-DD (VD: 01-01)"></td>
+      <td><input data-hf="name" value="${h.name}" placeholder="Tên ngày lễ"></td>
+      <td><button class="icon-btn" onclick="delHolFixed('${h.id}')">✕</button></td>
+    </tr>
+  `).join("");
+
+  const holDynRows = state.holidaysDynamic.map(h => `
+    <tr data-hol-d="${h.id}">
+      <td><input type="number" data-hd="year" value="${h.year||2026}" style="width:70px"></td>
+      <td><input type="date" data-hd="date" value="${h.date}"></td>
+      <td><input data-hd="name" value="${h.name}" placeholder="Tên ngày lễ"></td>
+      <td><button class="icon-btn" onclick="delHolDyn('${h.id}')">✕</button></td>
+    </tr>
+  `).join("");
+
+  return `
+  <div class="panel">
+    <h2>Cấu hình Quy tắc Ca Trực & Hạn mức Cảnh báo <button class="info-icon-btn" onclick="openTopicLogic('cauhinh')" title="Xem giải thích">i</button></h2>
+    <div style="display:flex;gap:20px;flex-wrap:wrap">
+      <label class="f">FTE & BPO Passed (Số ngày OFF/Tháng)<input type="number" min="0" id="cfg-offFTE" value="${state.cfg.offFTE}"></label>
+      <label class="f">BPO Thử Việc (Số ngày OFF/Tháng)<input type="number" min="0" id="cfg-offBPO" value="${state.cfg.offBPO}"></label>
+      <label class="f">Max Trực Chủ Nhật (Gợi ý 2 Cháo Bầu + 2 Cá Nướng)<input type="number" min="0" max="16" id="cfg-maxSun" value="${state.cfg.maxSundayHC}"></label>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>➕ Tỉ lệ điều chỉnh bổ sung (Manual) <button class="info-icon-btn" onclick="openTopicLogic('cauhinh')" title="Xem giải thích">i</button></h2>
+    <div style="display:flex; gap:20px; flex-wrap:wrap;">
+      <label class="f">Tỉ lệ điều chỉnh cho Ngày đôi <input type="number" step="0.05" id="cfg-doubleDay" value="${state.cfg.doubleDayAdj||1.20}"></label>
+      <label class="f">Tỉ lệ điều chỉnh cho Ngày sale <input type="number" step="0.05" id="cfg-saleDay" value="${state.cfg.saleDayAdj||1.15}"></label>
+      <label class="f">Tỉ lệ điều chỉnh cho Ngày lương <input type="number" step="0.05" id="cfg-payDay" value="${state.cfg.payDayAdj||1.10}"></label>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>🎉 Quản lý Ngày Lễ / Tết (Holidays) <button class="info-icon-btn" onclick="openTopicLogic('cauhinh')" title="Xem giải thích">i</button></h2>
+    <div style="display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start;">
+      <div style="flex:1; min-width:300px;">
+        <h3 style="font-size:13px; color:var(--teal); margin-top:0;">📅 Ngày Lễ Cố Định (Hàng năm - MM-DD)</h3>
+        <table class="hol-table">
+          <thead><tr><th>Ngày (MM-DD)</th><th>Tên Ngày Lễ</th><th></th></tr></thead>
+          <tbody>${holFixedRows}</tbody>
+        </table>
+        <br><button class="btn-primary" onclick="addHolFixed()">＋ Thêm Lễ Cố Định</button>
+      </div>
+      <div style="flex:1.2; min-width:320px;">
+        <h3 style="font-size:13px; color:var(--violet); margin-top:0;">🏮 Ngày Lễ Âm Lịch / Linh Hoạt (Theo Năm)</h3>
+        <table class="hol-table">
+          <thead><tr><th>Năm</th><th>Ngày Cụ Thể</th><th>Tên Ngày Lễ</th><th></th></tr></thead>
+          <tbody>${holDynRows}</tbody>
+        </table>
+        <br><button class="btn-primary" onclick="addHolDyn()">＋ Thêm Lễ Linh Hoạt</button>
+      </div>
+    </div>
+  </div>
+  
+  <div class="panel">
+    <h2>🛠 Chỉnh sửa Manual Trọng Số Ngày trong Tuần (Day Weight) <button class="info-icon-btn" onclick="openTopicLogic('cauhinh')" title="Xem giải thích">i</button></h2>
+    <p style="font-size:12px; color:var(--text-dim); margin-top:-6px;">Thay đổi hệ số phân bổ Workload mặc định của từng ngày trong tuần:</p>
+    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+      <label class="f">T2 <input type="number" step="0.01" data-dw="1" value="${dw[1]}"></label>
+      <label class="f">T3 <input type="number" step="0.01" data-dw="2" value="${dw[2]}"></label>
+      <label class="f">T4 <input type="number" step="0.01" data-dw="3" value="${dw[3]}"></label>
+      <label class="f">T5 <input type="number" step="0.01" data-dw="4" value="${dw[4]}"></label>
+      <label class="f">T6 <input type="number" step="0.01" data-dw="5" value="${dw[5]}"></label>
+      <label class="f">T7 <input type="number" step="0.01" data-dw="6" value="${dw[6]}"></label>
+      <label class="f">CN <input type="number" step="0.01" data-dw="0" value="${dw[0]}"></label>
+    </div>
+  </div>`;
+}
+
+function addHolFixed(){
+  state.holidaysFixed.push({ id: uid(), date: "10-20", name: "Ngày Phụ Nữ VN" });
+  saveLocalState(); renderAll();
+}
+function delHolFixed(id){
+  state.holidaysFixed = state.holidaysFixed.filter(h => h.id !== id);
+  saveLocalState(); renderAll();
+}
+function addHolDyn(){
+  state.holidaysDynamic.push({ id: uid(), year: state.year, date: `${state.year}-03-08`, name: "Ngày Lễ Linh Hoạt" });
+  saveLocalState(); renderAll();
+}
+function delHolDyn(id){
+  state.holidaysDynamic = state.holidaysDynamic.filter(h => h.id !== id);
+  saveLocalState(); renderAll();
+}
+
+function copyToClipboardGSheet(){
+  const n = daysInMonth(state.month, state.year);
+  const visibleEmps = getVisibleEmployeesForCurrentMonth();
+  let tsv = "";
+
+  let rHeader = ["Name","Team","Role","CN M-3","CN M-2","CN M-1","CN M+1","AL/SL","OFF DAY","CN THÁNG NÀY","WFH","OFF T7"];
+  for(let d=1; d<=n; d++) {
+    let dayStr = String(d).padStart(2, '0');
+    let monthStr = String(state.month).padStart(2, '0');
+    tsv += `${VN_SHORT_WEEKDAY[dateOf(d).getDay()]} ${dayStr}/${monthStr}\t`;
+  }
+  tsv += rHeader.join("\t") + "\n";
+
+  const mList = [
+    { m: state.month-3 < 1 ? state.month+9 : state.month-3, y: state.month-3 < 1 ? state.year-1 : state.year },
+    { m: state.month-2 < 1 ? state.month+10 : state.month-2, y: state.month-2 < 1 ? state.year-1 : state.year },
+    { m: state.month-1 < 1 ? state.month+11 : state.month-1, y: state.month-1 < 1 ? state.year-1 : state.year },
+    { m: state.month+1 > 12 ? state.month-11 : state.month+1, y: state.month+1 > 12 ? state.year+1 : state.year }
+  ];
+
+  visibleEmps.forEach(e => {
+    let counts = { AL_SL:0, OFF:0, CN_Working:0, WFH:0, OFF_T7:0 };
+    let daysData = [];
+
+    for(let d=1; d<=n; d++){
+      const curDate = dateOf(d);
+      if(!isEmpActiveOnDate(e, curDate)){
+        daysData.push("-");
+        continue;
+      }
+
+      const cell = getCellData(e.id, d);
+      const mk = cell.status || "";
+      const wd = curDate.getDay();
+      const isWorking = (mk === "S2" || mk === "OT" || mk === "WFH" || !mk);
+
+      if(isWorking && wd === 0) counts.CN_Working++;
+      if(mk === "AL" || mk === "AL1/2" || mk === "SL") counts.AL_SL += (mk==="AL"||mk==="SL"?1:0.5);
+      if(mk === "OFF" || mk === "OFF/2") {
+        counts.OFF += (mk==="OFF"?1:0.5);
+        if(wd===6) counts.OFF_T7++;
+      }
+      if(mk === "WFH") counts.WFH++;
+      daysData.push(mk);
+    }
+
+    let prevSunCounts = mList.map(item => countSundayDutyInMonth(e.id, item.m, item.y));
+
+    let row = [
+      e.name, e.team, e.role,
+      ...prevSunCounts,
+      counts.AL_SL, counts.OFF, counts.CN_Working, counts.WFH, counts.OFF_T7,
+      ...daysData
+    ];
+    tsv += row.join("\t") + "\n";
+  });
+
+  navigator.clipboard.writeText(tsv).then(() => {
+    alert("✅ Đã sao chép lịch trực vào Clipboard!\nBạn mở Google Sheet và nhấn Ctrl + V để dán.");
+  }).catch(err => { alert("Lỗi khi copy: " + err); });
+}
+
+// 🎯 HÀM KIỂM TRA CHỐNG NGHỈ NỔI CỤC / 3 NGÀY LIÊN TIẾP
+function checkConsecutiveOffThreshold(empId, day, totalDaysInMonth) {
+  let isNotWorking = (d) => {
+    if (d < 1 || d > totalDaysInMonth) return false;
+    let st = getCellData(empId, d).status;
+    return st === "OFF" || st === "AL" || st === "SL" || st === "HOL" || st === "OFF/2";
+  };
+
+  let left = 0;
+  for (let d = day - 1; d >= 1; d--) {
+    if (isNotWorking(d)) left++;
+    else break;
+  }
+
+  let right = 0;
+  for (let d = day + 1; d <= totalDaysInMonth; d++) {
+    if (isNotWorking(d)) right++;
+    else break;
+  }
+
+  return (left + 1 + right);
+}
+
+// 🎯 SMART AUTO-FILL DÀN TRẢI & CHỐNG NGHỈ 3 NGÀY
+function autoFillSmart(){
+  const n = daysInMonth(state.month, state.year);
+  const { dailyForecast } = calculateMonthlyForecast();
+  const visibleEmps = getVisibleEmployeesForCurrentMonth();
+
+  // Reset ca OFF & S2 hiện tại (giữ lại AL/SL/WFH/HOL/OT)
+  visibleEmps.forEach(e => {
+    for(let d=1; d<=n; d++){
+      if(!isEmpActiveOnDate(e, dateOf(d))) continue;
+      let cell = getCellData(e.id, d);
+      if(cell.status === "OFF" || cell.status === "S2") {
+        setCellData(e.id, d, null, undefined, true);
+      }
+    }
+  });
+
+  // 1. Chia ca Chủ Nhật
+  let currentMonthSunCount = {};
+  visibleEmps.forEach(e => currentMonthSunCount[e.id] = 0);
+
+  let sundays = [];
+  for(let d=1; d<=n; d++){
+    if(dateOf(d).getDay() === 0) sundays.push(d);
+  }
+
+  sundays.forEach(d => {
+    ["Cháo Bầu", "Cá Nướng"].forEach(teamName => {
+      let teamEmps = visibleEmps.filter(e => {
+        if(!isEmpActiveOnDate(e, dateOf(d))) return false;
+        if(e.team !== teamName) return false;
+        if(e.role === "Leader" || e.role === "SubLead") return false; 
+        if(e.type === "BPO" && !isBPOPassedProbation(e, dateOf(d))) return false; 
+        return true;
+      });
+
+      teamEmps.sort((a, b) => {
+        let prevA = countSundayDutyInMonth(a.id, state.month-1, state.year) + countSundayDutyInMonth(a.id, state.month-2, state.year);
+        let prevB = countSundayDutyInMonth(b.id, state.month-1, state.year) + countSundayDutyInMonth(b.id, state.month-2, state.year);
+        let totalA = prevA + currentMonthSunCount[a.id];
+        let totalB = prevB + currentMonthSunCount[b.id];
+        if (totalA !== totalB) return totalA - totalB;
+        return Math.random() - 0.5;
+      });
+
+      let assigned = 0;
+      teamEmps.forEach(e => {
+        let cell = getCellData(e.id, d);
+        if(cell.status) return;
+
+        if(assigned < 2) {
+          setCellData(e.id, d, "S2", undefined, true);
+          currentMonthSunCount[e.id]++;
+          assigned++;
+        } else {
+          setCellData(e.id, d, "OFF", undefined, true);
+        }
+      });
+    });
+
+    visibleEmps.forEach(e => {
+      if(dateOf(d).getDay() === 0) {
+        if(isEmpActiveOnDate(e, dateOf(d))) {
+          if(e.role === "Leader" || e.role === "SubLead" || (e.type === "BPO" && !isBPOPassedProbation(e, dateOf(d)))) {
+            let cell = getCellData(e.id, d);
+            if(!cell.status) setCellData(e.id, d, "OFF", undefined, true);
+          }
+        }
+      }
+    });
+  });
+
+  // 2. Chia ca OFF Ngày Thường DÀN TRẢI & CẤM NGHỈ DỒN 3 NGÀY
+  let dailyTeamOffCount = {}; 
+  for(let d=1; d<=n; d++){
+    dailyTeamOffCount[`Cháo Bầu_${d}`] = 0;
+    dailyTeamOffCount[`Cá Nướng_${d}`] = 0;
+    dailyTeamOffCount[`Chung_${d}`] = 0;
+  }
+
+  visibleEmps.forEach(e => {
+    for(let d=1; d<=n; d++){
+      let cell = getCellData(e.id, d);
+      if(cell.status === "OFF") dailyTeamOffCount[`${e.team}_${d}`]++;
+    }
+  });
+
+  visibleEmps.forEach(e => {
+    let passed = isBPOPassedProbation(e, dateOf(1));
+    let baseTargetOff = (e.type === "FTE" || passed) ? state.cfg.offFTE : state.cfg.offBPO;
+    
+    let activeDaysInMonth = 0;
+    for(let d=1; d<=n; d++){
+      if(isEmpActiveOnDate(e, dateOf(d))) activeDaysInMonth++;
+    }
+    let targetOff = Math.round(baseTargetOff * (activeDaysInMonth / n));
+
+    let currentOff = 0;
+    for(let d=1; d<=n; d++){
+      if(!isEmpActiveOnDate(e, dateOf(d))) continue;
+      let cell = getCellData(e.id, d);
+      if(cell.status === "OFF") {
+        currentOff++;
+      }
+    }
+
+    let neededOff = Math.max(0, targetOff - currentOff);
+
+    for(let i=0; i<neededOff; i++){
+      let candidateDays = [];
+      for(let d=1; d<=n; d++){
+        if(!isEmpActiveOnDate(e, dateOf(d))) continue;
+        if(dateOf(d).getDay() === 0) continue; 
+
+        let cell = getCellData(e.id, d);
+        const isSpike = dailyForecast[d-1].spikeFactor > 1.0;
+
+        if(!cell.status && !isSpike) {
+          if(e.team === "Chung" || dailyTeamOffCount[`${e.team}_${d}`] < 2) {
+            let consStreak = checkConsecutiveOffThreshold(e.id, d, n);
+            
+            candidateDays.push({
+              day: d,
+              consStreak: consStreak,
+              currentOffInTeam: dailyTeamOffCount[`${e.team}_${d}`],
+              wl: dailyForecast[d-1].dayTotalWL
+            });
+          }
+        }
+      }
+
+      if(candidateDays.length > 0){
+        candidateDays.sort((a, b) => {
+          if (a.consStreak !== b.consStreak) {
+            return a.consStreak - b.consStreak;
+          }
+          if (a.currentOffInTeam !== b.currentOffInTeam) {
+            return a.currentOffInTeam - b.currentOffInTeam; 
+          }
+          return a.wl - b.wl; 
+        });
+
+        let selectedDay = candidateDays[0].day;
+        setCellData(e.id, selectedDay, "OFF", undefined, true);
+        dailyTeamOffCount[`${e.team}_${selectedDay}`]++;
+      }
+    }
+
+    for(let d=1; d<=n; d++){
+      if(!isEmpActiveOnDate(e, dateOf(d))) continue;
+      let cell = getCellData(e.id, d);
+      if(!cell.status) setCellData(e.id, d, "S2", undefined, true);
+    }
+  });
+
+  saveLocalState();
+  renderAll();
+}
+
+function renderAllUIOnly(){
+  ensureMonthData(); renderNav(); renderTopbar();
+  const el = document.getElementById("content");
+  if(tab==="forecast") el.innerHTML = renderForecast();
+  else if(tab==="lich") {
+    el.innerHTML = renderLich();
+    bindCrosshairEvents();
+  }
+  else if(tab==="nhansu") el.innerHTML = renderNhanSu();
+  else if(tab==="cauhinh") el.innerHTML = renderCauHinh();
+
+  document.querySelectorAll('input[id^="cfg-"]').forEach(i => i.onchange = (e) => { 
+    const key = i.id.replace("cfg-","");
+    const mapKey = { lastWL:'lastMonthWL', growth:'growthRate', fteT:'fteTarget', bpoT:'bpoTarget', offFTE:'offFTE', offBPO:'offBPO', maxSun:'maxSundayHC', claimPct:'claimPct', sunWL:'sundayWL', underTh:'underThreshold', overTh:'overThreshold', doubleDay:'doubleDayAdj', saleDay:'saleDayAdj', payDay:'payDayAdj' };
+    if(mapKey[key]) state.cfg[mapKey[key]] = Number(e.target.value);
+    saveLocalState();
+    renderAll();
+  });
+
+  document.querySelectorAll('input[data-dw]').forEach(i => i.onchange = (e) => {
+    const dayWd = i.dataset.dw;
+    state.cfg.dayWeights[dayWd] = parseFloat(e.target.value) || 1.0;
+    saveLocalState();
+    renderAll();
+  });
+
+  document.querySelectorAll('tr[data-emp] [data-f]').forEach(i => i.onchange = (e) => { 
+      const emp = state.employees.find(em => em.id === i.closest('tr').dataset.emp);
+      const field = i.dataset.f;
+      let val = (i.type === 'checkbox') ? i.checked : e.target.value;
+      emp[field] = val;
+      saveLocalState();
+      renderAll();
+  });
+
+  document.querySelectorAll('tr[data-hol-f] [data-hf]').forEach(i => i.onchange = (e) => {
+      const hId = i.closest('tr').dataset.holF;
+      const item = state.holidaysFixed.find(h => h.id === hId);
+      if(item) { item[i.dataset.hf] = e.target.value; saveLocalState(); }
+  });
+
+  document.querySelectorAll('tr[data-hol-d] [data-hd]').forEach(i => i.onchange = (e) => {
+      const hId = i.closest('tr').dataset.holD;
+      const item = state.holidaysDynamic.find(h => h.id === hId);
+      if(item) { 
+        let field = i.dataset.hd;
+        item[field] = field === 'year' ? Number(e.target.value) : e.target.value; 
+        saveLocalState(); 
+      }
+  });
+
+  document.querySelectorAll('[data-del]').forEach(b => b.onclick = (e) => {
+    if(confirm("Bạn có chắc chắn muốn xóa hẳn nhân viên này khỏi hệ thống? (Khuyên dùng: Bạn có thể nhập ngày Offboard để tự động ẩn ở các tháng tiếp theo).")) {
+      state.employees = state.employees.filter(em => em.id !== e.target.dataset.del);
+      saveLocalState();
+      renderAll();
+    }
+  });
+}
+
+function renderAll(){
+  renderAllUIOnly();
+}
+
+document.getElementById("prevMonth").onclick = () => { state.month = state.month===1?12:state.month-1; if(state.month===12) state.year--; renderAll(); };
+document.getElementById("nextMonth").onclick = () => { state.month = state.month===12?1:state.month+1; if(state.month===1) state.year++; renderAll(); };
+
+loadLocalState();
+renderAll();
+listenCloudChanges();
+</script>
+</body>
+</html>
