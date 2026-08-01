@@ -273,13 +273,13 @@
 // 🔴 FIREBASE CONFIG (TÙY CHỌN)
 // ==========================================
 const firebaseConfig = {
-  apiKey: "AIzaSyBpZWNqI62FLABbCXwCxBT1qACS1Ku9kz0",
-  authDomain: "spx-workload-hcm.firebaseapp.com",
-  databaseURL: "https://spx-workload-hcm-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "spx-workload-hcm",
-  storageBucket: "spx-workload-hcm.firebasestorage.app",
-  messagingSenderId: "556327875882",
-  appId: "1:556327875882:web:ed6a944a331be515ffda53"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
 };
 
 let db = null;
@@ -445,7 +445,7 @@ function openTopicLogic(topicKey){
     'palette': `<div class="logic-section">
       <h3>Thao tác Tô Màu / Chọn Ca</h3>
       <p>• <b>Chọn Ca (S2, OT, OFF, WFH, AL, HOL...):</b> Nhấp chọn nút tên ca, sau đó nhấp vào ô ngày của nhân viên tương ứng.</p>
-      <p>• <b>Xếp lịch Leader:</b> Tự động nghỉ 100% Chủ Nhật. Các ngày nghỉ ngơi còn lại ưu tiên ngẫu nhiên vào Thứ 7.</p>
+      <p>• <b>Xếp lịch Dàn Trải:</b> Hệ thống phân bổ đều số ngày OFF của nhân viên từ Thứ 2 đến Thứ 7, ưu tiên các ngày có lượng người nghỉ ít nhất để cân bằng tải vận hành.</p>
     </div>`,
     'nhansu': `<div class="logic-section">
       <h3>🔑 Thêm Team Mới & Phân vùng Region</h3>
@@ -899,7 +899,7 @@ function renderLich(){
     </div>
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px">
         <div style="display:flex; gap:8px">
-          <button class="btn-primary" onclick="autoFillSmart()">✨ Auto-Fill (Lịch Trực & Ưu Tiên Leader)</button>
+          <button class="btn-primary" onclick="autoFillSmart()">✨ Auto-Fill Dàn Trải Lịch Trực (T2-T7)</button>
           <button class="btn-danger" onclick="clearMonthSchedule()">🗑️ Xóa hết lịch tháng này</button>
           <button class="btn-refresh" onclick="renderAll()">🔄 Refresh Toàn Bộ</button>
           <button class="btn-excel" onclick="copyToClipboardGSheet()">📋 Copy sang Google Sheet</button>
@@ -1070,7 +1070,7 @@ function renderNhanSu(){
   }).join("");
 
   return `<div class="panel">
-    <h2>Danh sách Nhân sự, Khu vực & Dynamically Team <button class="info-icon-btn" onclick="openTopicLogic('nhansu')" title="Xem hướng dẫn Offboard">i</button></h2>
+    <h2>Danh sách Nhân sự, Khu vực & Dynamic Team <button class="info-icon-btn" onclick="openTopicLogic('nhansu')" title="Xem hướng dẫn Offboard">i</button></h2>
     
     <datalist id="region-list">${regionOptions}</datalist>
     <datalist id="team-list">${teamOptions}</datalist>
@@ -1120,7 +1120,6 @@ function renderCauHinh(){
     </div>
   </div>
 
-  <!-- 🛠 PHẦN MANUAL CHỈNH TRỌNG SỐ NGÀY TRONG TUẦN (DAY WEIGHT) ĐÃ ĐƯỢC KHÔI PHÚC HÒAN TOÀN -->
   <div class="panel">
     <h2>🛠️ Chỉnh sửa Manual Trọng Số Ngày trong Tuần (Day Weight) <button class="info-icon-btn" onclick="openTopicLogic('cauhinh')" title="Xem công thức Day Weight">i</button></h2>
     <div style="display:flex; gap:14px; flex-wrap:wrap;">
@@ -1266,12 +1265,13 @@ function clearMonthSchedule(){
   alert(`✅ Đã xóa sạch lịch trực Tháng ${state.month}/${state.year} về trống!`);
 }
 
-// 🎯 SMART AUTO-FILL VỚI LOGIC LEADER NGHĨ T7 & CÁC TEAM ĐỘNG
+// 🎯 SMART AUTO-FILL VỚI THUẬT TOÁN DÀN TRẢI NGÀY OFF DỰA TRÊN TẢI VẬN HÀNH (UNIFORM SPREAD)
 function autoFillSmart(){
   const n = daysInMonth(state.month, state.year);
   const { dailyForecast } = calculateMonthlyForecast();
   const visibleEmps = getVisibleEmployeesForCurrentMonth();
 
+  // Reset ca OFF, S2, HOL cũ
   visibleEmps.forEach(e => {
     for(let d=1; d<=n; d++){
       if(!isEmpActiveOnDate(e, dateOf(d))) continue;
@@ -1292,7 +1292,7 @@ function autoFillSmart(){
     }
   }
 
-  // 1. Chia ca Chủ Nhật (Leader & SubLead auto OFF)
+  // 1. CHIA CA CHỦ NHẬT (Ưu tiên xoay vòng theo lịch sử trực)
   let currentMonthSunCount = {};
   visibleEmps.forEach(e => currentMonthSunCount[e.id] = 0);
 
@@ -1345,8 +1345,21 @@ function autoFillSmart(){
     });
   });
 
-  // 2. Chia ca OFF Ngày Thường (Ưu tiên Thứ 7 cho Leader)
-  let dailyTeamOffCount = {}; 
+  // 2. CHIA CA OFF DÀN TRẢI ĐỀU TỪ THỨ 2 ĐẾN THỨ 7 (DAILY BALANCING SPREAD)
+  let dailyOffCount = {}; 
+  for(let d=1; d<=n; d++) dailyOffCount[d] = 0;
+
+  // Khởi tạo đếm số lượng người đã nghỉ sẵn trong từng ngày (Do lễ, nghỉ phép cố định...)
+  visibleEmps.forEach(e => {
+    for(let d=1; d<=n; d++){
+      if(!isEmpActiveOnDate(e, dateOf(d))) continue;
+      let cell = getCellData(e.id, d);
+      if(cell.status === "OFF" || cell.status === "AL" || cell.status === "SL" || cell.status === "HOL") {
+        dailyOffCount[d]++;
+      }
+    }
+  });
+
   visibleEmps.forEach(e => {
     let passed = isBPOPassedProbation(e, dateOf(1));
     let baseTargetOff = (e.type === "FTE" || passed) ? state.cfg.offFTE : state.cfg.offBPO;
@@ -1367,7 +1380,7 @@ function autoFillSmart(){
     let candidateDays = [];
     for(let d=1; d<=n; d++){
       if(!isEmpActiveOnDate(e, dateOf(d))) continue;
-      if(dateOf(d).getDay() === 0) continue; 
+      if(dateOf(d).getDay() === 0) continue; // Bỏ qua Chủ Nhật
 
       let cell = getCellData(e.id, d);
       const isSpike = dailyForecast[d-1].spikeFactor > 1.0;
@@ -1377,37 +1390,31 @@ function autoFillSmart(){
         candidateDays.push({
           day: d,
           consStreak: consStreak,
+          offCount: dailyOffCount[d], // Ưu tiên chọn ngày đang có ÍT người nghỉ nhất
           wl: dailyForecast[d-1].dayTotalWL
         });
       }
     }
 
-    if(candidateDays.length > 0) {
-      if (e.role === "Leader") {
-        let candidateSaturdays = candidateDays.filter(c => dateOf(c.day).getDay() === 6);
-        candidateSaturdays.sort(() => Math.random() - 0.5);
-        
-        while (neededOff > 0 && candidateSaturdays.length > 0) {
-          let selectedSat = candidateSaturdays.pop();
-          setCellData(e.id, selectedSat.day, "OFF", undefined, true);
-          neededOff--;
-          candidateDays = candidateDays.filter(c => c.day !== selectedSat.day);
-        }
-      }
+    // Tiêu chí sắp xếp phân bổ dàn trải:
+    // 1. Tránh tạo nghỉ dồn > 2-3 ngày liên tiếp
+    // 2. Ưu tiên ngày có TỔNG SỐ NGƯỜI NGHỈ ĐANG ÍT NHẤT (Dàn trải đều tải)
+    // 3. Ưu tiên ngày có Workload nhẹ hơn
+    candidateDays.sort((a, b) => {
+      if (a.consStreak !== b.consStreak) return a.consStreak - b.consStreak;
+      if (a.offCount !== b.offCount) return a.offCount - b.offCount;
+      return a.wl - b.wl;
+    });
 
-      candidateDays.sort((a, b) => {
-        if (a.consStreak !== b.consStreak) return a.consStreak - b.consStreak;
-        return a.wl - b.wl; 
-      });
-
-      for (let i = 0; i < neededOff; i++) {
-        if (candidateDays.length > 0) {
-          let selectedDay = candidateDays.shift().day;
-          setCellData(e.id, selectedDay, "OFF", undefined, true);
-        }
+    for (let i = 0; i < neededOff; i++) {
+      if (candidateDays.length > 0) {
+        let selectedDay = candidateDays.shift().day;
+        setCellData(e.id, selectedDay, "OFF", undefined, true);
+        dailyOffCount[selectedDay]++; // Cập nhật tăng biến đếm người nghỉ của ngày đó
       }
     }
 
+    // Điền ca S2 cho tất cả ngày làm việc còn lại
     for(let d=1; d<=n; d++){
       if(!isEmpActiveOnDate(e, dateOf(d))) continue;
       let cell = getCellData(e.id, d);
@@ -1417,7 +1424,7 @@ function autoFillSmart(){
 
   saveLocalState();
   renderAll();
-  alert(`✨ Đã tự động xếp lịch xong cho Tháng ${state.month}/${state.year}! (Leader được nghỉ 100% Chủ Nhật & ưu tiên Thứ 7).`);
+  alert(`✨ Đã tự động xếp lịch dàn trải đều từ Thứ 2 đến Thứ 7 cho Tháng ${state.month}/${state.year}!`);
 }
 
 function renderAllUIOnly(){
@@ -1440,7 +1447,7 @@ function renderAllUIOnly(){
     renderAll();
   });
 
-  // 🛠 BẮT SỰ KIỆN LƯU BẢNG DAY WEIGHT (dw-0 -> dw-6)
+  // BẮT SỰ KIỆN LƯU BẢNG DAY WEIGHT (dw-0 -> dw-6)
   document.querySelectorAll('input[id^="dw-"]').forEach(i => i.onchange = (e) => {
     const dayIndex = Number(i.id.replace("dw-", ""));
     if(!state.cfg.dayWeights) state.cfg.dayWeights = {};
