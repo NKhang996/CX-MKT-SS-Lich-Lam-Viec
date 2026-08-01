@@ -273,13 +273,13 @@
 // 🔴 FIREBASE CONFIG (TÙY CHỌN)
 // ==========================================
 const firebaseConfig = {
-  apiKey: "AIzaSyBpZWNqI62FLABbCXwCxBT1qACS1Ku9kz0",
-  authDomain: "spx-workload-hcm.firebaseapp.com",
-  databaseURL: "https://spx-workload-hcm-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "spx-workload-hcm",
-  storageBucket: "spx-workload-hcm.firebasestorage.app",
-  messagingSenderId: "556327875882",
-  appId: "1:556327875882:web:ed6a944a331be515ffda53"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
 };
 
 let db = null;
@@ -316,26 +316,27 @@ const CUSTOM_COLORS = [
 ];
 
 const INITIAL_EMPLOYEES = [
-  { name:"Nguyễn Tấn Khang", mail:"khang.nguyentan@spxexpress.com", role:"Leader", team:"Leader HCM", region:"HCM", type:"FTE", onboarding:"2023-12-11", offboardDate:"", earlyPass: false },
-  { name:"Trần Hoàng Minh", mail:"hoangminh.tran@spxexpress.com", role:"SubLead", team:"Cháo Bầu", region:"HCM", type:"FTE", onboarding:"2022-05-30", offboardDate:"", earlyPass: false },
-  { name:"Nguyễn Huỳnh Anh Thư", mail:"anhthu.nguyenhuynh@spxexpress.com", role:"FTE", team:"Cháo Bầu", region:"HCM", type:"FTE", onboarding:"2022-06-20", offboardDate:"", earlyPass: false },
-  { name:"Lê Thị Hoàng Nguyên", mail:"hoangnguyen.lethi01@spxexpress.com", role:"FTE", team:"Cháo Bầu", region:"HCM", type:"FTE", onboarding:"2026-07-20", offboardDate:"", earlyPass: false },
-  { name:"Phan Thị Linh", mail:"linh.phanthi@spxexpress.com", role:"FTE", team:"Cháo Bầu", region:"HCM", type:"FTE", onboarding:"2022-04-12", offboardDate:"", earlyPass: false },
-  { name:"Trần Thị Thu Thủy", mail:"thuthuy.tranthi@spxexpress.com", role:"FTE", team:"Cháo Bầu", region:"HCM", type:"FTE", onboarding:"2023-12-04", offboardDate:"", earlyPass: false },
-  { name:"Tô Nguyên Bảo", mail:"nguyenbao.to@spx-sales.com", role:"FTE", team:"Cháo Bầu", region:"HCM", type:"FTE", onboarding:"2026-01-21", offboardDate:"", earlyPass: false },
-  { name:"Trần Đăng Khoa", mail:"dangkhoa.tran07@spx-sales.com", role:"BPO", team:"Cháo Bầu", region:"HCM", type:"BPO", onboarding:"2026-07-22", offboardDate:"", earlyPass: true },
-  { name:"Mai Trọng Nghĩa", mail:"trongnghia.mai@spx-sales.com", role:"BPO", team:"Cháo Bầu", region:"HCM", type:"BPO", onboarding:"2026-07-27", offboardDate:"", earlyPass: false },
-  { name:"Nguyễn Hữu Nghĩa", mail:"nghia.nguyenhuu@spxexpress.com", role:"SubLead", team:"Cá Nướng", region:"HCM", type:"FTE", onboarding:"2021-06-07", offboardDate:"", earlyPass: false },
-  { name:"Dương Minh Phương", mail:"phuong.duongminh@spxexpress.com", role:"FTE", team:"Cá Nướng", region:"HCM", type:"FTE", onboarding:"2023-10-16", offboardDate:"", earlyPass: false },
-  { name:"Lê Nguyễn Thanh Vy", mail:"vy.lethanh@spxexpress.com", role:"FTE", team:"Cá Nướng", region:"HCM", type:"FTE", onboarding:"2021-11-02", offboardDate:"", earlyPass: false },
-  { name:"Huỳnh Mỹ Loan Anh", mail:"loananh.huynhmy@spxexpress.com", role:"FTE", team:"Cá Nướng", region:"HCM", type:"FTE", onboarding:"2023-12-04", offboardDate:"", earlyPass: false },
-  { name:"Nhan Bích Tâm", mail:"bichtam.nhan01@spxexpress.com", role:"FTE", team:"Cá Nướng", region:"HCM", type:"FTE", onboarding:"2026-07-20", offboardDate:"", earlyPass: false },
-  { name:"Châu Hiệp Phát", mail:"hiepphat.chau01@spx-sales.com", role:"BPO", team:"Cá Nướng", region:"HCM", type:"BPO", onboarding:"2026-07-27", offboardDate:"", earlyPass: true },
-  { name:"Nguyễn Quỳnh Cẩm Tú", mail:"camtu.nguyenquynh@spx-sales.com", role:"BPO", team:"Cá Nướng", region:"HCM", type:"BPO", onboarding:"2026-07-27", offboardDate:"", earlyPass: false }
+  { name:"Nguyễn Tấn Khang", mail:"khang.nguyentan@spxexpress.com", role:"Leader", team:"Leader HCM", region:"HCM", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Trần Hoàng Minh", mail:"hoangminh.tran@spxexpress.com", role:"SubLead", team:"Cháo Bầu", region:"HCM", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Nguyễn Huỳnh Anh Thư", mail:"anhthu.nguyenhuynh@spxexpress.com", role:"FTE", team:"Cháo Bầu", region:"HCM", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Lê Thị Hoàng Nguyên", mail:"hoangnguyen.lethi01@spxexpress.com", role:"FTE", team:"Cháo Bầu", region:"HCM", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Phan Thị Linh", mail:"linh.phanthi@spxexpress.com", role:"FTE", team:"Cháo Bầu", region:"HCM", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Trần Thị Thu Thủy", mail:"thuthuy.tranthi@spxexpress.com", role:"FTE", team:"Cháo Bầu", region:"HCM", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Tô Nguyên Bảo", mail:"nguyenbao.to@spx-sales.com", role:"FTE", team:"Cháo Bầu", region:"HCM", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Trần Đăng Khoa", mail:"dangkhoa.tran07@spx-sales.com", role:"BPO", team:"Cháo Bầu", region:"HCM", type:"BPO", onboarding:"2026-05-01", offboardDate:"", earlyPass: true },
+  { name:"Mai Trọng Nghĩa", mail:"trongnghia.mai@spx-sales.com", role:"BPO", team:"Cháo Bầu", region:"HCM", type:"BPO", onboarding:"2026-08-15", offboardDate:"", earlyPass: false },
+  { name:"Nguyễn Hữu Nghĩa", mail:"nghia.nguyenhuu@spxexpress.com", role:"SubLead", team:"Cá Nướng", region:"HCM", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Dương Minh Phương", mail:"phuong.duongminh@spxexpress.com", role:"FTE", team:"Cá Nướng", region:"HCM", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Lê Nguyễn Thanh Vy", mail:"vy.lethanh@spxexpress.com", role:"FTE", team:"Cá Nướng", region:"HCM", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Huỳnh Mỹ Loan Anh", mail:"loananh.huynhmy@spxexpress.com", role:"FTE", team:"Cá Nướng", region:"HCM", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Nhan Bích Tâm", mail:"bichtam.nhan01@spxexpress.com", role:"FTE", team:"Cá Nướng", region:"HCM", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Châu Hiệp Phát", mail:"hiepphat.chau01@spx-sales.com", role:"BPO", team:"Cá Nướng", region:"HCM", type:"BPO", onboarding:"2026-05-01", offboardDate:"", earlyPass: true },
+  { name:"Nguyễn Quỳnh Cẩm Tú", mail:"camtu.nguyenquynh@spx-sales.com", role:"BPO", team:"Cá Nướng", region:"HCM", type:"BPO", onboarding:"2026-08-01", offboardDate:"", earlyPass: false }
 ].map(e => ({ ...e, id: uid() }));
 
 const DEFAULT_CONFIG = {
-  offFTE: 7, offBPO: 5,
+  offFTE: null, 
+  offBPO: null,
   maxSundayHC: 4,
   lastMonthWL: 100000,
   growthRate: 10,
@@ -376,6 +377,34 @@ let tab = "lich";
 let activeTool = "S2";       
 let activeColor = null;      
 
+// 🔹 HÀM TÍNH SỐ CHỦ NHẬT TRONG THÁNG
+function getSundaysInMonth(m = state.month, y = state.year) {
+  const totalDays = daysInMonth(m, y);
+  let sundays = 0;
+  for (let d = 1; d <= totalDays; d++) {
+    if (dateOf(d, m, y).getDay() === 0) sundays++;
+  }
+  return sundays;
+}
+
+// 🔹 HÀM LẤY SỐ NGÀY OFF MẶC ĐỊNH CHO NHÂN VIÊN
+function getEffectiveOffDays(emp, m = state.month, y = state.year) {
+  const totalSundays = getSundaysInMonth(m, y);
+  const isPassed = isBPOPassedProbation(emp, dateOf(1, m, y));
+  
+  if (emp.type === "BPO" && !isPassed) {
+    // BPO Thử việc: Số CN trong tháng (hoặc đè thủ công)
+    return (state.cfg.offBPO !== null && state.cfg.offBPO !== undefined && state.cfg.offBPO !== "" && !isNaN(state.cfg.offBPO))
+      ? Number(state.cfg.offBPO)
+      : totalSundays;
+  } else {
+    // FTE & BPO đã qua thử việc: Số CN + 2 (hoặc đè thủ công)
+    return (state.cfg.offFTE !== null && state.cfg.offFTE !== undefined && state.cfg.offFTE !== "" && !isNaN(state.cfg.offFTE))
+      ? Number(state.cfg.offFTE)
+      : (totalSundays + 2);
+  }
+}
+
 function getTeamStyle(teamName) {
   let hash = 0;
   for (let i = 0; i < teamName.length; i++) {
@@ -398,6 +427,7 @@ function syncStateAndConfig(){
   state.cfg.doubleDayAdj = Number(state.cfg.doubleDayAdj) || 1.20;
   state.cfg.saleDayAdj = Number(state.cfg.saleDayAdj) || 1.15;
   state.cfg.payDayAdj = Number(state.cfg.payDayAdj) || 1.10;
+  state.cfg.maxSundayHC = (state.cfg.maxSundayHC !== undefined && state.cfg.maxSundayHC !== null && state.cfg.maxSundayHC !== "") ? Number(state.cfg.maxSundayHC) : 4;
 
   if(!state.cfg.dayWeights) state.cfg.dayWeights = { ...DEFAULT_CONFIG.dayWeights };
   if(!state.employees || state.employees.length === 0) state.employees = INITIAL_EMPLOYEES;
@@ -452,16 +482,15 @@ function openTopicLogic(topicKey){
       <p>• <b>Team Mới:</b> Gõ tên Team mới trực tiếp ở ô Team để khởi tạo mà không cần chỉnh sửa mã nguồn.</p>
     </div>`,
     'cauhinh': `<div class="logic-section">
-      <h3>🛠️ Trọng Số Ngày trong Tuần (Day Weights) & Spike Days</h3>
-      <p>• <b>Trọng Số Ngày (Day Weight):</b> Xác định tỷ trọng Workload của từng thứ trong tuần so với trung bình. Ví dụ: T2 thường có lượng công việc dồn lại sau cuối tuần nên trọng số cao hơn (1.15).</p>
-      <p>• <b>Công thức tính Workload Ngày:</b></p>
-      <p><code>Daily WL = (Tổng WL Tháng / Tổng Trọng Số Cả Tháng) * (Trọng Số Thứ * Hệ Số Spike Day)</code></p>
-      <p>• <b>Hệ số Spike Days:</b></p>
+      <h3>🛠️ Quy Tắc Số Ngày OFF & Trọng Số Ngày</h3>
+      <p>• <b>Số Ngày OFF Mặc Định:</b></p>
       <ul>
-        <li>🔥 <b>Ngày Sale (Sale Day):</b> Nhân thêm hệ số (Mặc định x1.15)</li>
-        <li>🔥🔥 <b>Ngày Đôi (Double Day):</b> Nhân thêm hệ số (Mặc định x1.20)</li>
-        <li>💰 <b>Ngày Lương (PayDay):</b> Nhân thêm hệ số (Mặc định x1.10)</li>
+        <li><b>BPO Thử Việc:</b> Số ngày OFF = Tổng số Chủ Nhật trong tháng.</li>
+        <li><b>FTE & BPO đã qua Thử Việc:</b> Số ngày OFF = Tổng số Chủ Nhật trong tháng + 2 ngày.</li>
+        <li><i>Mô hình Auto-Placeholder: Để trống ô cấu hình = Tự động tính theo tháng, Nhập số = Ghi đè thủ công.</i></li>
       </ul>
+      <p>• <b>Trọng Số Ngày (Day Weight):</b> Xác định tỷ trọng Workload của từng thứ trong tuần so với trung bình.</p>
+      <p><code>Daily WL = (Tổng WL Tháng / Tổng Trọng Số Cả Tháng) * (Trọng Số Thứ * Hệ Số Spike Day)</code></p>
     </div>`
   };
 
@@ -635,7 +664,6 @@ function countSundayDutyInMonth(empId, m, y){
     const curD = dateOf(d, m, y);
     if(curD.getDay() === 0){
       const cell = getCellData(empId, d, m, y);
-      // CHỈ ĐẾM S2, OT VÀ WFH LÀ CA ĐI LÀM
       const isWorking = (cell.status === "S2" || cell.status === "OT" || cell.status === "WFH");
       if(isWorking && isEmpActiveOnDate(emp, curD)) count++;
     }
@@ -710,8 +738,6 @@ function calculateMonthlyForecast(){
       if(!isEmpActiveOnDate(e, curDate)) return;
       const cell = getCellData(e.id, d);
       const mk = cell.status;
-      
-      // CHỈ TÍNH CAPACITY CHO CA S2, OT, WFH
       const isWorking = (mk === "S2" || mk === "OT" || mk === "WFH");
 
       if(isWorking){
@@ -783,13 +809,11 @@ function renderLich(){
               </th>`;
   }
 
-  // Cập nhật thanh Tool nút ca: Chọn Ca -> Tự động nhả Cọ màu
   const tools = Object.keys(STATUS_DICT).map(k => {
     const isActive = (activeTool === k && activeColor === null);
     return `<button class="tool-btn ${isActive ? 'active' : ''}" onclick="activeTool='${k}';activeColor=null;renderAll()">${k}</button>`;
   }).join("");
 
-  // Cập nhật Palette cọ màu: Chọn Cọ màu -> Tự động nhả nút Ca
   const palette = CUSTOM_COLORS.map(c => {
     const isActive = (activeColor === c.bg);
     return `<div class="color-dot ${isActive ? 'active' : ''}" style="background:${c.hex}" onclick="activeColor='${c.bg}';activeTool=null;renderAll()" title="Tô màu ${c.id}"></div>`;
@@ -820,7 +844,6 @@ function renderLich(){
       const mk = cell.status;
       const customBg = cell.colorBg;
       
-      // CHỈ ĐẾM S2, OT VÀ WFH LÀ CA ĐI LÀM
       const isWorking = (mk === "S2" || mk === "OT" || mk === "WFH");
 
       if(!isWorking) {
@@ -956,11 +979,9 @@ function handleCellClick(empId, day){
   if(!isEmpActiveOnDate(emp, dateOf(day))) return;
 
   if(activeColor !== null){
-    // Đang bật Cọ tô màu thủ công
     if(activeColor === 'REMOVE') setCellData(empId, day, undefined, null);
     else setCellData(empId, day, undefined, activeColor);
   } else if(activeTool !== null) {
-    // Đang chọn Mã Ca -> Đổi Mã Ca đồng thời XÓA LUÔN màu tô thủ công cũ để trả về màu chuẩn của Ca
     const statusVal = activeTool === '(Xóa)' ? null : activeTool;
     setCellData(empId, day, statusVal, null);
   }
@@ -1107,6 +1128,7 @@ function addEmp(){
 function renderCauHinh(){
   syncStateAndConfig();
   const dw = state.cfg.dayWeights;
+  const totalSundays = getSundaysInMonth(state.month, state.year);
 
   const holFixedRows = state.holidaysFixed.map(h => `
     <tr data-hol-f="${h.id}">
@@ -1129,9 +1151,15 @@ function renderCauHinh(){
   <div class="panel">
     <h2>Cấu hình Quy tắc Ca Trực & Hạn mức Cảnh báo <button class="info-icon-btn" onclick="openTopicLogic('cauhinh')" title="Xem giải thích">i</button></h2>
     <div style="display:flex;gap:20px;flex-wrap:wrap">
-      <label class="f">FTE & BPO Passed (Số ngày OFF/Tháng)<input type="number" min="0" id="cfg-offFTE" value="${state.cfg.offFTE}"></label>
-      <label class="f">BPO Thử Việc (Số ngày OFF/Tháng)<input type="number" min="0" id="cfg-offBPO" value="${state.cfg.offBPO}"></label>
-      <label class="f">Max Trực Chủ Nhật (Gợi ý 2 Cháo Bầu + 2 Cá Nướng)<input type="number" min="0" max="16" id="cfg-maxSun" value="${state.cfg.maxSundayHC}"></label>
+      <label class="f">FTE & BPO Passed (Số ngày OFF/Tháng)
+        <input type="number" min="0" id="cfg-offFTE" placeholder="Tự động (${totalSundays + 2} ngày)" value="${state.cfg.offFTE !== null && state.cfg.offFTE !== undefined ? state.cfg.offFTE : ''}">
+      </label>
+      <label class="f">BPO Thử Việc (Số ngày OFF/Tháng)
+        <input type="number" min="0" id="cfg-offBPO" placeholder="Tự động (${totalSundays} ngày)" value="${state.cfg.offBPO !== null && state.cfg.offBPO !== undefined ? state.cfg.offBPO : ''}">
+      </label>
+      <label class="f">Max Trực Chủ Nhật Toàn Hệ Thống (Mặc định: 4)
+        <input type="number" min="0" max="30" id="cfg-maxSun" value="${state.cfg.maxSundayHC}">
+      </label>
     </div>
   </div>
 
@@ -1232,7 +1260,6 @@ function copyToClipboardGSheet(){
       const mk = cell.status || "";
       const wd = curDate.getDay();
       
-      // ĐẾM S2, OT VÀ WFH LÀ CA ĐI LÀM
       const isWorking = (mk === "S2" || mk === "OT" || mk === "WFH");
 
       if(isWorking && wd === 0) counts.CN_Working++;
@@ -1282,11 +1309,12 @@ function clearMonthSchedule(){
   alert(`✅ Đã xóa sạch lịch trực Tháng ${state.month}/${state.year} về trống!`);
 }
 
-// 🎯 SMART AUTO-FILL VỚI THUẬT TOÁN DÀN TRẢI NGÀY OFF DỰA TRÊN TẢI VẬN HÀNH (UNIFORM SPREAD)
+// 🎯 SMART AUTO-FILL VỚI THUẬT TOÁN DÀN TRẢI NGÀY OFF
 function autoFillSmart(){
   const n = daysInMonth(state.month, state.year);
   const { dailyForecast } = calculateMonthlyForecast();
   const visibleEmps = getVisibleEmployeesForCurrentMonth();
+  const maxSunLimit = state.cfg.maxSundayHC;
 
   // Reset ca OFF, S2, HOL cũ
   visibleEmps.forEach(e => {
@@ -1309,55 +1337,48 @@ function autoFillSmart(){
     }
   }
 
-  // 1. CHIA CA CHỦ NHẬT (Ưu tiên xoay vòng theo lịch sử trực)
+  // 1. CHIA CA CHỦ NHẬT (Áp dụng chính xác maxSundayHC)
   let currentMonthSunCount = {};
   visibleEmps.forEach(e => currentMonthSunCount[e.id] = 0);
 
   let sundays = [];
   for(let d=1; d<=n; d++) if(dateOf(d).getDay() === 0) sundays.push(d);
 
-  const teamList = [...new Set(visibleEmps.map(e => e.team))];
-
   sundays.forEach(d => {
-    teamList.forEach(teamName => {
-      let teamEmps = visibleEmps.filter(e => {
-        if(!isEmpActiveOnDate(e, dateOf(d))) return false;
-        if(e.team !== teamName) return false;
-        if(e.role === "Leader" || e.role === "SubLead") return false; 
-        if(e.type === "BPO" && !isBPOPassedProbation(e, dateOf(d))) return false; 
-        return true;
-      });
+    let eligibleEmps = visibleEmps.filter(e => {
+      if(!isEmpActiveOnDate(e, dateOf(d))) return false;
+      if(e.role === "Leader" || e.role === "SubLead") return false; 
+      if(e.type === "BPO" && !isBPOPassedProbation(e, dateOf(d))) return false; 
+      return true;
+    });
 
-      teamEmps.sort((a, b) => {
-        let prevA = countSundayDutyInMonth(a.id, state.month-1, state.year) + countSundayDutyInMonth(a.id, state.month-2, state.year);
-        let prevB = countSundayDutyInMonth(b.id, state.month-1, state.year) + countSundayDutyInMonth(b.id, state.month-2, state.year);
-        let totalA = prevA + currentMonthSunCount[a.id];
-        let totalB = prevB + currentMonthSunCount[b.id];
-        if (totalA !== totalB) return totalA - totalB;
-        return Math.random() - 0.5;
-      });
+    eligibleEmps.sort((a, b) => {
+      let prevA = countSundayDutyInMonth(a.id, state.month-1, state.year) + countSundayDutyInMonth(a.id, state.month-2, state.year);
+      let prevB = countSundayDutyInMonth(b.id, state.month-1, state.year) + countSundayDutyInMonth(b.id, state.month-2, state.year);
+      let totalA = prevA + currentMonthSunCount[a.id];
+      let totalB = prevB + currentMonthSunCount[b.id];
+      if (totalA !== totalB) return totalA - totalB;
+      return Math.random() - 0.5;
+    });
 
-      let assigned = 0;
-      teamEmps.forEach(e => {
-        let cell = getCellData(e.id, d);
-        if(cell.status) return;
+    let assigned = 0;
+    eligibleEmps.forEach(e => {
+      let cell = getCellData(e.id, d);
+      if(cell.status) return;
 
-        if(assigned < 2) {
-          setCellData(e.id, d, "S2", undefined, true);
-          currentMonthSunCount[e.id]++;
-          assigned++;
-        } else {
-          setCellData(e.id, d, "OFF", undefined, true);
-        }
-      });
+      if(assigned < maxSunLimit) {
+        setCellData(e.id, d, "S2", undefined, true);
+        currentMonthSunCount[e.id]++;
+        assigned++;
+      } else {
+        setCellData(e.id, d, "OFF", undefined, true);
+      }
     });
 
     visibleEmps.forEach(e => {
       if(dateOf(d).getDay() === 0 && isEmpActiveOnDate(e, dateOf(d))) {
-        if(e.role === "Leader" || e.role === "SubLead" || (e.type === "BPO" && !isBPOPassedProbation(e, dateOf(d)))) {
-          let cell = getCellData(e.id, d);
-          if(!cell.status) setCellData(e.id, d, "OFF", undefined, true);
-        }
+        let cell = getCellData(e.id, d);
+        if(!cell.status) setCellData(e.id, d, "OFF", undefined, true);
       }
     });
   });
@@ -1366,7 +1387,6 @@ function autoFillSmart(){
   let dailyOffCount = {}; 
   for(let d=1; d<=n; d++) dailyOffCount[d] = 0;
 
-  // Khởi tạo đếm số lượng người đã nghỉ sẵn trong từng ngày (Do lễ, nghỉ phép cố định...)
   visibleEmps.forEach(e => {
     for(let d=1; d<=n; d++){
       if(!isEmpActiveOnDate(e, dateOf(d))) continue;
@@ -1378,8 +1398,8 @@ function autoFillSmart(){
   });
 
   visibleEmps.forEach(e => {
-    let passed = isBPOPassedProbation(e, dateOf(1));
-    let baseTargetOff = (e.type === "FTE" || passed) ? state.cfg.offFTE : state.cfg.offBPO;
+    // Gọi hàm tính số ngày OFF chuẩn (có đè thủ công / placeholder tự động)
+    let baseTargetOff = getEffectiveOffDays(e, state.month, state.year);
     
     let activeDaysInMonth = 0;
     for(let d=1; d<=n; d++) if(isEmpActiveOnDate(e, dateOf(d))) activeDaysInMonth++;
@@ -1397,7 +1417,7 @@ function autoFillSmart(){
     let candidateDays = [];
     for(let d=1; d<=n; d++){
       if(!isEmpActiveOnDate(e, dateOf(d))) continue;
-      if(dateOf(d).getDay() === 0) continue; // Bỏ qua Chủ Nhật
+      if(dateOf(d).getDay() === 0) continue; 
 
       let cell = getCellData(e.id, d);
       const isSpike = dailyForecast[d-1].spikeFactor > 1.0;
@@ -1407,13 +1427,12 @@ function autoFillSmart(){
         candidateDays.push({
           day: d,
           consStreak: consStreak,
-          offCount: dailyOffCount[d], // Ưu tiên chọn ngày đang có ÍT người nghỉ nhất
+          offCount: dailyOffCount[d],
           wl: dailyForecast[d-1].dayTotalWL
         });
       }
     }
 
-    // Tiêu chí sắp xếp phân bổ dàn trải:
     candidateDays.sort((a, b) => {
       if (a.consStreak !== b.consStreak) return a.consStreak - b.consStreak;
       if (a.offCount !== b.offCount) return a.offCount - b.offCount;
@@ -1424,11 +1443,10 @@ function autoFillSmart(){
       if (candidateDays.length > 0) {
         let selectedDay = candidateDays.shift().day;
         setCellData(e.id, selectedDay, "OFF", undefined, true);
-        dailyOffCount[selectedDay]++; // Cập nhật tăng biến đếm người nghỉ của ngày đó
+        dailyOffCount[selectedDay]++;
       }
     }
 
-    // Điền ca S2 cho tất cả ngày làm việc còn lại
     for(let d=1; d<=n; d++){
       if(!isEmpActiveOnDate(e, dateOf(d))) continue;
       let cell = getCellData(e.id, d);
@@ -1438,7 +1456,7 @@ function autoFillSmart(){
 
   saveLocalState();
   renderAll();
-  alert(`✨ Đã tự động xếp lịch dàn trải đều từ Thứ 2 đến Thứ 7 cho Tháng ${state.month}/${state.year}!`);
+  alert(`✨ Đã tự động xếp lịch dàn trải đều cho Tháng ${state.month}/${state.year}!`);
 }
 
 function renderAllUIOnly(){
@@ -1452,16 +1470,20 @@ function renderAllUIOnly(){
   else if(tab==="nhansu") el.innerHTML = renderNhanSu();
   else if(tab==="cauhinh") el.innerHTML = renderCauHinh();
 
-  // BẮT SỰ KIỆN LƯU THÔNG SỐ CONFIG THƯỜNG
   document.querySelectorAll('input[id^="cfg-"]').forEach(i => i.onchange = (e) => { 
     const key = i.id.replace("cfg-","");
-    const mapKey = { lastWL:'lastMonthWL', growth:'growthRate', fteT:'fteTarget', bpoT:'bpoTarget', offFTE:'offFTE', offBPO:'offBPO', maxSun:'maxSundayHC', claimPct:'claimPct', sunWL:'sundayWL', underTh:'underThreshold', overTh:'overThreshold', doubleDay:'doubleDayAdj', saleDay:'saleDayAdj', payDay:'payDayAdj' };
-    if(mapKey[key]) state.cfg[mapKey[key]] = Number(e.target.value);
+    const mapKey = { lastWL:'lastMonthWL', growth:'growthRate', fteT:'fteTarget', bpoT:'bpoTarget', maxSun:'maxSundayHC', claimPct:'claimPct', sunWL:'sundayWL', underTh:'underThreshold', overTh:'overThreshold', doubleDay:'doubleDayAdj', saleDay:'saleDayAdj', payDay:'payDayAdj' };
+    
+    if(key === 'offFTE' || key === 'offBPO') {
+      const rawVal = e.target.value.trim();
+      state.cfg[key] = (rawVal === "" || isNaN(rawVal)) ? null : Number(rawVal);
+    } else if(mapKey[key]) {
+      state.cfg[mapKey[key]] = Number(e.target.value);
+    }
     saveLocalState();
     renderAll();
   });
 
-  // BẮT SỰ KIỆN LƯU BẢNG DAY WEIGHT (dw-0 -> dw-6)
   document.querySelectorAll('input[id^="dw-"]').forEach(i => i.onchange = (e) => {
     const dayIndex = Number(i.id.replace("dw-", ""));
     if(!state.cfg.dayWeights) state.cfg.dayWeights = {};
