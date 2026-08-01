@@ -71,12 +71,34 @@
   label.f{display:flex; flex-direction:column; gap:4px; font-size:11.5px; color:var(--text-dim); font-weight:600;}
   label.f input, label.f select{background:var(--surface-2); border:1px solid var(--border); color:var(--text); border-radius:7px; padding:6px 9px; font-size:12.5px;}
 
-  table{border-collapse:collapse; width:100%;}
-  .grid-wrap{overflow-x:auto; border-radius:8px; border:1px solid var(--border);}
+  table{border-collapse:separate; border-spacing:0; width:100%;}
+  
+  .grid-wrap{
+    overflow: auto; 
+    max-height: 72vh; 
+    border-radius:8px; 
+    border:1px solid var(--border);
+    position: relative;
+  }
 
   /* TABLES */
-  .emp-table th, .cal-table th, .wl-table th, .hol-table th{background:var(--surface-2); color:var(--text-dim); font-size:10.5px; text-transform:uppercase; padding:8px 6px; border:1px solid var(--border); text-align:left;}
-  .emp-table td, .cal-table td, .wl-table td, .hol-table td{padding:5px 6px; border:1px solid var(--border); font-size:12px; vertical-align:middle;}
+  .emp-table th, .cal-table th, .wl-table th, .hol-table th{
+    background:var(--surface-2); 
+    color:var(--text-dim); 
+    font-size:10.5px; 
+    text-transform:uppercase; 
+    padding:8px 6px; 
+    border-right:1px solid var(--border);
+    border-bottom:1px solid var(--border);
+    text-align:left;
+  }
+  .emp-table td, .cal-table td, .wl-table td, .hol-table td{
+    padding:5px 6px; 
+    border-right:1px solid var(--border);
+    border-bottom:1px solid var(--border);
+    font-size:12px; 
+    vertical-align:middle;
+  }
   .emp-table input, .emp-table select, .hol-table input{background:var(--surface-2); border:1px solid var(--border); color:var(--text); border-radius:5px; padding:4px 6px; font-size:11.5px; width:100%;}
   .icon-btn{background:none;border:none;color:var(--text-faint); font-size:13px; padding:3px 5px; border-radius:5px;}
   .icon-btn:hover{color:var(--coral); background:var(--coral-dim);}
@@ -93,10 +115,25 @@
   .btn-info:hover{background:var(--amber-dim); color:#fff;}
 
   /* CALENDAR HEADER FIXES */
-  .cal-table th.day-header { min-width: 46px; text-align: center; padding: 6px 3px; line-height: 1.25; white-space: nowrap; font-size: 10.5px; font-weight: 600; cursor: pointer; }
+  .cal-table thead tr th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--surface-2);
+  }
+  .cal-table th.day-header { 
+    min-width: 48px; 
+    text-align: center; 
+    padding: 4px 2px; 
+    line-height: 1.2; 
+    white-space: nowrap; 
+    font-size: 10.5px; 
+    font-weight: 600; 
+    cursor: pointer; 
+  }
   .cal-table th.hol-col { background: #4a1e35 !important; color: #f472b6 !important; border-bottom: 2px solid #f472b6; }
 
-  .cal-table td.daycell{ min-width: 46px; height: 34px; text-align: center; padding: 0; cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-weight: 700; font-size: 11px; transition: all .1s; }
+  .cal-table td.daycell{ min-width: 48px; height: 34px; text-align: center; padding: 0; cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-weight: 700; font-size: 11px; transition: all .1s; }
   .cal-table td.daycell:hover{opacity:0.8; filter:brightness(1.2);}
   .cal-table td.daycell.disabled{background:#171E23 !important; color:#4A5568 !important; cursor:not-allowed; font-weight:400;}
 
@@ -104,6 +141,36 @@
   .cal-table tr:hover td { background-color: rgba(255, 255, 255, 0.05) !important; }
   .cal-table td.col-hover, .cal-table th.col-hover { background-color: rgba(79, 179, 169, 0.12) !important; }
   .cal-table td.cell-active { background-color: rgba(232, 163, 61, 0.3) !important; outline: 2px solid var(--amber); }
+
+  /* STICKY COLUMNS (LEFT) & OVERALL ROW (BOTTOM) */
+  .cal-table .sticky-col {
+    position: sticky;
+    background: var(--surface);
+    z-index: 5;
+  }
+  .cal-table th.sticky-col {
+    z-index: 15;
+    background: var(--surface-2);
+  }
+  .cal-table .col-name { left: 0; min-width: 140px; }
+  .cal-table .col-region { left: 140px; min-width: 60px; text-align: center; }
+  .cal-table .col-team { left: 200px; min-width: 90px; text-align: center; }
+
+  .cal-table tfoot {
+    position: sticky;
+    bottom: 0;
+    z-index: 20;
+    background: var(--surface-3);
+  }
+  .cal-table tfoot td {
+    background: var(--surface-3);
+    font-weight: 700;
+    font-family: 'IBM Plex Mono', monospace;
+    border-top: 2px solid var(--teal);
+  }
+  .cal-table tfoot td.sticky-col {
+    z-index: 25;
+  }
 
   /* TOOLBAR & PALETTE */
   .toolbar{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; background:var(--surface-2); padding:8px 12px; border-radius:8px; border:1px solid var(--border); align-items:center;}
@@ -115,14 +182,6 @@
   .color-dot{width:18px; height:18px; border-radius:50%; cursor:pointer; border:2px solid transparent; transition:transform 0.1s;}
   .color-dot:hover{transform:scale(1.2);}
   .color-dot.active{border-color:#fff; transform:scale(1.25); box-shadow:0 0 8px rgba(255,255,255,0.4);}
-
-  .cal-table .name-col{min-width:140px; position:sticky; left:0; background:var(--surface); z-index:2;}
-  .cal-table th.name-col{background:var(--surface-2); z-index:3;}
-
-  /* COLOR CODING TEAMS */
-  .row-team-chao-bau td.name-col { border-left: 4px solid var(--teal) !important; background: #142323; }
-  .row-team-ca-nuong td.name-col { border-left: 4px solid var(--violet) !important; background: #1d1b2e; }
-  .row-team-chung td.name-col { border-left: 4px solid var(--amber) !important; background: #262018; }
 
   /* HIGHLIGHT STYLES */
   .cal-table th.sun-col{background:#321d22 !important; color:var(--coral) !important; border-bottom:2px solid var(--coral);}
@@ -151,7 +210,6 @@
   .tag-fte{background:#10b98120; color:#34d399;}
   .tag-bpo{background:#f59e0b20; color:#fbbf24;}
   
-  .overall-row td{background:var(--surface-3); font-weight:700; font-family:'IBM Plex Mono'; border-top:2px solid var(--border);}
   .alert-sun{background:var(--coral-dim) !important; color:var(--coral) !important;}
   .ok-sun{color:var(--teal) !important;}
 
@@ -172,7 +230,7 @@
   <nav id="sidebar">
     <div class="brand">
       <div class="brand-mark">SPX</div>
-      <div class="brand-text">Workload Planner<span>HCM Team Pro</span></div>
+      <div class="brand-text">Workload Planner<span>Multi-Region Pro</span></div>
     </div>
     <div class="navgroup" id="navgroup"></div>
   </nav>
@@ -235,7 +293,7 @@ try {
 const VN_SHORT_WEEKDAY = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 const uid = () => Math.random().toString(36).slice(2,10);
 
-// BẢNG TỪ ĐIỂN MÃ CA (ĐÃ BAO GỒM CA OT VÀ LỄ HOL)
+// BẢNG TỪ ĐIỂN MÃ CA
 const STATUS_DICT = {
   "S2":    { val: 1,   color:"var(--teal)",       bg:"var(--teal-dim)" },
   "OT":    { val: 1,   color:"#f97316",           bg:"#431407" },
@@ -258,22 +316,22 @@ const CUSTOM_COLORS = [
 ];
 
 const INITIAL_EMPLOYEES = [
-  { name:"Nguyễn Tấn Khang", mail:"khang.nguyentan@spxexpress.com", role:"Leader", team:"Chung", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
-  { name:"Trần Hoàng Minh", mail:"hoangminh.tran@spxexpress.com", role:"SubLead", team:"Cháo Bầu", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
-  { name:"Nguyễn Huỳnh Anh Thư", mail:"anhthu.nguyenhuynh@spxexpress.com", role:"FTE", team:"Cháo Bầu", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
-  { name:"Lê Thị Hoàng Nguyên", mail:"hoangnguyen.lethi01@spxexpress.com", role:"FTE", team:"Cháo Bầu", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
-  { name:"Phan Thị Linh", mail:"linh.phanthi@spxexpress.com", role:"FTE", team:"Cháo Bầu", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
-  { name:"Trần Thị Thu Thủy", mail:"thuthuy.tranthi@spxexpress.com", role:"FTE", team:"Cháo Bầu", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
-  { name:"Tô Nguyên Bảo", mail:"nguyenbao.to@spx-sales.com", role:"FTE", team:"Cháo Bầu", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
-  { name:"Trần Đăng Khoa", mail:"dangkhoa.tran07@spx-sales.com", role:"BPO", team:"Cháo Bầu", type:"BPO", onboarding:"2026-05-01", offboardDate:"", earlyPass: true },
-  { name:"Mai Trọng Nghĩa", mail:"trongnghia.mai@spx-sales.com", role:"BPO", team:"Cháo Bầu", type:"BPO", onboarding:"2026-08-15", offboardDate:"", earlyPass: false },
-  { name:"Nguyễn Hữu Nghĩa", mail:"nghia.nguyenhuu@spxexpress.com", role:"SubLead", team:"Cá Nướng", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
-  { name:"Dương Minh Phương", mail:"phuong.duongminh@spxexpress.com", role:"FTE", team:"Cá Nướng", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
-  { name:"Lê Nguyễn Thanh Vy", mail:"vy.lethanh@spxexpress.com", role:"FTE", team:"Cá Nướng", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
-  { name:"Huỳnh Mỹ Loan Anh", mail:"loananh.huynhmy@spxexpress.com", role:"FTE", team:"Cá Nướng", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
-  { name:"Nhan Bích Tâm", mail:"bichtam.nhan01@spxexpress.com", role:"FTE", team:"Cá Nướng", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
-  { name:"Châu Hiệp Phát", mail:"hiepphat.chau01@spx-sales.com", role:"BPO", team:"Cá Nướng", type:"BPO", onboarding:"2026-05-01", offboardDate:"", earlyPass: true },
-  { name:"Nguyễn Quỳnh Cẩm Tú", mail:"camtu.nguyenquynh@spx-sales.com", role:"BPO", team:"Cá Nướng", type:"BPO", onboarding:"2026-08-01", offboardDate:"", earlyPass: false }
+  { name:"Nguyễn Tấn Khang", mail:"khang.nguyentan@spxexpress.com", role:"Leader", team:"Leader HCM", region:"HCM", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Trần Hoàng Minh", mail:"hoangminh.tran@spxexpress.com", role:"SubLead", team:"Cháo Bầu", region:"HCM", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Nguyễn Huỳnh Anh Thư", mail:"anhthu.nguyenhuynh@spxexpress.com", role:"FTE", team:"Cháo Bầu", region:"HCM", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Lê Thị Hoàng Nguyên", mail:"hoangnguyen.lethi01@spxexpress.com", role:"FTE", team:"Cháo Bầu", region:"HCM", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Phan Thị Linh", mail:"linh.phanthi@spxexpress.com", role:"FTE", team:"Cháo Bầu", region:"HCM", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Trần Thị Thu Thủy", mail:"thuthuy.tranthi@spxexpress.com", role:"FTE", team:"Cháo Bầu", region:"HCM", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Tô Nguyên Bảo", mail:"nguyenbao.to@spx-sales.com", role:"FTE", team:"Cháo Bầu", region:"HCM", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Trần Đăng Khoa", mail:"dangkhoa.tran07@spx-sales.com", role:"BPO", team:"Cháo Bầu", region:"HCM", type:"BPO", onboarding:"2026-05-01", offboardDate:"", earlyPass: true },
+  { name:"Mai Trọng Nghĩa", mail:"trongnghia.mai@spx-sales.com", role:"BPO", team:"Cháo Bầu", region:"HCM", type:"BPO", onboarding:"2026-08-15", offboardDate:"", earlyPass: false },
+  { name:"Nguyễn Hữu Nghĩa", mail:"nghia.nguyenhuu@spxexpress.com", role:"SubLead", team:"Cá Nướng", region:"HCM", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Dương Minh Phương", mail:"phuong.duongminh@spxexpress.com", role:"FTE", team:"Cá Nướng", region:"HCM", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Lê Nguyễn Thanh Vy", mail:"vy.lethanh@spxexpress.com", role:"FTE", team:"Cá Nướng", region:"HCM", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Huỳnh Mỹ Loan Anh", mail:"loananh.huynhmy@spxexpress.com", role:"FTE", team:"Cá Nướng", region:"HCM", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Nhan Bích Tâm", mail:"bichtam.nhan01@spxexpress.com", role:"FTE", team:"Cá Nướng", region:"HCM", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Châu Hiệp Phát", mail:"hiepphat.chau01@spx-sales.com", role:"BPO", team:"Cá Nướng", region:"HCM", type:"BPO", onboarding:"2026-05-01", offboardDate:"", earlyPass: true },
+  { name:"Nguyễn Quỳnh Cẩm Tú", mail:"camtu.nguyenquynh@spx-sales.com", role:"BPO", team:"Cá Nướng", region:"HCM", type:"BPO", onboarding:"2026-08-01", offboardDate:"", earlyPass: false }
 ].map(e => ({ ...e, id: uid() }));
 
 const DEFAULT_CONFIG = {
@@ -300,7 +358,6 @@ let state = {
   marks: {},
   spikeDays: {},
   overrideWL: {},
-  // 📅 HOLIDAY CONFIGURATION (Từ File 2)
   holidaysFixed: [
     { id: "h1", date: "01-01", name: "Tết Dương Lịch" },
     { id: "h2", date: "04-30", name: "Ngày Giải Phóng" },
@@ -319,10 +376,18 @@ let tab = "lich";
 let activeTool = "S2";       
 let activeColor = null;      
 
-// TỰ ĐỘNG KHẮC PHỤC DỮ LIỆU THIẾU/RỖNG
+// TẠO MÀU ĐỘNG CHO CÁC TEAM MỚI TỰ ĐỊNH NGHĨA
+function getTeamStyle(teamName) {
+  let hash = 0;
+  for (let i = 0; i < teamName.length; i++) {
+    hash = teamName.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const h = Math.abs(hash) % 360;
+  return `border-left: 4px solid hsl(${h}, 70%, 50%) !important; background: hsl(${h}, 30%, 12%);`;
+}
+
 function syncStateAndConfig(){
   if(!state.cfg) state.cfg = { ...DEFAULT_CONFIG };
-  
   state.cfg.lastMonthWL = Number(state.cfg.lastMonthWL) || 100000;
   state.cfg.growthRate = Number(state.cfg.growthRate) ?? 10;
   state.cfg.fteTarget = Number(state.cfg.fteTarget) || 750;
@@ -335,21 +400,12 @@ function syncStateAndConfig(){
   state.cfg.saleDayAdj = Number(state.cfg.saleDayAdj) || 1.15;
   state.cfg.payDayAdj = Number(state.cfg.payDayAdj) || 1.10;
 
-  if(!state.cfg.dayWeights) {
-    state.cfg.dayWeights = { ...DEFAULT_CONFIG.dayWeights };
-  } else {
-    for(let i=0; i<=6; i++){
-      if(state.cfg.dayWeights[i] === undefined || state.cfg.dayWeights[i] === null) {
-        state.cfg.dayWeights[i] = DEFAULT_CONFIG.dayWeights[i];
-      }
-    }
-  }
-
-  if(!state.employees || state.employees.length === 0) {
-    state.employees = INITIAL_EMPLOYEES;
-  } else {
+  if(!state.cfg.dayWeights) state.cfg.dayWeights = { ...DEFAULT_CONFIG.dayWeights };
+  if(!state.employees || state.employees.length === 0) state.employees = INITIAL_EMPLOYEES;
+  else {
     state.employees.forEach(e => {
       if(!e.id) e.id = uid();
+      if(!e.region) e.region = "HCM";
       if(!e.onboarding) e.onboarding = "2024-01-01";
       if(e.offboardDate === undefined) e.offboardDate = "";
       if(e.earlyPass === undefined) e.earlyPass = false;
@@ -363,19 +419,15 @@ function syncStateAndConfig(){
   if(!state.holidaysDynamic) state.holidaysDynamic = [];
 }
 
-// KIỂM TRA NGÀY LỄ
 function getHolidayInfo(day, m = state.month, y = state.year){
   const mm = String(m).padStart(2, '0');
   const dd = String(day).padStart(2, '0');
   const dateStrShort = `${mm}-${dd}`;
   const dateStrFull = `${y}-${mm}-${dd}`;
-
   const f = state.holidaysFixed.find(h => h.date === dateStrShort);
   if(f) return f;
-
   const d = state.holidaysDynamic.find(h => h.date === dateStrFull);
   if(d) return d;
-
   return null;
 }
 
@@ -393,44 +445,24 @@ function openTopicLogic(topicKey){
     'palette': `<div class="logic-section">
       <h3>Thao tác Tô Màu / Chọn Ca</h3>
       <p>• <b>Chọn Ca (S2, OT, OFF, WFH, AL, HOL...):</b> Nhấp chọn nút tên ca, sau đó nhấp vào ô ngày của nhân viên tương ứng.</p>
-      <p>• <b>Ca OT (Overtime):</b> Nhân viên trực ca OT sẽ tính thêm 100% định mức năng lực làm việc trong ngày đó.</p>
-      <p>• <b>Chuyển đổi loại ngày đặc biệt:</b> Nhấp chuột trực tiếp vào tiêu đề cột ngày để xoay vòng: <i>Mặc định ➔ Sale (🔥) ➔ Ngày đôi (🔥🔥) ➔ Ngày lương (💰) ➔ Mặc định</i>.</p>
-      <p>• <b>Tô Màu Thủ Công:</b> Chọn màu ở dải Palette bên phải, sau đó nhấp vào ô ngày để làm nổi bật ca đặc biệt.</p>
+      <p>• <b>Xếp lịch Leader:</b> Tự động nghỉ 100% Chủ Nhật. Các ngày nghỉ ngơi còn lại ưu tiên ngẫu nhiên vào Thứ 7.</p>
     </div>`,
-    
-    'forecast_cfg': `<div class="logic-section">
-      <h3>Quy tắc tính toán Tham số Forecast</h3>
-      <p>• <b>Workload Tháng Trước:</b> Tổng số case thực tế của tháng liền kề trước đó.</p>
-      <p>• <b>Tỷ lệ Tăng trưởng (%):</b> Dự báo mức độ tăng trưởng case tháng này.</p>
-      <p>• <b>Target FTE & BPO:</b> Định mức năng suất bàn giao (case/người/ngày) cho nhân viên FTE và BPO.</p>
-      <p>• <b>Tỉ lệ điều chỉnh Ngày đôi / Sale / Lương:</b> Hệ số nhân áp dụng cho các ngày được đánh dấu đặc biệt trên tiêu đề cột.</p>
-    </div>`,
-    
-    'forecast_kpi': `<div class="logic-section">
-      <h3>Công thức KPI</h3>
-      <p>• <b>Total WL = </b> Workload Tháng Trước × (1 + Tỷ lệ Tăng trưởng %)</p>
-      <p>• <b>WL Trung bình/Ngày = </b> Total WL ÷ Số ngày trong tháng</p>
-      <p>• <b>Max Trực CN:</b> Hạn mức số lượng HC đi làm trong ngày Chủ Nhật để bảo vệ sức khỏe đội ngũ.</p>
-    </div>`,
-
-    'forecast_detail': `<div class="logic-section">
-      <h3>Công thức SLA & Workload Gap</h3>
-      <p>• <b>Tổng Năng Lực (Capacity) = </b> (FTE Active × Target FTE) + (BPO Active × Target BPO × % Ramp-up)</p>
-      <p>• <b>Net Case Gap = </b> Tổng Năng Lực - Daily Workload</p>
-      <p>• <b>HC Gap Quy Đổi = </b> Net Case Gap ÷ Target FTE</p>
-      <p>• <b>SLA Coverage Tổng thể = </b> (Tổng Năng Lực ÷ Daily Workload) × 100%</p>
-    </div>`,
-
     'nhansu': `<div class="logic-section">
-      <h3>🔑 Logic Ẩn Nhân Viên Offboard</h3>
-      <p>• <b>Ẩn Nhân viên Offboard:</b> Nếu nhân viên nghỉ việc (có <i>Offboard Date</i>), họ vẫn hiển thị trên lịch của tháng hiện tại. <b>Từ tháng sau trở đi (Month > Offboard Month)</b>, hệ thống sẽ <b>TỰ ĐỘNG ẨN HOÀN TOÀN</b> nhân viên đó khỏi danh sách.</p>
+      <h3>🔑 Thêm Team Mới & Phân vùng Region</h3>
+      <p>• <b>Khu vực (Region):</b> Nhập linh hoạt (HN / HCM) để nhóm nhân sự theo vùng miền.</p>
+      <p>• <b>Team Mới:</b> Gõ tên Team mới trực tiếp ở ô Team để khởi tạo mà không cần chỉnh sửa mã nguồn.</p>
     </div>`,
-
     'cauhinh': `<div class="logic-section">
-      <h3>Cấu hình Day Weights, Quy Tắc Ngày Nghỉ & Ngày Lễ</h3>
-      <p>• <b>Day Weight (Hệ số Ngày):</b> Điều chỉnh tỷ trọng case dự kiến giữa các ngày trong tuần (T2..CN).</p>
-      <p>• <b>Quy tắc Ngày Nghỉ:</b> Phép năm (AL) tính riêng biệt với OFF hàng tuần. Giới hạn tối đa 2 OFF/team/ngày. Thuật toán tự động giãn cách ca OFF, cấm xếp dồn 3 ngày nghỉ liên tiếp.</p>
-      <p>• <b>Quản lý Ngày Lễ (Holidays):</b> Tự động nhận diện và làm nổi bật cột Ngày Lễ Cố Định & Âm Lịch Linh Hoạt trên Lịch Trực.</p>
+      <h3>🛠️ Trọng Số Ngày trong Tuần (Day Weights) & Spike Days</h3>
+      <p>• <b>Trọng Số Ngày (Day Weight):</b> Xác định tỷ trọng Workload của từng thứ trong tuần so với trung bình. Ví dụ: T2 thường có lượng công việc dồn lại sau cuối tuần nên trọng số cao hơn (1.15).</p>
+      <p>• <b>Công thức tính Workload Ngày:</b></p>
+      <p><code>Daily WL = (Tổng WL Tháng / Tổng Trọng Số Cả Tháng) * (Trọng Số Thứ * Hệ Số Spike Day)</code></p>
+      <p>• <b>Hệ số Spike Days:</b></p>
+      <ul>
+        <li>🔥 <b>Ngày Sale (Sale Day):</b> Nhân thêm hệ số (Mặc định x1.15)</li>
+        <li>🔥🔥 <b>Ngày Đôi (Double Day):</b> Nhân thêm hệ số (Mặc định x1.20)</li>
+        <li>💰 <b>Ngày Lương (PayDay):</b> Nhân thêm hệ số (Mặc định x1.10)</li>
+      </ul>
     </div>`
   };
 
@@ -439,16 +471,13 @@ function openTopicLogic(topicKey){
   document.getElementById("logicModal").classList.add("active");
 }
 
-function openLogicModal(){ openTopicLogic('nhansu'); }
+function openLogicModal(){ openTopicLogic('cauhinh'); }
 function closeLogicModal(){ document.getElementById("logicModal").classList.remove("active"); }
 
 function loadLocalState(){
   try {
     const s = localStorage.getItem("spx_wfm_state_combined");
-    if(s) {
-      const parsed = JSON.parse(s);
-      state = { ...state, ...parsed };
-    }
+    if(s) state = { ...state, ...JSON.parse(s) };
   } catch(e) { console.error("Load local error:", e); }
   syncStateAndConfig();
 }
@@ -494,7 +523,6 @@ function listenCloudChanges() {
 function getVisibleEmployeesForCurrentMonth(){
   const monthStart = new Date(state.year, state.month - 1, 1);
   monthStart.setHours(0,0,0,0);
-
   return state.employees.filter(emp => {
     if(!emp.offboardDate) return true;
     const offb = new Date(emp.offboardDate);
@@ -531,7 +559,6 @@ function getBPOPerformancePct(emp, currentDate){
   if(emp.type !== "BPO") return 1.0;
   if(isBPOPassedProbation(emp, currentDate)) return 1.0;
   if(!emp.onboarding) return 1.0;
-  
   const onb = new Date(emp.onboarding);
   const cur = new Date(currentDate);
   const diffDays = Math.floor((cur - onb) / (1000 * 60 * 60 * 24));
@@ -559,11 +586,8 @@ function setCellData(empId, day, status, colorBg, skipSave=false){
   const newStatus = (status !== undefined) ? status : current.status;
   const newBg = (colorBg !== undefined) ? colorBg : current.colorBg;
 
-  if(!newStatus && !newBg) {
-    delete state.marks[k][empId][day];
-  } else {
-    state.marks[k][empId][day] = { status: newStatus, colorBg: newBg };
-  }
+  if(!newStatus && !newBg) delete state.marks[k][empId][day];
+  else state.marks[k][empId][day] = { status: newStatus, colorBg: newBg };
 
   if(!skipSave) saveLocalState();
 }
@@ -571,16 +595,13 @@ function setCellData(empId, day, status, colorBg, skipSave=false){
 function toggleSpikeDay(day){
   const k = monthKey();
   if(!state.spikeDays[k]) state.spikeDays[k] = {};
-  
   const currentVal = state.spikeDays[k][day];
   let currentType = "NONE";
   if(typeof currentVal === "string") currentType = currentVal;
   else if(typeof currentVal === "number" && currentVal > 1.0) currentType = "SALE";
 
   const nextTypeMap = { "NONE": "SALE", "SALE": "DOUBLE", "DOUBLE": "PAYDAY", "PAYDAY": "NONE" };
-  const nextType = nextTypeMap[currentType] || "NONE";
-
-  state.spikeDays[k][day] = nextType;
+  state.spikeDays[k][day] = nextTypeMap[currentType] || "NONE";
   saveLocalState();
   renderAll();
 }
@@ -588,23 +609,18 @@ function toggleSpikeDay(day){
 function getDaySpikeFactor(day){
   const k = monthKey();
   const dayVal = state.spikeDays[k]?.[day];
-  
   if(!dayVal || dayVal === "NONE") return 1.0;
   if(dayVal === "DOUBLE") return Number(state.cfg.doubleDayAdj) || 1.20;
   if(dayVal === "SALE" || dayVal === 1.15) return Number(state.cfg.saleDayAdj) || 1.15;
   if(dayVal === "PAYDAY") return Number(state.cfg.payDayAdj) || 1.10;
-  
   return 1.0;
 }
 
 function setOverrideWL(day, val){
   const k = monthKey();
   if(!state.overrideWL[k]) state.overrideWL[k] = {};
-  if(val === "" || val === null || isNaN(val)) {
-    delete state.overrideWL[k][day];
-  } else {
-    state.overrideWL[k][day] = Number(val);
-  }
+  if(val === "" || val === null || isNaN(val)) delete state.overrideWL[k][day];
+  else state.overrideWL[k][day] = Number(val);
   saveLocalState();
   renderAll();
 }
@@ -688,25 +704,18 @@ function calculateMonthlyForecast(){
     const supportWL = dayTotalWL - claimWL;
 
     let fteCapacity = 0, bpoCapacity = 0;
-    let hcChaoBau = 0, hcCaNuong = 0, hcChung = 0;
     let totalWorkingHC = 0;
     
     visibleEmps.forEach(e => {
       if(!isEmpActiveOnDate(e, curDate)) return;
-
       const cell = getCellData(e.id, d);
       const mk = cell.status;
       const isWorking = (mk === "S2" || mk === "OT" || mk === "WFH" || !mk);
 
       if(isWorking){
         totalWorkingHC++;
-        if(e.team === "Cháo Bầu") hcChaoBau++;
-        else if(e.team === "Cá Nướng") hcCaNuong++;
-        else hcChung++;
-
-        if(e.type === "FTE"){
-          fteCapacity += state.cfg.fteTarget;
-        } else {
+        if(e.type === "FTE") fteCapacity += state.cfg.fteTarget;
+        else {
           const rampPct = getBPOPerformancePct(e, curDate);
           bpoCapacity += state.cfg.bpoTarget * rampPct;
         }
@@ -715,16 +724,13 @@ function calculateMonthlyForecast(){
 
     const totalCapacity = fteCapacity + bpoCapacity;
     const overallCoverage = dayTotalWL > 0 ? (totalCapacity / dayTotalWL) * 100 : 100;
-
     const netGapWL = totalCapacity - dayTotalWL;
     const hcGap = state.cfg.fteTarget > 0 ? (netGapWL / state.cfg.fteTarget).toFixed(1) : 0;
 
     dailyForecast.push({
       day: d, weekday: VN_SHORT_WEEKDAY[wd], dayTotalWL, claimWL, supportWL,
       fteCapacity, bpoCapacity, totalCapacity,
-      netGapWL, hcGap,
-      overallCoverage,
-      totalWorkingHC, hcChaoBau, hcCaNuong, hcChung,
+      netGapWL, hcGap, overallCoverage, totalWorkingHC,
       spikeFactor: spike, isOverride: state.overrideWL[mkKey]?.[d] !== undefined
     });
   }
@@ -742,7 +748,10 @@ function renderLich(){
     { m: state.month+1 > 12 ? state.month-11 : state.month+1, y: state.month+1 > 12 ? state.year+1 : state.year, label: "CN M+1" }
   ];
 
-  let head1 = `<th class="name-col">NAME</th><th>TEAM</th><th>CHỨC VỤ</th>`;
+  let head1 = `<th class="sticky-col col-name">NAME</th>
+               <th class="sticky-col col-region">MIỀN</th>
+               <th class="sticky-col col-team">TEAM</th>
+               <th>CHỨC VỤ</th>`;
   mList.forEach(item => {
     head1 += `<th style="text-align:center; color:var(--violet); font-size:10px;" title="Tháng ${item.m}/${item.y}">${item.label}</th>`;
   });
@@ -766,20 +775,17 @@ function renderLich(){
     let monthStr = String(state.month).padStart(2, '0');
     let holTitle = holInfo ? ` [${holInfo.name}]` : '';
     
-    head1 += `<th class="${thClass} day-header col-idx-${d}" onclick="toggleSpikeDay(${d})" title="${holTitle} Nhấp để xoay vòng Ngày Đặc Biệt (Sale / Đôi / Lương)">
-                ${VN_SHORT_WEEKDAY[wd]} ${dayStr}/${monthStr}${spikeTag}${holInfo?'🎉':''}
+    head1 += `<th class="${thClass} day-header col-idx-${d}" onclick="toggleSpikeDay(${d})" title="${holTitle} Nhấp để xoay vòng Ngày Đặc Biệt">
+                <div>${VN_SHORT_WEEKDAY[wd]}${spikeTag}${holInfo?'🎉':''}</div>
+                <div style="font-size:10px; opacity:0.8">${dayStr}/${monthStr}</div>
               </th>`;
   }
 
   const tools = Object.keys(STATUS_DICT).map(k=>`<button class="tool-btn ${activeTool===k && activeColor===null?'active':''}" onclick="activeTool='${k}';activeColor=null;renderAll()">${k}</button>`).join("");
-  
-  const palette = CUSTOM_COLORS.map(c=>`
-    <div class="color-dot ${activeColor===c.bg?'active':''}" style="background:${c.hex}" onclick="activeColor='${c.bg}';renderAll()" title="Tô màu ${c.id}"></div>
-  `).join("") + `<button class="tool-btn ${activeColor==='REMOVE'?'active':''}" onclick="activeColor='REMOVE';renderAll()">Xóa màu</button>`;
+  const palette = CUSTOM_COLORS.map(c=>`<div class="color-dot ${activeColor===c.bg?'active':''}" style="background:${c.hex}" onclick="activeColor='${c.bg}';renderAll()" title="Tô màu ${c.id}"></div>`).join("") + `<button class="tool-btn ${activeColor==='REMOVE'?'active':''}" onclick="activeColor='REMOVE';renderAll()">Xóa màu</button>`;
 
   let dailyWorkingHC = Array(n + 1).fill(0);
   let dailySundayFTE = Array(n + 1).fill(0);
-  let teamSunCounts = { "Cháo Bầu": 0, "Cá Nướng": 0, "Chung": 0 };
 
   const rows = visibleEmps.map(e=>{
     let counts = { AL_SL:0, OFF:0, CN_Working:0, WFH:0, OFF_T7:0 };
@@ -807,16 +813,13 @@ function renderLich(){
       if(!isWorking) {
         consecutiveOff++;
         if(consecutiveOff >= 3) has3ConsecutiveOff = true;
-      } else {
-        consecutiveOff = 0;
-      }
+      } else consecutiveOff = 0;
 
       if(isWorking) {
         dailyWorkingHC[d]++;
         if(isSun) {
           counts.CN_Working++;
           dailySundayFTE[d]++;
-          teamSunCounts[e.team] = (teamSunCounts[e.team] || 0) + 1;
         }
       }
 
@@ -830,18 +833,15 @@ function renderLich(){
       let cellStyle = "";
       let cellClass = isSun ? "sun-cell" : "";
 
-      if(customBg) {
-        cellStyle = `background:${customBg} !important; border:1px solid rgba(255,255,255,0.2);`;
-      } else if(mk && STATUS_DICT[mk]){ 
-        cellStyle = `background:${STATUS_DICT[mk].bg}; color:${STATUS_DICT[mk].color}; border:1px solid ${STATUS_DICT[mk].color};`; 
-      }
+      if(customBg) cellStyle = `background:${customBg} !important; border:1px solid rgba(255,255,255,0.2);`;
+      else if(mk && STATUS_DICT[mk]) cellStyle = `background:${STATUS_DICT[mk].bg}; color:${STATUS_DICT[mk].color}; border:1px solid ${STATUS_DICT[mk].color};`;
 
       dayCells += `<td class="daycell ${cellClass} col-idx-${d}" style="${cellStyle}" onclick="handleCellClick('${e.id}',${d})">${mk||""}</td>`;
     }
 
     const tagClass = e.role === "Leader" ? "tag-lead" : (e.type==="FTE"?"tag-fte":"tag-bpo");
-    let teamRowClass = e.team === "Cháo Bầu" ? "row-team-chao-bau" : (e.team === "Cá Nướng" ? "row-team-ca-nuong" : "row-team-chung");
-    
+    const dynamicTeamStyle = getTeamStyle(e.team);
+
     let sundayMultiMonthCells = "";
     mList.forEach(item => {
       const cnt = countSundayDutyInMonth(e.id, item.m, item.y);
@@ -850,8 +850,9 @@ function renderLich(){
 
     let warnBadge = has3ConsecutiveOff ? `<span title="⚠️ Nhân sự nghỉ 3 ngày liên tiếp!" style="color:var(--coral); cursor:help;">⚠️</span>` : '';
 
-    let meta = `<td class="name-col" style="font-weight:600">${warnBadge} ${e.name} ${e.offboardDate ? '<span style="color:var(--coral); font-size:10px;" title="Nghỉ việc trong tháng">(Offboard)</span>':''}</td>
-                <td style="text-align:center;font-weight:600">${e.team}</td>
+    let meta = `<td class="sticky-col col-name" style="font-weight:600">${warnBadge} ${e.name} ${e.offboardDate ? '<span style="color:var(--coral); font-size:10px;">(Offboard)</span>':''}</td>
+                <td class="sticky-col col-region" style="font-weight:700; color:var(--teal)">${e.region||'HCM'}</td>
+                <td class="sticky-col col-team" style="${dynamicTeamStyle} font-weight:600">${e.team}</td>
                 <td style="text-align:center"><span class="tag ${tagClass}">${e.role}</span></td>
                 ${sundayMultiMonthCells}
                 <td style="text-align:center; color:var(--amber)" class="mono">${counts.AL_SL}</td>
@@ -860,7 +861,7 @@ function renderLich(){
                 <td style="text-align:center" class="mono">${counts.WFH}</td>
                 <td style="text-align:center" class="mono">${counts.OFF_T7}</td>`;
 
-    return `<tr class="${teamRowClass}">${meta}${dayCells}</tr>`;
+    return `<tr>${meta}${dayCells}</tr>`;
   }).join("");
 
   let overallCells = "";
@@ -875,14 +876,13 @@ function renderLich(){
   }
 
   const numMCols = mList.length;
-  const overallRow = `<tr class="overall-row">
-    <td class="name-col" style="color:var(--teal)">📊 OVERALL HC ĐI LÀM</td>
-    <td colspan="${2 + numMCols + 5}" style="text-align:right; font-size:11px; color:var(--text-dim)">Tổng làm / (CN: Trực/Max):</td>
+  const overallFooter = `<tfoot><tr>
+    <td class="sticky-col col-name" style="color:var(--teal)">📊 OVERALL HC</td>
+    <td class="sticky-col col-region"></td>
+    <td class="sticky-col col-team"></td>
+    <td colspan="${1 + numMCols + 5}" style="text-align:right; font-size:11px; color:var(--text-dim)">Tổng làm / (CN: Trực/Max):</td>
     ${overallCells}
-  </tr>`;
-
-  const totalSunChaoBau = teamSunCounts["Cháo Bầu"] || 0;
-  const totalSunCaNuong = teamSunCounts["Cá Nướng"] || 0;
+  </tr></tfoot>`;
 
   return `
   <div class="panel sticky-panel">
@@ -899,21 +899,22 @@ function renderLich(){
     </div>
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px">
         <div style="display:flex; gap:8px">
-          <button class="btn-primary" onclick="autoFillSmart()">✨ Auto-Fill (Dàn trải Lịch OFF & Lễ HOL)</button>
+          <button class="btn-primary" onclick="autoFillSmart()">✨ Auto-Fill (Lịch Trực & Ưu Tiên Leader)</button>
           <button class="btn-danger" onclick="clearMonthSchedule()">🗑️ Xóa hết lịch tháng này</button>
-          <button class="btn-refresh" onclick="renderAll()" title="Refresh lại Workload và các trường chỉ số">🔄 Refresh Toàn Bộ Dữ Liệu</button>
+          <button class="btn-refresh" onclick="renderAll()">🔄 Refresh Toàn Bộ</button>
           <button class="btn-excel" onclick="copyToClipboardGSheet()">📋 Copy sang Google Sheet</button>
-        </div>
-        <div style="font-size:12px; background:var(--surface-2); padding:6px 12px; border-radius:8px; border:1px solid var(--border)">
-          ☀️ <b>Tỉ lệ Trực CN Tháng này:</b> 
-          <span style="color:var(--teal); font-weight:700">Cháo Bầu (${totalSunChaoBau} ca)</span> vs 
-          <span style="color:var(--violet); font-weight:700">Cá Nướng (${totalSunCaNuong} ca)</span>
         </div>
     </div>
   </div>
 
   <div class="panel">
-    <div class="grid-wrap"><table class="cal-table" id="calendarTable"><thead><tr>${head1}</tr></thead><tbody>${rows}${overallRow}</tbody></table></div>
+    <div class="grid-wrap" id="calendarTableContainer">
+      <table class="cal-table" id="calendarTable">
+        <thead><tr>${head1}</tr></thead>
+        <tbody>${rows}</tbody>
+        ${overallFooter}
+      </table>
+    </div>
   </div>`;
 }
 
@@ -928,12 +929,8 @@ function bindCrosshairEvents(){
     table.querySelectorAll(".col-hover, .cell-active").forEach(el => el.classList.remove("col-hover", "cell-active"));
 
     const colClass = Array.from(td.classList).find(c => c.startsWith("col-idx-"));
-    if (colClass) {
-      table.querySelectorAll("." + colClass).forEach(el => el.classList.add("col-hover"));
-    }
-    if(td.tagName === 'TD' && td.classList.contains('daycell')) {
-      td.classList.add("cell-active");
-    }
+    if (colClass) table.querySelectorAll("." + colClass).forEach(el => el.classList.add("col-hover"));
+    if(td.tagName === 'TD' && td.classList.contains('daycell')) td.classList.add("cell-active");
   });
 
   table.addEventListener("mouseleave", () => {
@@ -946,11 +943,8 @@ function handleCellClick(empId, day){
   if(!isEmpActiveOnDate(emp, dateOf(day))) return;
 
   if(activeColor !== null){
-    if(activeColor === 'REMOVE'){
-      setCellData(empId, day, undefined, null);
-    } else {
-      setCellData(empId, day, undefined, activeColor);
-    }
+    if(activeColor === 'REMOVE') setCellData(empId, day, undefined, null);
+    else setCellData(empId, day, undefined, activeColor);
   } else {
     const statusVal = activeTool === '(Xóa)' ? null : activeTool;
     setCellData(empId, day, statusVal, undefined);
@@ -964,7 +958,6 @@ function renderForecast(){
 
   let head = `<tr><th class="rowlabel">Chỉ số / Ngày</th>`;
   let rHC = `<tr><td class="rowlabel" style="color:var(--teal)">Overall HC Đi Làm</td>`;
-  let rHCDetail = `<tr><td class="rowlabel" style="font-size:10px; color:var(--text-dim)">HC (Cháo Bầu / Cá Nướng / Leader)</td>`;
   let rTotal = `<tr><td class="rowlabel">Workload Dự kiến (Daily WL)</td>`;
   let rOverride = `<tr><td class="rowlabel" style="color:var(--amber)">✏️ Override Workload (Thủ công)</td>`;
   let rClaim = `<tr><td class="rowlabel">Workload Claim (Khiếu nại)</td>`;
@@ -984,7 +977,6 @@ function renderForecast(){
 
     head += `<th class="${alertClass}">${dayStr}<br><span style="font-size:9px;">${f.weekday}</span>${spikeTag}</th>`;
     rHC += `<td class="mono ${alertClass}" style="font-weight:700">${f.totalWorkingHC}</td>`;
-    rHCDetail += `<td class="mono" style="font-size:10px">${f.hcChaoBau}/${f.hcCaNuong}/${f.hcChung}</td>`;
     rTotal += `<td class="mono">${f.dayTotalWL.toLocaleString()}</td>`;
     
     const overrideVal = state.overrideWL[monthKey()]?.[f.day] ?? '';
@@ -996,11 +988,10 @@ function renderForecast(){
 
     rGapWL += `<td class="mono" style="font-weight:700; color:${f.netGapWL<0?'var(--coral)':'var(--teal)'}">${f.netGapWL>0?'+':''}${Math.round(f.netGapWL)}</td>`;
     rGapHC += `<td class="mono" style="color:${f.hcGap<0?'var(--coral)':'var(--teal)'}">${f.hcGap>0?'+':''}${f.hcGap} HC</td>`;
-
     rOverallCov += `<td class="mono ${alertClass}" style="font-weight:700">${Math.round(f.overallCoverage)}%</td>`;
   });
 
-  head += `</tr>`; rHC += `</tr>`; rHCDetail += `</tr>`; rTotal += `</tr>`; rOverride += `</tr>`; rClaim += `</tr>`; rSupp += `</tr>`;
+  head += `</tr>`; rHC += `</tr>`; rTotal += `</tr>`; rOverride += `</tr>`; rClaim += `</tr>`; rSupp += `</tr>`;
   rCapTotal += `</tr>`; rGapWL += `</tr>`; rGapHC += `</tr>`; rOverallCov += `</tr>`;
 
   return `
@@ -1031,7 +1022,7 @@ function renderForecast(){
   <div class="panel">
     <h2>⚖ Cân đối Workload & Số HC Thực tế Đi làm (WFM Details) <button class="info-icon-btn" onclick="openTopicLogic('forecast_detail')" title="Xem công thức">i</button></h2>
     <div class="grid-wrap"><table class="wl-table"><thead>${head}</thead><tbody>
-      ${rHC}${rHCDetail}${rTotal}${rOverride}${rClaim}${rSupp}
+      ${rHC}${rTotal}${rOverride}${rClaim}${rSupp}
       ${rCapTotal}
       ${rGapWL}${rGapHC}${rOverallCov}
     </tbody></table></div>
@@ -1040,6 +1031,12 @@ function renderForecast(){
 
 function renderNhanSu(){
   const visibleEmps = getVisibleEmployeesForCurrentMonth();
+  
+  const allTeams = [...new Set(state.employees.map(e => e.team))].filter(Boolean);
+  const allRegions = [...new Set(state.employees.map(e => e.region))].filter(Boolean);
+
+  const teamOptions = allTeams.map(t => `<option value="${t}">`).join("");
+  const regionOptions = allRegions.map(r => `<option value="${r}">`).join("");
 
   const rows = visibleEmps.map(e=>{
     const autoRampPct = Math.round(getBPOPerformancePct(e, dateOf(1)) * 100);
@@ -1049,25 +1046,37 @@ function renderNhanSu(){
     <tr data-emp="${e.id}">
       <td><input data-f="name" value="${e.name}"></td>
       <td><input data-f="mail" value="${e.mail||''}"></td>
-      <td><select data-f="team"><option ${e.team==="Cháo Bầu"?"selected":""}>Cháo Bầu</option><option ${e.team==="Cá Nướng"?"selected":""}>Cá Nướng</option><option ${e.team==="Chung"?"selected":""}>Chung</option></select></td>
-      <td><select data-f="role"><option ${e.role==="Leader"?"selected":""}>Leader</option><option ${e.role==="SubLead"?"selected":""}>SubLead</option><option ${e.role==="FTE"?"selected":""}>FTE</option><option ${e.role==="BPO"?"selected":""}>BPO</option></select></td>
+      <td>
+        <input list="region-list" data-f="region" value="${e.region||'HCM'}" placeholder="HCM/HN">
+      </td>
+      <td>
+        <input list="team-list" data-f="team" value="${e.team}" placeholder="Nhập team...">
+      </td>
+      <td>
+        <select data-f="role">
+          <option ${e.role==="Leader"?"selected":""}>Leader</option>
+          <option ${e.role==="SubLead"?"selected":""}>SubLead</option>
+          <option ${e.role==="FTE"?"selected":""}>FTE</option>
+          <option ${e.role==="BPO"?"selected":""}>BPO</option>
+        </select>
+      </td>
       <td><select data-f="type"><option ${e.type==="FTE"?"selected":""}>FTE</option><option ${e.type==="BPO"?"selected":""}>BPO</option></select></td>
       <td><input type="date" data-f="onboarding" value="${e.onboarding||'2024-01-01'}"></td>
       <td><input type="date" data-f="offboardDate" value="${e.offboardDate||''}" style="color:var(--coral)"></td>
-      <td style="text-align:center">
-        ${e.type==='BPO'?`<input type="checkbox" data-f="earlyPass" ${e.earlyPass?'checked':''}>`: '—'}
-      </td>
-      <td style="text-align:center; font-weight:700" class="mono">
-        ${e.type==='BPO'?(isPassed?'100% (Passed)':autoRampPct+'%'):'100%'}
-      </td>
-      <td><button class="icon-btn" data-del="${e.id}" title="Xóa nhân viên khỏi hệ thống">✕</button></td>
+      <td style="text-align:center">${e.type==='BPO'?`<input type="checkbox" data-f="earlyPass" ${e.earlyPass?'checked':''}>`: '—'}</td>
+      <td style="text-align:center; font-weight:700" class="mono">${e.type==='BPO'?(isPassed?'100% (Passed)':autoRampPct+'%'):'100%'}</td>
+      <td><button class="icon-btn" data-del="${e.id}" title="Xóa nhân viên">✕</button></td>
     </tr>`;
   }).join("");
 
   return `<div class="panel">
-    <h2>Danh sách Nhân sự HCM, Onboarding & Ramp-up Performance <button class="info-icon-btn" onclick="openTopicLogic('nhansu')" title="Xem hướng dẫn Offboard">i</button></h2>
+    <h2>Danh sách Nhân sự, Khu vực & Dynamically Team <button class="info-icon-btn" onclick="openTopicLogic('nhansu')" title="Xem hướng dẫn Offboard">i</button></h2>
+    
+    <datalist id="region-list">${regionOptions}</datalist>
+    <datalist id="team-list">${teamOptions}</datalist>
+
     <div class="grid-wrap"><table class="emp-table">
-      <thead><tr><th>Họ tên</th><th>Mail</th><th>Team</th><th>Chức vụ</th><th>Loại</th><th>Onboarding</th><th>Offboard</th><th>Pass Thử Việc Sớm</th><th>Hiệu suất Thực</th><th></th></tr></thead>
+      <thead><tr><th>Họ tên</th><th>Mail</th><th>Khu vực</th><th>Team</th><th>Chức vụ</th><th>Loại</th><th>Onboarding</th><th>Offboard</th><th>Pass BPO</th><th>Hiệu suất</th><th></th></tr></thead>
       <tbody>${rows}</tbody>
     </table></div>
     <br><button class="btn-primary" onclick="addEmp()">＋ Thêm Nhân viên</button>
@@ -1075,7 +1084,7 @@ function renderNhanSu(){
 }
 
 function addEmp(){ 
-  state.employees.push({ id:uid(), name:"Nhân viên mới", mail:"", team:"Cháo Bầu", role:"FTE", type:"FTE", onboarding:"2026-08-01", offboardDate:"", earlyPass: false }); 
+  state.employees.push({ id:uid(), name:"Nhân viên mới", mail:"", region:"HCM", team:"Team Mới", role:"FTE", type:"FTE", onboarding:"2026-08-01", offboardDate:"", earlyPass: false }); 
   saveLocalState();
   renderAll(); 
 }
@@ -1111,8 +1120,22 @@ function renderCauHinh(){
     </div>
   </div>
 
+  <!-- 🛠 PHẦN MANUAL CHỈNH TRỌNG SỐ NGÀY TRONG TUẦN (DAY WEIGHT) ĐÃ ĐƯỢC KHÔI PHÚC HÒAN TOÀN -->
   <div class="panel">
-    <h2>➕ Tỉ lệ điều chỉnh bổ sung (Manual) <button class="info-icon-btn" onclick="openTopicLogic('cauhinh')" title="Xem giải thích">i</button></h2>
+    <h2>🛠️ Chỉnh sửa Manual Trọng Số Ngày trong Tuần (Day Weight) <button class="info-icon-btn" onclick="openTopicLogic('cauhinh')" title="Xem công thức Day Weight">i</button></h2>
+    <div style="display:flex; gap:14px; flex-wrap:wrap;">
+      <label class="f">Thứ 2 (T2)<input type="number" step="0.01" id="dw-1" value="${dw[1] ?? 1.15}"></label>
+      <label class="f">Thứ 3 (T3)<input type="number" step="0.01" id="dw-2" value="${dw[2] ?? 1.05}"></label>
+      <label class="f">Thứ 4 (T4)<input type="number" step="0.01" id="dw-3" value="${dw[3] ?? 1.00}"></label>
+      <label class="f">Thứ 5 (T5)<input type="number" step="0.01" id="dw-4" value="${dw[4] ?? 0.98}"></label>
+      <label class="f">Thứ 6 (T6)<input type="number" step="0.01" id="dw-5" value="${dw[5] ?? 0.97}"></label>
+      <label class="f">Thứ 7 (T7)<input type="number" step="0.01" id="dw-6" value="${dw[6] ?? 0.95}"></label>
+      <label class="f">Chủ Nhật (CN)<input type="number" step="0.01" id="dw-0" value="${dw[0] ?? 0.90}"></label>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>➕ Tỉ lệ điều chỉnh bổ sung (Spike Days Adjustment)</h2>
     <div style="display:flex; gap:20px; flex-wrap:wrap;">
       <label class="f">Tỉ lệ điều chỉnh cho Ngày đôi <input type="number" step="0.05" id="cfg-doubleDay" value="${state.cfg.doubleDayAdj||1.20}"></label>
       <label class="f">Tỉ lệ điều chỉnh cho Ngày sale <input type="number" step="0.05" id="cfg-saleDay" value="${state.cfg.saleDayAdj||1.15}"></label>
@@ -1121,10 +1144,10 @@ function renderCauHinh(){
   </div>
 
   <div class="panel">
-    <h2>🎉 Quản lý Ngày Lễ / Tết (Holidays) <button class="info-icon-btn" onclick="openTopicLogic('cauhinh')" title="Xem giải thích">i</button></h2>
+    <h2>🎉 Quản lý Ngày Lễ / Tết (Holidays)</h2>
     <div style="display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start;">
       <div style="flex:1; min-width:300px;">
-        <h3 style="font-size:13px; color:var(--teal); margin-top:0;">📅 Ngày Lễ Cố Định (Hàng năm - MM-DD)</h3>
+        <h3 style="font-size:13px; color:var(--teal); margin-top:0;">📅 Ngày Lễ Cố Định (MM-DD)</h3>
         <table class="hol-table">
           <thead><tr><th>Ngày (MM-DD)</th><th>Tên Ngày Lễ</th><th></th></tr></thead>
           <tbody>${holFixedRows}</tbody>
@@ -1132,27 +1155,13 @@ function renderCauHinh(){
         <br><button class="btn-primary" onclick="addHolFixed()">＋ Thêm Lễ Cố Định</button>
       </div>
       <div style="flex:1.2; min-width:320px;">
-        <h3 style="font-size:13px; color:var(--violet); margin-top:0;">🏮 Ngày Lễ Âm Lịch / Linh Hoạt (Theo Năm)</h3>
+        <h3 style="font-size:13px; color:var(--violet); margin-top:0;">🏮 Ngày Lễ Linh Hoạt (Theo Năm)</h3>
         <table class="hol-table">
           <thead><tr><th>Năm</th><th>Ngày Cụ Thể</th><th>Tên Ngày Lễ</th><th></th></tr></thead>
           <tbody>${holDynRows}</tbody>
         </table>
         <br><button class="btn-primary" onclick="addHolDyn()">＋ Thêm Lễ Linh Hoạt</button>
       </div>
-    </div>
-  </div>
-  
-  <div class="panel">
-    <h2>🛠 Chỉnh sửa Manual Trọng Số Ngày trong Tuần (Day Weight) <button class="info-icon-btn" onclick="openTopicLogic('cauhinh')" title="Xem giải thích">i</button></h2>
-    <p style="font-size:12px; color:var(--text-dim); margin-top:-6px;">Thay đổi hệ số phân bổ Workload mặc định của từng ngày trong tuần:</p>
-    <div style="display:flex; gap:12px; flex-wrap:wrap;">
-      <label class="f">T2 <input type="number" step="0.01" data-dw="1" value="${dw[1]}"></label>
-      <label class="f">T3 <input type="number" step="0.01" data-dw="2" value="${dw[2]}"></label>
-      <label class="f">T4 <input type="number" step="0.01" data-dw="3" value="${dw[3]}"></label>
-      <label class="f">T5 <input type="number" step="0.01" data-dw="4" value="${dw[4]}"></label>
-      <label class="f">T6 <input type="number" step="0.01" data-dw="5" value="${dw[5]}"></label>
-      <label class="f">T7 <input type="number" step="0.01" data-dw="6" value="${dw[6]}"></label>
-      <label class="f">CN <input type="number" step="0.01" data-dw="0" value="${dw[0]}"></label>
     </div>
   </div>`;
 }
@@ -1179,7 +1188,7 @@ function copyToClipboardGSheet(){
   const visibleEmps = getVisibleEmployeesForCurrentMonth();
   let tsv = "";
 
-  let rHeader = ["Name","Team","Role","CN M-3","CN M-2","CN M-1","CN M+1","AL/SL","OFF DAY","CN THÁNG NÀY","WFH","OFF T7"];
+  let rHeader = ["Name","Region","Team","Role","CN M-3","CN M-2","CN M-1","CN M+1","AL/SL","OFF DAY","CN THÁNG NÀY","WFH","OFF T7"];
   for(let d=1; d<=n; d++) {
     let dayStr = String(d).padStart(2, '0');
     let monthStr = String(state.month).padStart(2, '0');
@@ -1221,13 +1230,7 @@ function copyToClipboardGSheet(){
     }
 
     let prevSunCounts = mList.map(item => countSundayDutyInMonth(e.id, item.m, item.y));
-
-    let row = [
-      e.name, e.team, e.role,
-      ...prevSunCounts,
-      counts.AL_SL, counts.OFF, counts.CN_Working, counts.WFH, counts.OFF_T7,
-      ...daysData
-    ];
+    let row = [ e.name, e.region||'HCM', e.team, e.role, ...prevSunCounts, counts.AL_SL, counts.OFF, counts.CN_Working, counts.WFH, counts.OFF_T7, ...daysData ];
     tsv += row.join("\t") + "\n";
   });
 
@@ -1236,7 +1239,6 @@ function copyToClipboardGSheet(){
   }).catch(err => { alert("Lỗi khi copy: " + err); });
 }
 
-// 🎯 HÀM KIỂM TRA CHỐNG NGHỈ NỔI CỤC / 3 NGÀY LIÊN TIẾP
 function checkConsecutiveOffThreshold(empId, day, totalDaysInMonth) {
   let isNotWorking = (d) => {
     if (d < 1 || d > totalDaysInMonth) return false;
@@ -1246,42 +1248,30 @@ function checkConsecutiveOffThreshold(empId, day, totalDaysInMonth) {
 
   let left = 0;
   for (let d = day - 1; d >= 1; d--) {
-    if (isNotWorking(d)) left++;
-    else break;
+    if (isNotWorking(d)) left++; else break;
   }
-
   let right = 0;
   for (let d = day + 1; d <= totalDaysInMonth; d++) {
-    if (isNotWorking(d)) right++;
-    else break;
+    if (isNotWorking(d)) right++; else break;
   }
-
   return (left + 1 + right);
 }
 
-// 🎯 XÓA TẤT CẢ LỊCH THÁNG HIỆN TẠI VỀ TRỐNG
 function clearMonthSchedule(){
   const k = monthKey();
-  if(!confirm(`⚠️ Bạn có chắc muốn XÓA TRỐNG toàn bộ lịch xếp của Tháng ${state.month}/${state.year} không?`)) {
-    return;
-  }
-  
-  if(state.marks && state.marks[k]){
-    delete state.marks[k];
-  }
-  
+  if(!confirm(`⚠️ Bạn có chắc muốn XÓA TRỐNG toàn bộ lịch xếp của Tháng ${state.month}/${state.year} không?`)) return;
+  if(state.marks && state.marks[k]) delete state.marks[k];
   saveLocalState();
   renderAll();
   alert(`✅ Đã xóa sạch lịch trực Tháng ${state.month}/${state.year} về trống!`);
 }
 
-// 🎯 SMART AUTO-FILL DÀN TRẢI & CHỐNG NGHỈ 3 NGÀY + BÁO LỄ & AUTO-FILL HOL
+// 🎯 SMART AUTO-FILL VỚI LOGIC LEADER NGHĨ T7 & CÁC TEAM ĐỘNG
 function autoFillSmart(){
   const n = daysInMonth(state.month, state.year);
   const { dailyForecast } = calculateMonthlyForecast();
   const visibleEmps = getVisibleEmployeesForCurrentMonth();
 
-  // Reset ca OFF & S2 hiện tại (giữ lại AL/SL/WFH/OT)
   visibleEmps.forEach(e => {
     for(let d=1; d<=n; d++){
       if(!isEmpActiveOnDate(e, dateOf(d))) continue;
@@ -1292,31 +1282,27 @@ function autoFillSmart(){
     }
   });
 
-  // 0. AUTO FILL NGÀY LỄ (HOL) NẾU CÓ NGÀY LỄ TRONG THÁNG
-  let foundHolidays = [];
+  // 0. AUTO FILL NGÀY LỄ (HOL)
   for(let d=1; d<=n; d++){
     let holInfo = getHolidayInfo(d);
     if(holInfo){
-      foundHolidays.push({ day: d, name: holInfo.name });
       visibleEmps.forEach(e => {
-        if(isEmpActiveOnDate(e, dateOf(d))){
-          setCellData(e.id, d, "HOL", undefined, true);
-        }
+        if(isEmpActiveOnDate(e, dateOf(d))) setCellData(e.id, d, "HOL", undefined, true);
       });
     }
   }
 
-  // 1. Chia ca Chủ Nhật
+  // 1. Chia ca Chủ Nhật (Leader & SubLead auto OFF)
   let currentMonthSunCount = {};
   visibleEmps.forEach(e => currentMonthSunCount[e.id] = 0);
 
   let sundays = [];
-  for(let d=1; d<=n; d++){
-    if(dateOf(d).getDay() === 0) sundays.push(d);
-  }
+  for(let d=1; d<=n; d++) if(dateOf(d).getDay() === 0) sundays.push(d);
+
+  const teamList = [...new Set(visibleEmps.map(e => e.team))];
 
   sundays.forEach(d => {
-    ["Cháo Bầu", "Cá Nướng"].forEach(teamName => {
+    teamList.forEach(teamName => {
       let teamEmps = visibleEmps.filter(e => {
         if(!isEmpActiveOnDate(e, dateOf(d))) return false;
         if(e.team !== teamName) return false;
@@ -1350,90 +1336,75 @@ function autoFillSmart(){
     });
 
     visibleEmps.forEach(e => {
-      if(dateOf(d).getDay() === 0) {
-        if(isEmpActiveOnDate(e, dateOf(d))) {
-          if(e.role === "Leader" || e.role === "SubLead" || (e.type === "BPO" && !isBPOPassedProbation(e, dateOf(d)))) {
-            let cell = getCellData(e.id, d);
-            if(!cell.status) setCellData(e.id, d, "OFF", undefined, true);
-          }
+      if(dateOf(d).getDay() === 0 && isEmpActiveOnDate(e, dateOf(d))) {
+        if(e.role === "Leader" || e.role === "SubLead" || (e.type === "BPO" && !isBPOPassedProbation(e, dateOf(d)))) {
+          let cell = getCellData(e.id, d);
+          if(!cell.status) setCellData(e.id, d, "OFF", undefined, true);
         }
       }
     });
   });
 
-  // 2. Chia ca OFF Ngày Thường DÀN TRẢI & CẤM NGHỈ DỒN 3 NGÀY
+  // 2. Chia ca OFF Ngày Thường (Ưu tiên Thứ 7 cho Leader)
   let dailyTeamOffCount = {}; 
-  for(let d=1; d<=n; d++){
-    dailyTeamOffCount[`Cháo Bầu_${d}`] = 0;
-    dailyTeamOffCount[`Cá Nướng_${d}`] = 0;
-    dailyTeamOffCount[`Chung_${d}`] = 0;
-  }
-
-  visibleEmps.forEach(e => {
-    for(let d=1; d<=n; d++){
-      let cell = getCellData(e.id, d);
-      if(cell.status === "OFF") dailyTeamOffCount[`${e.team}_${d}`]++;
-    }
-  });
-
   visibleEmps.forEach(e => {
     let passed = isBPOPassedProbation(e, dateOf(1));
     let baseTargetOff = (e.type === "FTE" || passed) ? state.cfg.offFTE : state.cfg.offBPO;
     
     let activeDaysInMonth = 0;
-    for(let d=1; d<=n; d++){
-      if(isEmpActiveOnDate(e, dateOf(d))) activeDaysInMonth++;
-    }
+    for(let d=1; d<=n; d++) if(isEmpActiveOnDate(e, dateOf(d))) activeDaysInMonth++;
     let targetOff = Math.round(baseTargetOff * (activeDaysInMonth / n));
 
     let currentOff = 0;
     for(let d=1; d<=n; d++){
       if(!isEmpActiveOnDate(e, dateOf(d))) continue;
       let cell = getCellData(e.id, d);
-      if(cell.status === "OFF") {
-        currentOff++;
-      }
+      if(cell.status === "OFF") currentOff++;
     }
 
     let neededOff = Math.max(0, targetOff - currentOff);
 
-    for(let i=0; i<neededOff; i++){
-      let candidateDays = [];
-      for(let d=1; d<=n; d++){
-        if(!isEmpActiveOnDate(e, dateOf(d))) continue;
-        if(dateOf(d).getDay() === 0) continue; 
+    let candidateDays = [];
+    for(let d=1; d<=n; d++){
+      if(!isEmpActiveOnDate(e, dateOf(d))) continue;
+      if(dateOf(d).getDay() === 0) continue; 
 
-        let cell = getCellData(e.id, d);
-        const isSpike = dailyForecast[d-1].spikeFactor > 1.0;
+      let cell = getCellData(e.id, d);
+      const isSpike = dailyForecast[d-1].spikeFactor > 1.0;
 
-        if(!cell.status && !isSpike) {
-          if(e.team === "Chung" || dailyTeamOffCount[`${e.team}_${d}`] < 2) {
-            let consStreak = checkConsecutiveOffThreshold(e.id, d, n);
-            
-            candidateDays.push({
-              day: d,
-              consStreak: consStreak,
-              currentOffInTeam: dailyTeamOffCount[`${e.team}_${d}`],
-              wl: dailyForecast[d-1].dayTotalWL
-            });
-          }
+      if(!cell.status && !isSpike) {
+        let consStreak = checkConsecutiveOffThreshold(e.id, d, n);
+        candidateDays.push({
+          day: d,
+          consStreak: consStreak,
+          wl: dailyForecast[d-1].dayTotalWL
+        });
+      }
+    }
+
+    if(candidateDays.length > 0) {
+      if (e.role === "Leader") {
+        let candidateSaturdays = candidateDays.filter(c => dateOf(c.day).getDay() === 6);
+        candidateSaturdays.sort(() => Math.random() - 0.5);
+        
+        while (neededOff > 0 && candidateSaturdays.length > 0) {
+          let selectedSat = candidateSaturdays.pop();
+          setCellData(e.id, selectedSat.day, "OFF", undefined, true);
+          neededOff--;
+          candidateDays = candidateDays.filter(c => c.day !== selectedSat.day);
         }
       }
 
-      if(candidateDays.length > 0){
-        candidateDays.sort((a, b) => {
-          if (a.consStreak !== b.consStreak) {
-            return a.consStreak - b.consStreak;
-          }
-          if (a.currentOffInTeam !== b.currentOffInTeam) {
-            return a.currentOffInTeam - b.currentOffInTeam; 
-          }
-          return a.wl - b.wl; 
-        });
+      candidateDays.sort((a, b) => {
+        if (a.consStreak !== b.consStreak) return a.consStreak - b.consStreak;
+        return a.wl - b.wl; 
+      });
 
-        let selectedDay = candidateDays[0].day;
-        setCellData(e.id, selectedDay, "OFF", undefined, true);
-        dailyTeamOffCount[`${e.team}_${selectedDay}`]++;
+      for (let i = 0; i < neededOff; i++) {
+        if (candidateDays.length > 0) {
+          let selectedDay = candidateDays.shift().day;
+          setCellData(e.id, selectedDay, "OFF", undefined, true);
+        }
       }
     }
 
@@ -1446,14 +1417,7 @@ function autoFillSmart(){
 
   saveLocalState();
   renderAll();
-
-  // BÁO POPUP THÔNG BÁO AUTO-FILL & NGÀY LỄ
-  if(foundHolidays.length > 0){
-    let holListText = foundHolidays.map(h => `• Ngày ${h.day}/${state.month}: ${h.name}`).join("\n");
-    alert(`🎉 Phát hiện ${foundHolidays.length} ngày lễ trong Tháng ${state.month}/${state.year}:\n${holListText}\n\n✅ Đã tự động điền mã HOL cho toàn bộ nhân sự và hoàn tất xếp lịch!`);
-  } else {
-    alert(`✨ Đã tự động xếp lịch xong cho Tháng ${state.month}/${state.year}! (Không có ngày lễ trong tháng này)`);
-  }
+  alert(`✨ Đã tự động xếp lịch xong cho Tháng ${state.month}/${state.year}! (Leader được nghỉ 100% Chủ Nhật & ưu tiên Thứ 7).`);
 }
 
 function renderAllUIOnly(){
@@ -1467,6 +1431,7 @@ function renderAllUIOnly(){
   else if(tab==="nhansu") el.innerHTML = renderNhanSu();
   else if(tab==="cauhinh") el.innerHTML = renderCauHinh();
 
+  // BẮT SỰ KIỆN LƯU THÔNG SỐ CONFIG THƯỜNG
   document.querySelectorAll('input[id^="cfg-"]').forEach(i => i.onchange = (e) => { 
     const key = i.id.replace("cfg-","");
     const mapKey = { lastWL:'lastMonthWL', growth:'growthRate', fteT:'fteTarget', bpoT:'bpoTarget', offFTE:'offFTE', offBPO:'offBPO', maxSun:'maxSundayHC', claimPct:'claimPct', sunWL:'sundayWL', underTh:'underThreshold', overTh:'overThreshold', doubleDay:'doubleDayAdj', saleDay:'saleDayAdj', payDay:'payDayAdj' };
@@ -1475,9 +1440,11 @@ function renderAllUIOnly(){
     renderAll();
   });
 
-  document.querySelectorAll('input[data-dw]').forEach(i => i.onchange = (e) => {
-    const dayWd = i.dataset.dw;
-    state.cfg.dayWeights[dayWd] = parseFloat(e.target.value) || 1.0;
+  // 🛠 BẮT SỰ KIỆN LƯU BẢNG DAY WEIGHT (dw-0 -> dw-6)
+  document.querySelectorAll('input[id^="dw-"]').forEach(i => i.onchange = (e) => {
+    const dayIndex = Number(i.id.replace("dw-", ""));
+    if(!state.cfg.dayWeights) state.cfg.dayWeights = {};
+    state.cfg.dayWeights[dayIndex] = Number(e.target.value);
     saveLocalState();
     renderAll();
   });
@@ -1508,7 +1475,7 @@ function renderAllUIOnly(){
   });
 
   document.querySelectorAll('[data-del]').forEach(b => b.onclick = (e) => {
-    if(confirm("Bạn có chắc chắn muốn xóa hẳn nhân viên này khỏi hệ thống? (Khuyên dùng: Bạn có thể nhập ngày Offboard để tự động ẩn ở các tháng tiếp theo).")) {
+    if(confirm("Bạn có chắc chắn muốn xóa hẳn nhân viên này khỏi hệ thống?")) {
       state.employees = state.employees.filter(em => em.id !== e.target.dataset.del);
       saveLocalState();
       renderAll();
@@ -1517,7 +1484,22 @@ function renderAllUIOnly(){
 }
 
 function renderAll(){
+  const container = document.getElementById("calendarTableContainer");
+  let scrollTop = 0;
+  let scrollLeft = 0;
+  
+  if (container) {
+    scrollTop = container.scrollTop;
+    scrollLeft = container.scrollLeft;
+  }
+
   renderAllUIOnly();
+
+  const newContainer = document.getElementById("calendarTableContainer");
+  if (newContainer) {
+    newContainer.scrollTop = scrollTop;
+    newContainer.scrollLeft = scrollLeft;
+  }
 }
 
 document.getElementById("prevMonth").onclick = () => { state.month = state.month===1?12:state.month-1; if(state.month===12) state.year--; renderAll(); };
