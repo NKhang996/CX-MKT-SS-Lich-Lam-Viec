@@ -273,13 +273,13 @@
 // 🔴 FIREBASE CONFIG (TÙY CHỌN)
 // ==========================================
 const firebaseConfig = {
-  apiKey: "AIzaSyBpZWNqI62FLABbCXwCxBT1qACS1Ku9kz0",
-  authDomain: "spx-workload-hcm.firebaseapp.com",
-  databaseURL: "https://spx-workload-hcm-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "spx-workload-hcm",
-  storageBucket: "spx-workload-hcm.firebasestorage.app",
-  messagingSenderId: "556327875882",
-  appId: "1:556327875882:web:ed6a944a331be515ffda53"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
 };
 
 let db = null;
@@ -783,8 +783,17 @@ function renderLich(){
               </th>`;
   }
 
-  const tools = Object.keys(STATUS_DICT).map(k=>`<button class="tool-btn ${activeTool===k && activeColor===null?'active':''}" onclick="activeTool='${k}';activeColor=null;renderAll()">${k}</button>`).join("");
-  const palette = CUSTOM_COLORS.map(c=>`<div class="color-dot ${activeColor===c.bg?'active':''}" style="background:${c.hex}" onclick="activeColor='${c.bg}';renderAll()" title="Tô màu ${c.id}"></div>`).join("") + `<button class="tool-btn ${activeColor==='REMOVE'?'active':''}" onclick="activeColor='REMOVE';renderAll()">Xóa màu</button>`;
+  // Cập nhật thanh Tool nút ca: Chọn Ca -> Tự động nhả Cọ màu
+  const tools = Object.keys(STATUS_DICT).map(k => {
+    const isActive = (activeTool === k && activeColor === null);
+    return `<button class="tool-btn ${isActive ? 'active' : ''}" onclick="activeTool='${k}';activeColor=null;renderAll()">${k}</button>`;
+  }).join("");
+
+  // Cập nhật Palette cọ màu: Chọn Cọ màu -> Tự động nhả nút Ca
+  const palette = CUSTOM_COLORS.map(c => {
+    const isActive = (activeColor === c.bg);
+    return `<div class="color-dot ${isActive ? 'active' : ''}" style="background:${c.hex}" onclick="activeColor='${c.bg}';activeTool=null;renderAll()" title="Tô màu ${c.id}"></div>`;
+  }).join("") + `<button class="tool-btn ${activeColor === 'REMOVE' ? 'active' : ''}" onclick="activeColor='REMOVE';activeTool=null;renderAll()">Xóa màu</button>`;
 
   let dailyWorkingHC = Array(n + 1).fill(0);
   let dailySundayFTE = Array(n + 1).fill(0);
@@ -811,7 +820,7 @@ function renderLich(){
       const mk = cell.status;
       const customBg = cell.colorBg;
       
-      // 🌟 ĐIỀU CHỈNH: CHỈ ĐẾM S2, OT VÀ WFH LÀ CA ĐI LÀM
+      // CHỈ ĐẾM S2, OT VÀ WFH LÀ CA ĐI LÀM
       const isWorking = (mk === "S2" || mk === "OT" || mk === "WFH");
 
       if(!isWorking) {
@@ -947,11 +956,13 @@ function handleCellClick(empId, day){
   if(!isEmpActiveOnDate(emp, dateOf(day))) return;
 
   if(activeColor !== null){
+    // Đang bật Cọ tô màu thủ công
     if(activeColor === 'REMOVE') setCellData(empId, day, undefined, null);
     else setCellData(empId, day, undefined, activeColor);
-  } else {
+  } else if(activeTool !== null) {
+    // Đang chọn Mã Ca -> Đổi Mã Ca đồng thời XÓA LUÔN màu tô thủ công cũ để trả về màu chuẩn của Ca
     const statusVal = activeTool === '(Xóa)' ? null : activeTool;
-    setCellData(empId, day, statusVal, undefined);
+    setCellData(empId, day, statusVal, null);
   }
   renderAll();
 }
