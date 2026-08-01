@@ -273,13 +273,13 @@
 // 🔴 FIREBASE CONFIG (TÙY CHỌN)
 // ==========================================
 const firebaseConfig = {
-  apiKey: "AIzaSyBpZWNqI62FLABbCXwCxBT1qACS1Ku9kz0",
-  authDomain: "spx-workload-hcm.firebaseapp.com",
-  databaseURL: "https://spx-workload-hcm-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "spx-workload-hcm",
-  storageBucket: "spx-workload-hcm.firebasestorage.app",
-  messagingSenderId: "556327875882",
-  appId: "1:556327875882:web:ed6a944a331be515ffda53"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
 };
 
 let db = null;
@@ -376,7 +376,6 @@ let tab = "lich";
 let activeTool = "S2";       
 let activeColor = null;      
 
-// TẠO MÀU ĐỘNG CHO CÁC TEAM MỚI TỰ ĐỊNH NGHĨA
 function getTeamStyle(teamName) {
   let hash = 0;
   for (let i = 0; i < teamName.length; i++) {
@@ -636,7 +635,8 @@ function countSundayDutyInMonth(empId, m, y){
     const curD = dateOf(d, m, y);
     if(curD.getDay() === 0){
       const cell = getCellData(empId, d, m, y);
-      const isWorking = (cell.status === "S2" || cell.status === "OT" || cell.status === "WFH" || (!cell.status && isEmpActiveOnDate(emp, curD)));
+      // CHỈ ĐẾM S2, OT VÀ WFH LÀ CA ĐI LÀM
+      const isWorking = (cell.status === "S2" || cell.status === "OT" || cell.status === "WFH");
       if(isWorking && isEmpActiveOnDate(emp, curD)) count++;
     }
   }
@@ -710,7 +710,9 @@ function calculateMonthlyForecast(){
       if(!isEmpActiveOnDate(e, curDate)) return;
       const cell = getCellData(e.id, d);
       const mk = cell.status;
-      const isWorking = (mk === "S2" || mk === "OT" || mk === "WFH" || !mk);
+      
+      // CHỈ TÍNH CAPACITY CHO CA S2, OT, WFH
+      const isWorking = (mk === "S2" || mk === "OT" || mk === "WFH");
 
       if(isWorking){
         totalWorkingHC++;
@@ -808,7 +810,9 @@ function renderLich(){
       const cell = getCellData(e.id, d);
       const mk = cell.status;
       const customBg = cell.colorBg;
-      const isWorking = (mk === "S2" || mk === "OT" || mk === "WFH" || !mk);
+      
+      // 🌟 ĐIỀU CHỈNH: CHỈ ĐẾM S2, OT VÀ WFH LÀ CA ĐI LÀM
+      const isWorking = (mk === "S2" || mk === "OT" || mk === "WFH");
 
       if(!isWorking) {
         consecutiveOff++;
@@ -880,7 +884,7 @@ function renderLich(){
     <td class="sticky-col col-name" style="color:var(--teal)">📊 OVERALL HC</td>
     <td class="sticky-col col-region"></td>
     <td class="sticky-col col-team"></td>
-    <td colspan="${1 + numMCols + 5}" style="text-align:right; font-size:11px; color:var(--text-dim)">Tổng làm / (CN: Trực/Max):</td>
+    <td colspan="${1 + numMCols + 5}" style="text-align:right; font-size:11px; color:var(--text-dim)">Tổng làm (S2+OT+WFH) / (CN: Trực/Max):</td>
     ${overallCells}
   </tr></tfoot>`;
 
@@ -1216,7 +1220,9 @@ function copyToClipboardGSheet(){
       const cell = getCellData(e.id, d);
       const mk = cell.status || "";
       const wd = curDate.getDay();
-      const isWorking = (mk === "S2" || mk === "OT" || mk === "WFH" || !mk);
+      
+      // ĐẾM S2, OT VÀ WFH LÀ CA ĐI LÀM
+      const isWorking = (mk === "S2" || mk === "OT" || mk === "WFH");
 
       if(isWorking && wd === 0) counts.CN_Working++;
       if(mk === "AL" || mk === "AL1/2" || mk === "SL") counts.AL_SL += (mk==="AL"||mk==="SL"?1:0.5);
@@ -1397,9 +1403,6 @@ function autoFillSmart(){
     }
 
     // Tiêu chí sắp xếp phân bổ dàn trải:
-    // 1. Tránh tạo nghỉ dồn > 2-3 ngày liên tiếp
-    // 2. Ưu tiên ngày có TỔNG SỐ NGƯỜI NGHỈ ĐANG ÍT NHẤT (Dàn trải đều tải)
-    // 3. Ưu tiên ngày có Workload nhẹ hơn
     candidateDays.sort((a, b) => {
       if (a.consStreak !== b.consStreak) return a.consStreak - b.consStreak;
       if (a.offCount !== b.offCount) return a.offCount - b.offCount;
