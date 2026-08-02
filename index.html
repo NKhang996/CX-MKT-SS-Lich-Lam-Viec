@@ -100,6 +100,7 @@
     vertical-align:middle;
   }
   .emp-table input, .emp-table select, .hol-table input{background:var(--surface-2); border:1px solid var(--border); color:var(--text); border-radius:5px; padding:4px 6px; font-size:11.5px; width:100%;}
+  .date-mask{font-family:'IBM Plex Mono', monospace; letter-spacing:0.5px;}
   .icon-btn{background:none;border:none;color:var(--text-faint); font-size:13px; padding:3px 5px; border-radius:5px;}
   .icon-btn:hover{color:var(--coral); background:var(--coral-dim);}
   
@@ -142,6 +143,10 @@
   .cal-table td.col-hover, .cal-table th.col-hover { background-color: rgba(79, 179, 169, 0.12) !important; }
   .cal-table td.cell-active { background-color: rgba(232, 163, 61, 0.3) !important; outline: 2px solid var(--amber); }
 
+  /* FIX: cột sticky (NAME/MIỀN/TEAM) phải giữ NỀN ĐẶC khi hover, tránh lộ/đè chữ của cell cuộn bên dưới */
+  .cal-table tr:hover td.sticky-col { background-color: var(--surface) !important; }
+  .cal-table tr:hover td.sticky-col.col-hover { background-color: rgba(79, 179, 169, 0.12) !important; }
+
   /* STICKY COLUMNS (LEFT) & OVERALL ROW (BOTTOM) */
   .cal-table .sticky-col {
     position: sticky;
@@ -183,9 +188,9 @@
   .color-dot:hover{transform:scale(1.2);}
   .color-dot.active{border-color:#fff; transform:scale(1.25); box-shadow:0 0 8px rgba(255,255,255,0.4);}
 
-  /* HIGHLIGHT STYLES */
-  .cal-table th.sun-col{background:#321d22 !important; color:var(--coral) !important; border-bottom:2px solid var(--coral);}
-  .cal-table td.sun-cell{background:rgba(232, 97, 93, 0.05);}
+  /* HIGHLIGHT STYLES - CHỦ NHẬT NỔI BẬT HƠN */
+  .cal-table th.sun-col{background:#581c2d !important; color:#f87171 !important; border-bottom:3px solid #ef4444; font-weight:800;}
+  .cal-table td.sun-cell{background:rgba(239, 68, 68, 0.12) !important;}
   .cal-table th.spike-sale{background:#3b1f35 !important; color:var(--pink) !important; border-bottom:2px solid var(--pink);}
   .cal-table th.spike-double{background:#4a1e35 !important; color:#f472b6 !important; border-bottom:2px solid #f472b6;}
   .cal-table th.spike-payday{background:#2a3b1e !important; color:#4ade80 !important; border-bottom:2px solid #4ade80;}
@@ -273,15 +278,14 @@
 // 🔴 FIREBASE CONFIG (TÙY CHỌN)
 // ==========================================
 const firebaseConfig = {
-  apiKey: "AIzaSyBpZWNqI62FLABbCXwCxBT1qACS1Ku9kz0",
-  authDomain: "spx-workload-hcm.firebaseapp.com",
-  databaseURL: "https://spx-workload-hcm-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "spx-workload-hcm",
-  storageBucket: "spx-workload-hcm.firebasestorage.app",
-  messagingSenderId: "556327875882",
-  appId: "1:556327875882:web:ed6a944a331be515ffda53"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
 };
-
 
 let db = null;
 try {
@@ -317,28 +321,31 @@ const CUSTOM_COLORS = [
 ];
 
 const INITIAL_EMPLOYEES = [
-  { name:"Nguyễn Tấn Khang", mail:"khang.nguyentan@spxexpress.com", role:"Leader", team:"Leader HCM", region:"HCM", type:"FTE", onboarding:"11/12/2023", offboardDate:"", earlyPass: false },
-  { name:"Trần Hoàng Minh", mail:"hoangminh.tran@spxexpress.com", role:"SubLead", team:"Cháo Bầu", region:"HCM", type:"FTE", onboarding:"30/05/2022", offboardDate:"", earlyPass: false },
-  { name:"Nguyễn Huỳnh Anh Thư", mail:"anhthu.nguyenhuynh@spxexpress.com", role:"FTE", team:"Cháo Bầu", region:"HCM", type:"FTE", onboarding:"20/06/2022", offboardDate:"", earlyPass: false },
-  { name:"Lê Thị Hoàng Nguyên", mail:"hoangnguyen.lethi01@spxexpress.com", role:"FTE", team:"Cháo Bầu", region:"HCM", type:"FTE", onboarding:"20/07/2026", offboardDate:"", earlyPass: false },
-  { name:"Phan Thị Linh", mail:"linh.phanthi@spxexpress.com", role:"FTE", team:"Cháo Bầu", region:"HCM", type:"FTE", onboarding:"12/04/2022", offboardDate:"", earlyPass: false },
-  { name:"Trần Thị Thu Thủy", mail:"thuthuy.tranthi@spxexpress.com", role:"FTE", team:"Cháo Bầu", region:"HCM", type:"FTE", onboarding:"04/12/2023", offboardDate:"", earlyPass: false },
-  { name:"Tô Nguyên Bảo", mail:"nguyenbao.to@spx-sales.com", role:"FTE", team:"Cháo Bầu", region:"HCM", type:"FTE", onboarding:"21/01/2026", offboardDate:"", earlyPass: false },
-  { name:"Trần Đăng Khoa", mail:"dangkhoa.tran07@spx-sales.com", role:"BPO", team:"Cháo Bầu", region:"HCM", type:"BPO", onboarding:"22/07/2026", offboardDate:"", earlyPass: true },
-  { name:"Mai Trọng Nghĩa", mail:"trongnghia.mai@spx-sales.com", role:"BPO", team:"Cháo Bầu", region:"HCM", type:"BPO", onboarding:"27/07/2026", offboardDate:"", earlyPass: false },
-  { name:"Nguyễn Hữu Nghĩa", mail:"nghia.nguyenhuu@spxexpress.com", role:"SubLead", team:"Cá Nướng", region:"HCM", type:"FTE", onboarding:"07/06/2021", offboardDate:"", earlyPass: false },
-  { name:"Dương Minh Phương", mail:"phuong.duongminh@spxexpress.com", role:"FTE", team:"Cá Nướng", region:"HCM", type:"FTE", onboarding:"16/10/2023", offboardDate:"", earlyPass: false },
-  { name:"Lê Nguyễn Thanh Vy", mail:"vy.lethanh@spxexpress.com", role:"FTE", team:"Cá Nướng", region:"HCM", type:"FTE", onboarding:"02/11/2021", offboardDate:"", earlyPass: false },
-  { name:"Huỳnh Mỹ Loan Anh", mail:"loananh.huynhmy@spxexpress.com", role:"FTE", team:"Cá Nướng", region:"HCM", type:"FTE", onboarding:"04/12/2023", offboardDate:"", earlyPass: false },
-  { name:"Nhan Bích Tâm", mail:"bichtam.nhan01@spxexpress.com", role:"FTE", team:"Cá Nướng", region:"HCM", type:"FTE", onboarding:"20/07/2026", offboardDate:"", earlyPass: false },
-  { name:"Châu Hiệp Phát", mail:"hiepphat.chau01@spx-sales.com", role:"BPO", team:"Cá Nướng", region:"HCM", type:"BPO", onboarding:"27/07/2026", offboardDate:"", earlyPass: true },
-  { name:"Nguyễn Quỳnh Cẩm Tú", mail:"camtu.nguyenquynh@spx-sales.com", role:"BPO", team:"Cá Nướng", region:"HCM", type:"BPO", onboarding:"27/07/2026", offboardDate:"", earlyPass: false }
+  { name:"Nguyễn Tấn Khang", mail:"khang.nguyentan@spxexpress.com", role:"Leader", team:"Leader HCM", region:"HCM", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Trần Hoàng Minh", mail:"hoangminh.tran@spxexpress.com", role:"SubLead", team:"Cháo Bầu", region:"HCM", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Nguyễn Huỳnh Anh Thư", mail:"anhthu.nguyenhuynh@spxexpress.com", role:"FTE", team:"Cháo Bầu", region:"HCM", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Lê Thị Hoàng Nguyên", mail:"hoangnguyen.lethi01@spxexpress.com", role:"FTE", team:"Cháo Bầu", region:"HCM", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Phan Thị Linh", mail:"linh.phanthi@spxexpress.com", role:"FTE", team:"Cháo Bầu", region:"HCM", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Trần Thị Thu Thủy", mail:"thuthuy.tranthi@spxexpress.com", role:"FTE", team:"Cháo Bầu", region:"HCM", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Tô Nguyên Bảo", mail:"nguyenbao.to@spx-sales.com", role:"FTE", team:"Cháo Bầu", region:"HCM", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Trần Đăng Khoa", mail:"dangkhoa.tran07@spx-sales.com", role:"BPO", team:"Cháo Bầu", region:"HCM", type:"BPO", onboarding:"2026-05-01", offboardDate:"", earlyPass: true },
+  { name:"Mai Trọng Nghĩa", mail:"trongnghia.mai@spx-sales.com", role:"BPO", team:"Cháo Bầu", region:"HCM", type:"BPO", onboarding:"2026-08-15", offboardDate:"", earlyPass: false },
+  { name:"Nguyễn Hữu Nghĩa", mail:"nghia.nguyenhuu@spxexpress.com", role:"SubLead", team:"Cá Nướng", region:"HCM", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Dương Minh Phương", mail:"phuong.duongminh@spxexpress.com", role:"FTE", team:"Cá Nướng", region:"HCM", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Lê Nguyễn Thanh Vy", mail:"vy.lethanh@spxexpress.com", role:"FTE", team:"Cá Nướng", region:"HCM", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Huỳnh Mỹ Loan Anh", mail:"loananh.huynhmy@spxexpress.com", role:"FTE", team:"Cá Nướng", region:"HCM", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Nhan Bích Tâm", mail:"bichtam.nhan01@spxexpress.com", role:"FTE", team:"Cá Nướng", region:"HCM", type:"FTE", onboarding:"2024-01-01", offboardDate:"", earlyPass: false },
+  { name:"Châu Hiệp Phát", mail:"hiepphat.chau01@spx-sales.com", role:"BPO", team:"Cá Nướng", region:"HCM", type:"BPO", onboarding:"2026-05-01", offboardDate:"", earlyPass: true },
+  { name:"Nguyễn Quỳnh Cẩm Tú", mail:"camtu.nguyenquynh@spx-sales.com", role:"BPO", team:"Cá Nướng", region:"HCM", type:"BPO", onboarding:"2026-08-01", offboardDate:"", earlyPass: false }
 ].map(e => ({ ...e, id: uid() }));
-  
+
 const DEFAULT_CONFIG = {
   offFTE: null, 
   offBPO: null,
   maxSundayHC: 4,
+  sundayCapPctBPO: 75,   // % Trần số CN tối đa 1 BPO Pass được trực/tháng
+  fteRatioNum: 1,        // Tỉ lệ FTE / BPO đi kèm ca CN (tử số)
+  fteRatioDenom: 5,      // Tỉ lệ FTE / BPO đi kèm ca CN (mẫu số)
   lastMonthWL: 100000,
   growthRate: 10,
   fteTarget: 750,
@@ -388,18 +395,27 @@ function getSundaysInMonth(m = state.month, y = state.year) {
   return sundays;
 }
 
+// 🔹 KIỂM TRA NHÂN SỰ ĐÃ PASS THỬ VIỆC CHƯA (2 THÁNG/60 NGÀY CHO CẢ FTE & BPO)
+function isEmpPassedProbation(emp, curDate){
+  if(emp.earlyPass) return true;
+  if(!emp.onboarding) return true;
+  const onb = new Date(emp.onboarding);
+  const cur = new Date(curDate);
+  return Math.floor((cur - onb) / (1000 * 60 * 60 * 24)) >= 60;
+}
+
 // 🔹 HÀM LẤY SỐ NGÀY OFF MẶC ĐỊNH CHO NHÂN VIÊN
 function getEffectiveOffDays(emp, m = state.month, y = state.year) {
   const totalSundays = getSundaysInMonth(m, y);
-  const isPassed = isBPOPassedProbation(emp, dateOf(1, m, y));
+  const isPassed = isEmpPassedProbation(emp, dateOf(1, m, y));
   
-  if (emp.type === "BPO" && !isPassed) {
-    // BPO Thử việc: Số CN trong tháng (hoặc đè thủ công)
+  if (!isPassed) {
+    // FTE/BPO Thử việc: Số CN trong tháng (hoặc đè thủ công)
     return (state.cfg.offBPO !== null && state.cfg.offBPO !== undefined && state.cfg.offBPO !== "" && !isNaN(state.cfg.offBPO))
       ? Number(state.cfg.offBPO)
       : totalSundays;
   } else {
-    // FTE & BPO đã qua thử việc: Số CN + 2 (hoặc đè thủ công)
+    // FTE/BPO đã qua thử việc: Số CN + 2 (hoặc đè thủ công)
     return (state.cfg.offFTE !== null && state.cfg.offFTE !== undefined && state.cfg.offFTE !== "" && !isNaN(state.cfg.offFTE))
       ? Number(state.cfg.offFTE)
       : (totalSundays + 2);
@@ -429,6 +445,9 @@ function syncStateAndConfig(){
   state.cfg.saleDayAdj = Number(state.cfg.saleDayAdj) || 1.15;
   state.cfg.payDayAdj = Number(state.cfg.payDayAdj) || 1.10;
   state.cfg.maxSundayHC = (state.cfg.maxSundayHC !== undefined && state.cfg.maxSundayHC !== null && state.cfg.maxSundayHC !== "") ? Number(state.cfg.maxSundayHC) : 4;
+  state.cfg.sundayCapPctBPO = (state.cfg.sundayCapPctBPO !== undefined && state.cfg.sundayCapPctBPO !== null && state.cfg.sundayCapPctBPO !== "") ? Number(state.cfg.sundayCapPctBPO) : 75;
+  state.cfg.fteRatioNum = (state.cfg.fteRatioNum !== undefined && state.cfg.fteRatioNum !== null && state.cfg.fteRatioNum !== "") ? Number(state.cfg.fteRatioNum) : 1;
+  state.cfg.fteRatioDenom = (state.cfg.fteRatioDenom !== undefined && state.cfg.fteRatioDenom !== null && state.cfg.fteRatioDenom !== "") ? Number(state.cfg.fteRatioDenom) : 5;
 
   if(!state.cfg.dayWeights) state.cfg.dayWeights = { ...DEFAULT_CONFIG.dayWeights };
   if(!state.employees || state.employees.length === 0) state.employees = INITIAL_EMPLOYEES;
@@ -467,7 +486,7 @@ function openTopicLogic(topicKey){
     'forecast_cfg': '⚙️ Logic Tham Số Forecast Workload',
     'forecast_kpi': '📈 Logic Tính Toán Chỉ Số Workload Tổng Quan',
     'forecast_detail': '⚖️ Logic Chi Tiết Cân Đối Năng Lực & SLA Coverage',
-    'nhansu': '👤 Logic Quản Lý Offboard & Ramp-up',
+    'nhansu': '👤 Logic Quản Lý Offboard, Ramp-up & Thử Việc',
     'cauhinh': '⚙️ Logic Cấu Hình Trọng Số, Quy Tắc Off & Ngày Lễ'
   };
 
@@ -475,23 +494,91 @@ function openTopicLogic(topicKey){
     'palette': `<div class="logic-section">
       <h3>Thao tác Tô Màu / Chọn Ca</h3>
       <p>• <b>Chọn Ca (S2, OT, OFF, WFH, AL, HOL...):</b> Nhấp chọn nút tên ca, sau đó nhấp vào ô ngày của nhân viên tương ứng.</p>
-      <p>• <b>Xếp lịch Dàn Trải:</b> Hệ thống phân bổ đều số ngày OFF của nhân viên từ Thứ 2 đến Thứ 7, ưu tiên các ngày có lượng người nghỉ ít nhất để cân bằng tải vận hành.</p>
+      <p>• <b>Cọ tô màu:</b> Chọn 1 màu rồi nhấp vào ô để tô nổi bật (không đổi ca trực), chọn "Xóa màu" để gỡ.</p>
+      <p>• <b>Lịch Chủ Nhật:</b> Hệ thống tự đổi mã ca đi làm CN thành <b>WFH</b>.</p>
+      <p>• <b>Quy tắc AL/SL:</b> Nhân viên đang thử việc (chưa pass probation) <b>KHÔNG</b> được đăng ký ca AL/SL.</p>
+      <p>• <b>Đánh dấu Ngày Đặc Biệt (Spike):</b> Nhấp vào ô tiêu đề (thứ/ngày) trên đầu bảng lịch để xoay vòng: Bình thường → Ngày Sale → Ngày Đôi → Ngày Lương → Bình thường. Ngày đặc biệt sẽ nhân thêm hệ số vào Workload dự báo (xem tab Cấu hình).</p>
+      <p>• <b>Auto-Fill Dàn Trải:</b> Tự động xếp Ngày Lễ, Ca trực Chủ Nhật (3 bước BPO/FTE), nghỉ bù cố định & OFF dàn trải cho cả tháng. Xem chi tiết công thức ở phần Cấu hình.</p>
     </div>`,
     'nhansu': `<div class="logic-section">
-      <h3>🔑 Thêm Team Mới & Phân vùng Region</h3>
-      <p>• <b>Khu vực (Region):</b> Nhập linh hoạt (HN / HCM) để nhóm nhân sự theo vùng miền.</p>
-      <p>• <b>Team Mới:</b> Gõ tên Team mới trực tiếp ở ô Team để khởi tạo mà không cần chỉnh sửa mã nguồn.</p>
+      <h3>🔑 Logic Thử Việc & Ramp-up (FTE & BPO)</h3>
+      <p>• <b>Thời gian Thử việc:</b> Mặc định 2 tháng (60 ngày) tính từ ngày Onboarding.</p>
+      <p>• <b>Phân bổ Năng suất (Ramp-up %):</b> Tuần 1: 20%, Tuần 2: 50%, Tuần 3: 75%, Tuần 4 trở đi (hoặc đã Pass): 100%.</p>
+      <p>• <b>Pass sớm (Early Pass):</b> Tích checkbox để kích hoạt ngay 100% năng suất & mở quyền đăng ký AL/SL, bỏ qua mốc 60 ngày.</p>
+      <p>• <b>Cột "Hiệu suất":</b> Hiển thị % ramp-up tại ngày 01 của tháng đang xem — đây cũng là % dùng trong công thức <b>HC khả dụng</b> (xem tab Cấu hình) khi nhân sự BPO còn đang thử việc.</p>
+      <p>• <b>Chức vụ (Role) vs Loại (Type):</b> "Chức vụ" (Leader/SubLead/FTE/BPO) dùng để loại Leader/SubLead khỏi vòng xoay trực Chủ Nhật; "Loại" (FTE/BPO) quyết định Target năng suất & luật ưu tiên trực CN (BPO Pass được ưu tiên xếp trước).</p>
+    </div>
+    <div class="logic-section">
+      <h3>📅 Nhập Ngày Tháng (Onboarding / Offboard)</h3>
+      <p>• <b>Định dạng:</b> <code>dd/mm/yyyy</code>. Chỉ cần gõ liền dãy số, hệ thống tự chèn dấu "/" (VD: gõ <code>01082026</code> → tự hiện <code>01/08/2026</code>).</p>
+      <p>• <b>Auto-reset khi sai:</b> Nếu gõ ngày không tồn tại (VD <code>31/02/2026</code>), khi rời khỏi ô hệ thống tự động làm tròn về ngày hợp lệ gần nhất trong tháng đó (VD: <code>28/02/2026</code>). Nếu gõ sai cấu trúc hẳn, ô sẽ tự khôi phục lại giá trị hợp lệ trước đó.</p>
+      <p>• <b>Offboard để trống:</b> Nhân sự chưa nghỉ việc thì để trống ô Offboard.</p>
     </div>`,
     'cauhinh': `<div class="logic-section">
       <h3>🛠️ Quy Tắc Số Ngày OFF & Trọng Số Ngày</h3>
-      <p>• <b>Số Ngày OFF Mặc Định:</b></p>
+      <p>• <b>Số Ngày OFF Mặc Định (Target/Tháng):</b></p>
       <ul>
-        <li><b>BPO Thử Việc:</b> Số ngày OFF = Tổng số Chủ Nhật trong tháng.</li>
-        <li><b>FTE & BPO đã qua Thử Việc:</b> Số ngày OFF = Tổng số Chủ Nhật trong tháng + 2 ngày.</li>
-        <li><i>Mô hình Auto-Placeholder: Để trống ô cấu hình = Tự động tính theo tháng, Nhập số = Ghi đè thủ công.</i></li>
+        <li><b>Nhân sự Thử Việc (FTE & BPO):</b> Target OFF = Tổng số Chủ Nhật trong tháng.</li>
+        <li><b>Nhân sự Đã Pass Thử Việc:</b> Target OFF = Tổng số Chủ Nhật trong tháng + 2 ngày.</li>
       </ul>
-      <p>• <b>Trọng Số Ngày (Day Weight):</b> Xác định tỷ trọng Workload của từng thứ trong tuần so với trung bình.</p>
-      <p><code>Daily WL = (Tổng WL Tháng / Tổng Trọng Số Cả Tháng) * (Trọng Số Thứ * Hệ Số Spike Day)</code></p>
+      <p>• ⚠️ <b>Lưu ý quan trọng:</b> "Số Chủ Nhật" ở đây chỉ là <b>con số tham chiếu</b> để tính TỔNG số ngày OFF/tháng, KHÔNG bắt buộc nhân sự phải nghỉ đúng vào Chủ Nhật. Hệ thống tự dàn trải các ngày OFF còn thiếu (sau khi đã trừ CN không trực + nghỉ bù cố định) vào bất kỳ ngày nào trong tuần (T2-T7) sao cho cân bằng workload nhất.</p>
+      <p>• <b>2 ô "Số ngày OFF/Tháng":</b> Để trống = dùng công thức tự động ở trên. Nhập số cụ thể = ghi đè thủ công cho toàn bộ nhân sự nhóm đó trong tháng.</p>
+      <p>• <b>Phân bổ Workload Chủ Nhật:</b> BPO trực CN gánh tối đa WL Hỗ trợ theo Target BPO, toàn bộ WL Khiếu nại + phần WL Hỗ trợ dư sẽ do FTE đảm nhận.</p>
+    </div>
+    <div class="logic-section">
+      <h3>📅 Logic Phân Ca Chủ Nhật (3 Bước) & Trọng Số HC BPO Thử Việc</h3>
+      <p>• <b>HC khả dụng</b> = FTE + BPO đã Pass + (BPO Thử việc × %Hiệu suất Ramp-up hiện tại của người đó). Số này dùng để đánh giá năng lực thực tế mỗi ngày, tránh ảo tưởng đủ người khi BPO thử việc còn yếu. Xem ở dòng "🔷 HC Khả Dụng" trong tab Dự báo Workload.</p>
+      <p>• <b>Max Trực Chủ Nhật Toàn Hệ Thống:</b> Trần tổng số người (BPO+FTE) được trực trong 1 ca Chủ Nhật. Đây là trần cứng cuối cùng — dùng để tính HC khi chưa đủ BPO Pass, và không bước nào trong 3 bước dưới đây được phép vượt qua.</p>
+      <p>• <b>Bước 1 - Nòng cốt BPO Pass:</b> Ưu tiên xếp BPO đã pass thử việc vào ca CN, xoay vòng công bằng theo số CN đã trực gần đây, cho đến khi 1 BPO chạm <b>% Trần CN/tháng</b> (Số CN tối đa/tháng/BPO = Tổng số CN trong tháng × %Trần) hoặc chạm <b>Max Trực CN</b>.</p>
+      <p>• <b>Bước 2 - FTE giám sát theo tỉ lệ:</b> Với số BPO đã xếp trong ca, hệ thống tự thêm FTE theo <b>Tỉ lệ FTE : BPO</b> (VD 1:5 → 5 BPO có 1 FTE đi kèm xử lý khiếu nại/ca khó). Số FTE thêm vào <b>luôn bị giới hạn</b> bởi phần chỗ trống còn lại của Max Trực CN — nếu Bước 1 đã gần chạm trần, Bước 2 chỉ thêm đủ FTE cho tới khi chạm Max, không vượt quá.</p>
+      <p>• <b>Bước 3 - Random rotation phần dư:</b> Nếu sau Bước 1+2 vẫn chưa đạt Max Trực CN, hệ thống chia đều ngẫu nhiên phần thiếu cho các FTE còn lại (không tính Leader/SubLead) cho tới khi vừa đủ Max.</p>
+      <p>• <b>Nghỉ bù cố định:</b> Mỗi FTE có trực CN trong tháng sẽ được hệ thống tự chọn 1 ngày cố định trong tuần (T2-T7, dàn đều giữa các FTE) để nghỉ bù mỗi tuần có trực CN, đảm bảo tổng ngày công không đổi. FTE không trực CN thì làm đủ T2-T7.</p>
+    </div>
+    <div class="logic-section">
+      <h3>📈 Trọng Số Ngày trong Tuần (Day Weight)</h3>
+      <p>• Mỗi thứ trong tuần có 1 hệ số riêng, dùng để phân bổ Tổng Workload Dự kiến của cả tháng ra từng ngày theo công thức:</p>
+      <p style="color:var(--teal)">Workload/ngày = (Tổng WL tháng ÷ Tổng trọng số cả tháng) × (Trọng số Thứ trong tuần × Hệ số Ngày đặc biệt)</p>
+      <p>• Hệ số càng cao → ngày đó được dự báo càng nhiều case. Có thể chỉnh tay theo đặc thù thực tế (VD T2 luôn đông hơn do dồn từ CN).</p>
+    </div>
+    <div class="logic-section">
+      <h3>➕ Tỉ lệ điều chỉnh bổ sung (Spike Days Adjustment)</h3>
+      <p>• Đánh dấu "Ngày đặc biệt" bằng cách nhấp vào ô tiêu đề ngày trên bảng lịch (tab Chọn ca), xoay vòng: Ngày Sale → Ngày Đôi → Ngày Lương → Bình thường.</p>
+      <p>• 3 hệ số này sẽ nhân thêm vào Trọng Số Ngày của đúng ngày được đánh dấu khi tính Workload dự báo (xem công thức ở mục Day Weight).</p>
+    </div>
+    <div class="logic-section">
+      <h3>🎉 Quản lý Ngày Lễ / Tết & Định dạng Ngày Tháng</h3>
+      <p>• <b>Ngày Lễ Cố Định:</b> Nhập theo <code>MM-DD</code> (không có năm), lặp lại hàng năm — VD <code>01-01</code> cho Tết Dương lịch.</p>
+      <p>• <b>Ngày Lễ Linh Hoạt:</b> Gắn với 1 năm cụ thể (VD Tết Âm lịch đổi ngày mỗi năm) — nhập theo <code>dd/mm/yyyy</code>, có Auto-Masking (tự chèn "/") và Auto-reset về ngày hợp lệ gần nhất nếu nhập sai (giống ô Onboarding/Offboard ở tab Nhân sự).</p>
+      <p>• Ngày rơi vào Lễ sẽ được Auto-Fill gán mã <b>HOL</b> cho toàn bộ nhân sự đang active, không tính vào Target OFF.</p>
+    </div>`,
+    'forecast_cfg': `<div class="logic-section">
+      <h3>⚙️ Tham số Đầu vào Dự báo Workload</h3>
+      <p>• <b>Workload Tháng Trước / Tỷ lệ Tăng trưởng (%):</b> Tổng Workload Dự kiến Tháng này = Workload Tháng Trước × (1 + Tăng trưởng%).</p>
+      <p>• <b>Target FTE / Target BPO (case/ngày):</b> Năng suất chuẩn 1 người xử lý được/ngày khi đã Pass thử việc & ramp 100%. Dùng để tính Tổng Năng Lực Team.</p>
+      <p>• <b>% Ticket Khiếu nại:</b> % trong Tổng WL/ngày được xem là Workload Claim (khiếu nại); phần còn lại là Workload Support (hỗ trợ). BPO trực CN chỉ gánh Support, FTE gánh Claim + phần Support dư.</p>
+      <p>• <b>Ghi đè Workload CN:</b> Nếu &gt; 0, mọi ngày Chủ Nhật sẽ dùng thẳng số này thay vì tính theo Trọng Số Ngày × Spike.</p>
+      <p>• <b>Ngưỡng Thiếu (Alert Đỏ) / Ngưỡng Thừa (Alert Vàng):</b> Ngưỡng % SLA Coverage để tô màu cảnh báo trong bảng Dự báo — dưới ngưỡng Thiếu = đỏ (không đủ người), trên ngưỡng Thừa = vàng (dư người).</p>
+    </div>`,
+    'forecast_kpi': `<div class="logic-section">
+      <h3>📈 Các Chỉ Số Tổng Quan (KPI)</h3>
+      <p>• <b>Tổng Workload Dự kiến:</b> Tổng cộng Workload/ngày của cả tháng (đã gồm Override & Spike).</p>
+      <p>• <b>Workload Trung bình/ngày:</b> Tổng Workload Dự kiến ÷ Số ngày trong tháng.</p>
+      <p>• <b>Hạn mức Trực CN:</b> Giá trị cấu hình "Max Trực Chủ Nhật Toàn Hệ Thống" — trần tổng số người (BPO+FTE) mỗi ca CN.</p>
+      <p>• <b>Trần CN cho BPO Pass:</b> % cấu hình quy đổi ra số CN tối đa/tháng mà 1 BPO Pass được trực (= %Trần × Tổng số CN trong tháng).</p>
+      <p>• <b>Tỉ lệ FTE / BPO giám sát:</b> Tỉ lệ cấu hình dùng ở Bước 2 của thuật toán chia ca CN (VD 1:5 → 5 BPO có 1 FTE đi kèm).</p>
+      <p>• <b>Ngưỡng cảnh báo SLA:</b> Nhắc lại 2 ngưỡng Đỏ/Vàng đang cấu hình ở panel phía trên.</p>
+    </div>`,
+    'forecast_detail': `<div class="logic-section">
+      <h3>⚖️ Công Thức Bảng Cân Đối Workload & HC</h3>
+      <p>• <b>Overall HC Đi Làm:</b> Đếm nguyên số nhân sự có ca S2/OT/WFH trong ngày (không quy đổi %, không phân biệt thử việc).</p>
+      <p>• <b>🔷 HC Khả Dụng (quy đổi thử việc):</b> = FTE (làm việc, tính đủ 1) + BPO đã Pass (tính đủ 1) + BPO Thử việc × %Ramp-up hiện tại. Phản ánh đúng năng lực thực tế hơn "Overall HC" khi team còn nhiều BPO mới.</p>
+      <p>• <b>Workload Dự kiến (Daily WL):</b> Theo công thức Trọng Số Ngày (xem tab Cấu hình) hoặc số Override thủ công.</p>
+      <p>• <b>Override Workload (Thủ công):</b> Nhập số tại ô này để ghi đè trực tiếp Workload dự báo của đúng ngày đó, ưu tiên cao nhất so với công thức tự động.</p>
+      <p>• <b>Workload Claim / Support:</b> Claim = Daily WL × %Ticket Khiếu nại; Support = Daily WL − Claim.</p>
+      <p>• <b>Tổng Năng Lực Team (Total Cap):</b> = Σ(Target FTE × %Ramp-up mỗi FTE đang làm) + Σ(Target BPO × %Ramp-up mỗi BPO đang làm).</p>
+      <p>• <b>Dư/Thiếu WL (Net Case Gap):</b> = Total Cap − Daily WL. Dương = dư năng lực, Âm = thiếu năng lực.</p>
+      <p>• <b>Thừa/Thiếu HC Quy Đổi:</b> = Net Case Gap ÷ Target FTE — quy đổi phần dư/thiếu case ra số đầu người FTE tương đương.</p>
+      <p>• <b>⭐ SLA Coverage Tổng thể (%):</b> = Total Cap ÷ Daily WL × 100%. So với 2 Ngưỡng Cảnh báo để tô màu Đỏ/Vàng/Xanh.</p>
     </div>`
   };
 
@@ -522,6 +609,45 @@ function saveLocalState(){
 function monthKey(m = state.month, y = state.year){ return `${y}-${String(m).padStart(2,"0")}`; }
 function daysInMonth(m = state.month, y = state.year){ return new Date(y,m,0).getDate(); }
 function dateOf(day, m = state.month, y = state.year){ return new Date(y, m-1, day); }
+
+// 📅 HELPER: MASK NHẬP NGÀY THÁNG dd/mm/yyyy (dữ liệu lưu nội bộ vẫn là ISO yyyy-mm-dd)
+function isoToDMY(iso){
+  if(!iso) return '';
+  const parts = String(iso).split('-');
+  if(parts.length !== 3) return '';
+  const [y, m, d] = parts;
+  if(!y || !m || !d) return '';
+  return `${d}/${m}/${y}`;
+}
+function dmyPartsToISO(dd, mm, yyyy){
+  return `${String(yyyy).padStart(4,'0')}-${String(mm).padStart(2,'0')}-${String(dd).padStart(2,'0')}`;
+}
+// Tự động chèn dấu "/" khi gõ liền dãy số (VD: 01082026 -> 01/08/2026)
+function maskDateInputValue(raw){
+  let digits = String(raw).replace(/\D/g, '').slice(0, 8);
+  if(digits.length <= 2) return digits;
+  if(digits.length <= 4) return digits.slice(0,2) + '/' + digits.slice(2);
+  return digits.slice(0,2) + '/' + digits.slice(2,4) + '/' + digits.slice(4);
+}
+// Xác thực + Auto-reset về ngày hợp lệ gần nhất (VD: 31/02/2026 -> 28/02/2026). Trả về null nếu sai cấu trúc hẳn.
+function resolveDateMaskCommit(raw, allowEmpty){
+  const trimmed = String(raw || '').trim();
+  if(trimmed === '') return allowEmpty ? { iso: '', display: '' } : null;
+
+  const m = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(!m) return null;
+
+  let dd = Number(m[1]), mm = Number(m[2]), yyyy = Number(m[3]);
+  if(mm < 1) mm = 1;
+  if(mm > 12) mm = 12;
+  if(yyyy < 1900) yyyy = 1900;
+  if(yyyy > 2100) yyyy = 2100;
+  const lastDay = new Date(yyyy, mm, 0).getDate();
+  if(dd < 1) dd = 1;
+  if(dd > lastDay) dd = lastDay;
+
+  return { iso: dmyPartsToISO(dd, mm, yyyy), display: `${String(dd).padStart(2,'0')}/${String(mm).padStart(2,'0')}/${yyyy}` };
+}
 
 function ensureMonthData(m = state.month, y = state.year){
   const k = monthKey(m, y);
@@ -574,19 +700,10 @@ function isEmpActiveOnDate(emp, curDate){
   return true;
 }
 
-function isBPOPassedProbation(emp, curDate){
-  if(emp.type !== "BPO") return true;
-  if(emp.earlyPass) return true;
-  if(!emp.onboarding) return false;
-  const onb = new Date(emp.onboarding);
-  const cur = new Date(curDate);
-  return Math.floor((cur - onb) / (1000 * 60 * 60 * 24)) >= 60;
-}
-
-function getBPOPerformancePct(emp, currentDate){
+// 🔹 TÍNH % RAMP-UP HIỆU SUẤT TRONG THỬ VIỆC (CẢ FTE & BPO THEO CÙNG KHUNG)
+function getEmpPerformancePct(emp, currentDate){
   if(!isEmpActiveOnDate(emp, currentDate)) return 0;
-  if(emp.type !== "BPO") return 1.0;
-  if(isBPOPassedProbation(emp, currentDate)) return 1.0;
+  if(isEmpPassedProbation(emp, currentDate)) return 1.0;
   if(!emp.onboarding) return 1.0;
   const onb = new Date(emp.onboarding);
   const cur = new Date(currentDate);
@@ -612,8 +729,14 @@ function setCellData(empId, day, status, colorBg, skipSave=false){
   if(!state.marks[k][empId]) state.marks[k][empId] = {};
 
   const current = getCellData(empId, day);
-  const newStatus = (status !== undefined) ? status : current.status;
+  let newStatus = (status !== undefined) ? status : current.status;
   const newBg = (colorBg !== undefined) ? colorBg : current.colorBg;
+
+  // Tự động chuyển ca S2 thành WFH nếu rơi vào Chủ Nhật
+  const curDate = dateOf(day);
+  if(curDate.getDay() === 0 && newStatus === "S2") {
+    newStatus = "WFH";
+  }
 
   if(!newStatus && !newBg) delete state.marks[k][empId][day];
   else state.marks[k][empId][day] = { status: newStatus, colorBg: newBg };
@@ -696,6 +819,7 @@ function renderTopbar(){
   document.getElementById("monthLabel").textContent = `Th ${state.month}/${state.year}`;
 }
 
+// 🎯 HÀM TÍNH TOÁN FORECAST WORKLOAD & PHÂN BỔ CHỦ NHẬT THEO CẢI TIẾN MỚI
 function calculateMonthlyForecast(){
   syncStateAndConfig();
   const n = daysInMonth(state.month, state.year);
@@ -734,7 +858,8 @@ function calculateMonthlyForecast(){
 
     let fteCapacity = 0, bpoCapacity = 0;
     let totalWorkingHC = 0;
-    
+    let availableHC = 0; // 🔹 HC khả dụng = FTE + BPO_pass + (BPO_thử việc × %hiệu suất)
+
     visibleEmps.forEach(e => {
       if(!isEmpActiveOnDate(e, curDate)) return;
       const cell = getCellData(e.id, d);
@@ -743,13 +868,25 @@ function calculateMonthlyForecast(){
 
       if(isWorking){
         totalWorkingHC++;
-        if(e.type === "FTE") fteCapacity += state.cfg.fteTarget;
-        else {
-          const rampPct = getBPOPerformancePct(e, curDate);
+        const rampPct = getEmpPerformancePct(e, curDate);
+        if(e.type === "FTE") {
+          fteCapacity += state.cfg.fteTarget * rampPct;
+          availableHC += 1;
+        } else {
           bpoCapacity += state.cfg.bpoTarget * rampPct;
+          availableHC += isEmpPassedProbation(e, curDate) ? 1 : rampPct;
         }
       }
     });
+
+    // CÂN ĐỐI WORKLOAD CHỦ NHẬT THEO LOGIC MỚI
+    if(isSun) {
+      // BPO trực CN làm tối đa supportWL trong hạn mức BPO target
+      const bpoSupportCapacity = Math.min(supportWL, bpoCapacity);
+      const remainingSupportWL = Math.max(0, supportWL - bpoSupportCapacity);
+      // FTE gánh toàn bộ Claim WL + phần Support WL chưa làm hết
+      const fteAssignedWL = claimWL + remainingSupportWL;
+    }
 
     const totalCapacity = fteCapacity + bpoCapacity;
     const overallCoverage = dayTotalWL > 0 ? (totalCapacity / dayTotalWL) * 100 : 100;
@@ -759,7 +896,7 @@ function calculateMonthlyForecast(){
     dailyForecast.push({
       day: d, weekday: VN_SHORT_WEEKDAY[wd], dayTotalWL, claimWL, supportWL,
       fteCapacity, bpoCapacity, totalCapacity,
-      netGapWL, hcGap, overallCoverage, totalWorkingHC,
+      netGapWL, hcGap, overallCoverage, totalWorkingHC, availableHC,
       spikeFactor: spike, isOverride: state.overrideWL[mkKey]?.[d] !== undefined
     });
   }
@@ -977,13 +1114,23 @@ function bindCrosshairEvents(){
 
 function handleCellClick(empId, day){
   const emp = state.employees.find(e => e.id === empId);
-  if(!isEmpActiveOnDate(emp, dateOf(day))) return;
+  const curD = dateOf(day);
+  if(!isEmpActiveOnDate(emp, curD)) return;
+
+  if(activeTool === "AL" || activeTool === "AL1/2" || activeTool === "SL") {
+    if(!isEmpPassedProbation(emp, curD)) {
+      alert(`⚠️ Nhân sự ${emp.name} đang trong thời gian thử việc, KHÔNG ĐƯỢC ĐĂNG KÝ nghỉ AL/SL!`);
+      return;
+    }
+  }
 
   if(activeColor !== null){
     if(activeColor === 'REMOVE') setCellData(empId, day, undefined, null);
     else setCellData(empId, day, undefined, activeColor);
   } else if(activeTool !== null) {
-    const statusVal = activeTool === '(Xóa)' ? null : activeTool;
+    let statusVal = activeTool === '(Xóa)' ? null : activeTool;
+    // Chuyển S2 thành WFH nếu vào Chủ Nhật
+    if(curD.getDay() === 0 && statusVal === "S2") statusVal = "WFH";
     setCellData(empId, day, statusVal, null);
   }
   renderAll();
@@ -995,6 +1142,7 @@ function renderForecast(){
 
   let head = `<tr><th class="rowlabel">Chỉ số / Ngày</th>`;
   let rHC = `<tr><td class="rowlabel" style="color:var(--teal)">Overall HC Đi Làm</td>`;
+  let rAvailHC = `<tr><td class="rowlabel" style="color:var(--violet)">🔷 HC Khả Dụng (quy đổi thử việc)</td>`;
   let rTotal = `<tr><td class="rowlabel">Workload Dự kiến (Daily WL)</td>`;
   let rOverride = `<tr><td class="rowlabel" style="color:var(--amber)">✏️ Override Workload (Thủ công)</td>`;
   let rClaim = `<tr><td class="rowlabel">Workload Claim (Khiếu nại)</td>`;
@@ -1014,6 +1162,7 @@ function renderForecast(){
 
     head += `<th class="${alertClass}">${dayStr}<br><span style="font-size:9px;">${f.weekday}</span>${spikeTag}</th>`;
     rHC += `<td class="mono ${alertClass}" style="font-weight:700">${f.totalWorkingHC}</td>`;
+    rAvailHC += `<td class="mono" style="color:var(--violet); font-weight:700">${f.availableHC.toFixed(1)}</td>`;
     rTotal += `<td class="mono">${f.dayTotalWL.toLocaleString()}</td>`;
     
     const overrideVal = state.overrideWL[monthKey()]?.[f.day] ?? '';
@@ -1028,7 +1177,7 @@ function renderForecast(){
     rOverallCov += `<td class="mono ${alertClass}" style="font-weight:700">${Math.round(f.overallCoverage)}%</td>`;
   });
 
-  head += `</tr>`; rHC += `</tr>`; rTotal += `</tr>`; rOverride += `</tr>`; rClaim += `</tr>`; rSupp += `</tr>`;
+  head += `</tr>`; rHC += `</tr>`; rAvailHC += `</tr>`; rTotal += `</tr>`; rOverride += `</tr>`; rClaim += `</tr>`; rSupp += `</tr>`;
   rCapTotal += `</tr>`; rGapWL += `</tr>`; rGapHC += `</tr>`; rOverallCov += `</tr>`;
 
   return `
@@ -1052,6 +1201,8 @@ function renderForecast(){
       <div class="kpi"><div class="lbl">TỔNG WORKLOAD DỰ KIẾN</div><div class="val" style="color:var(--amber)">${totalWL.toLocaleString()} case</div></div>
       <div class="kpi"><div class="lbl">WORKLOAD TRUNG BÌNH/NGÀY</div><div class="val" style="color:var(--teal)">${Math.round(totalWL/n).toLocaleString()} case</div></div>
       <div class="kpi"><div class="lbl">HẠN MỨC TRỰC CN</div><div class="val" style="color:var(--violet)">Max ${state.cfg.maxSundayHC} HC/CN</div></div>
+      <div class="kpi"><div class="lbl">TRẦN CN CHO BPO PASS</div><div class="val" style="color:var(--amber); font-size:14px">${state.cfg.sundayCapPctBPO}% (~${Math.floor(getSundaysInMonth(state.month, state.year) * (state.cfg.sundayCapPctBPO/100))} CN/tháng/BPO)</div></div>
+      <div class="kpi"><div class="lbl">TỈ LỆ FTE / BPO GIÁM SÁT</div><div class="val" style="color:var(--teal); font-size:14px">${state.cfg.fteRatioNum} : ${state.cfg.fteRatioDenom}</div></div>
       <div class="kpi"><div class="lbl">NGƯỠNG CẢNH BÁO SLA</div><div class="val" style="font-size:14px; color:var(--text-dim)">Alert Đỏ: &lt;${state.cfg.underThreshold}% | Vàng: &gt;${state.cfg.overThreshold}%</div></div>
     </div>
   </div>
@@ -1059,7 +1210,7 @@ function renderForecast(){
   <div class="panel">
     <h2>⚖ Cân đối Workload & Số HC Thực tế Đi làm (WFM Details) <button class="info-icon-btn" onclick="openTopicLogic('forecast_detail')" title="Xem công thức">i</button></h2>
     <div class="grid-wrap"><table class="wl-table"><thead>${head}</thead><tbody>
-      ${rHC}${rTotal}${rOverride}${rClaim}${rSupp}
+      ${rHC}${rAvailHC}${rTotal}${rOverride}${rClaim}${rSupp}
       ${rCapTotal}
       ${rGapWL}${rGapHC}${rOverallCov}
     </tbody></table></div>
@@ -1076,8 +1227,8 @@ function renderNhanSu(){
   const regionOptions = allRegions.map(r => `<option value="${r}">`).join("");
 
   const rows = visibleEmps.map(e=>{
-    const autoRampPct = Math.round(getBPOPerformancePct(e, dateOf(1)) * 100);
-    const isPassed = isBPOPassedProbation(e, dateOf(1));
+    const autoRampPct = Math.round(getEmpPerformancePct(e, dateOf(1)) * 100);
+    const isPassed = isEmpPassedProbation(e, dateOf(1));
 
     return `
     <tr data-emp="${e.id}">
@@ -1098,22 +1249,22 @@ function renderNhanSu(){
         </select>
       </td>
       <td><select data-f="type"><option ${e.type==="FTE"?"selected":""}>FTE</option><option ${e.type==="BPO"?"selected":""}>BPO</option></select></td>
-      <td><input type="date" data-f="onboarding" value="${e.onboarding||'2024-01-01'}"></td>
-      <td><input type="date" data-f="offboardDate" value="${e.offboardDate||''}" style="color:var(--coral)"></td>
-      <td style="text-align:center">${e.type==='BPO'?`<input type="checkbox" data-f="earlyPass" ${e.earlyPass?'checked':''}>`: '—'}</td>
-      <td style="text-align:center; font-weight:700" class="mono">${e.type==='BPO'?(isPassed?'100% (Passed)':autoRampPct+'%'):'100%'}</td>
+      <td><input type="text" inputmode="numeric" maxlength="10" class="date-mask" placeholder="dd/mm/yyyy" data-f="onboarding" value="${isoToDMY(e.onboarding||'2024-01-01')}"></td>
+      <td><input type="text" inputmode="numeric" maxlength="10" class="date-mask" placeholder="dd/mm/yyyy" data-f="offboardDate" value="${isoToDMY(e.offboardDate||'')}" style="color:var(--coral)"></td>
+      <td style="text-align:center"><input type="checkbox" data-f="earlyPass" ${e.earlyPass?'checked':''} title="Đánh dấu để bỏ qua thời gian thử việc"></td>
+      <td style="text-align:center; font-weight:700" class="mono">${isPassed?'100% (Passed)':autoRampPct+'%'}</td>
       <td><button class="icon-btn" data-del="${e.id}" title="Xóa nhân viên">✕</button></td>
     </tr>`;
   }).join("");
 
   return `<div class="panel">
-    <h2>Danh sách Nhân sự, Khu vực & Dynamic Team <button class="info-icon-btn" onclick="openTopicLogic('nhansu')" title="Xem hướng dẫn Offboard">i</button></h2>
+    <h2>Danh sách Nhân sự, Khu vực & Early Pass Thử Việc <button class="info-icon-btn" onclick="openTopicLogic('nhansu')" title="Xem hướng dẫn Offboard">i</button></h2>
     
     <datalist id="region-list">${regionOptions}</datalist>
     <datalist id="team-list">${teamOptions}</datalist>
 
     <div class="grid-wrap"><table class="emp-table">
-      <thead><tr><th>Họ tên</th><th>Mail</th><th>Khu vực</th><th>Team</th><th>Chức vụ</th><th>Loại</th><th>Onboarding</th><th>Offboard</th><th>Pass BPO</th><th>Hiệu suất</th><th></th></tr></thead>
+      <thead><tr><th>Họ tên</th><th>Mail</th><th>Khu vực</th><th>Team</th><th>Chức vụ</th><th>Loại</th><th>Onboarding</th><th>Offboard</th><th>Early Pass</th><th>Hiệu suất</th><th></th></tr></thead>
       <tbody>${rows}</tbody>
     </table></div>
     <br><button class="btn-primary" onclick="addEmp()">＋ Thêm Nhân viên</button>
@@ -1142,7 +1293,7 @@ function renderCauHinh(){
   const holDynRows = state.holidaysDynamic.map(h => `
     <tr data-hol-d="${h.id}">
       <td><input type="number" data-hd="year" value="${h.year||2026}" style="width:70px"></td>
-      <td><input type="date" data-hd="date" value="${h.date}"></td>
+      <td><input type="text" inputmode="numeric" maxlength="10" class="date-mask" placeholder="dd/mm/yyyy" data-hd="date" value="${isoToDMY(h.date)}"></td>
       <td><input data-hd="name" value="${h.name}" placeholder="Tên ngày lễ"></td>
       <td><button class="icon-btn" onclick="delHolDyn('${h.id}')">✕</button></td>
     </tr>
@@ -1152,14 +1303,24 @@ function renderCauHinh(){
   <div class="panel">
     <h2>Cấu hình Quy tắc Ca Trực & Hạn mức Cảnh báo <button class="info-icon-btn" onclick="openTopicLogic('cauhinh')" title="Xem giải thích">i</button></h2>
     <div style="display:flex;gap:20px;flex-wrap:wrap">
-      <label class="f">FTE & BPO Passed (Số ngày OFF/Tháng)
+      <label class="f">Nhân sự Đã Pass Thử Việc (Số ngày OFF/Tháng)
         <input type="number" min="0" id="cfg-offFTE" placeholder="Tự động (${totalSundays + 2} ngày)" value="${state.cfg.offFTE !== null && state.cfg.offFTE !== undefined ? state.cfg.offFTE : ''}">
       </label>
-      <label class="f">BPO Thử Việc (Số ngày OFF/Tháng)
+      <label class="f">Nhân sự Đang Thử Việc (Số ngày OFF/Tháng)
         <input type="number" min="0" id="cfg-offBPO" placeholder="Tự động (${totalSundays} ngày)" value="${state.cfg.offBPO !== null && state.cfg.offBPO !== undefined ? state.cfg.offBPO : ''}">
       </label>
-      <label class="f">Max Trực Chủ Nhật Toàn Hệ Thống (Mặc định: 4)
+      <label class="f">Max Trực Chủ Nhật Toàn Hệ Thống (Trần tổng HC/ca CN, dùng khi chưa đủ BPO)
         <input type="number" min="0" max="30" id="cfg-maxSun" value="${state.cfg.maxSundayHC}">
+      </label>
+      <label class="f">% Trần CN cho BPO Pass (Mặc định: 75%)
+        <input type="number" min="0" max="100" id="cfg-sundayCapBPO" value="${state.cfg.sundayCapPctBPO}">
+      </label>
+      <label class="f">Tỉ lệ FTE giám sát : BPO
+        <div style="display:flex; gap:4px; align-items:center;">
+          <input type="number" min="0" style="width:50px" id="cfg-ratioFTE" value="${state.cfg.fteRatioNum}">
+          <span style="color:var(--text-dim)">:</span>
+          <input type="number" min="1" style="width:50px" id="cfg-ratioBPO" value="${state.cfg.fteRatioDenom}">
+        </div>
       </label>
     </div>
   </div>
@@ -1178,7 +1339,7 @@ function renderCauHinh(){
   </div>
 
   <div class="panel">
-    <h2>➕ Tỉ lệ điều chỉnh bổ sung (Spike Days Adjustment)</h2>
+    <h2>➕ Tỉ lệ điều chỉnh bổ sung (Spike Days Adjustment) <button class="info-icon-btn" onclick="openTopicLogic('cauhinh')" title="Xem giải thích">i</button></h2>
     <div style="display:flex; gap:20px; flex-wrap:wrap;">
       <label class="f">Tỉ lệ điều chỉnh cho Ngày đôi <input type="number" step="0.05" id="cfg-doubleDay" value="${state.cfg.doubleDayAdj||1.20}"></label>
       <label class="f">Tỉ lệ điều chỉnh cho Ngày sale <input type="number" step="0.05" id="cfg-saleDay" value="${state.cfg.saleDayAdj||1.15}"></label>
@@ -1187,7 +1348,7 @@ function renderCauHinh(){
   </div>
 
   <div class="panel">
-    <h2>🎉 Quản lý Ngày Lễ / Tết (Holidays)</h2>
+    <h2>🎉 Quản lý Ngày Lễ / Tết (Holidays) <button class="info-icon-btn" onclick="openTopicLogic('cauhinh')" title="Xem giải thích">i</button></h2>
     <div style="display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start;">
       <div style="flex:1; min-width:300px;">
         <h3 style="font-size:13px; color:var(--teal); margin-top:0;">📅 Ngày Lễ Cố Định (MM-DD)</h3>
@@ -1310,19 +1471,19 @@ function clearMonthSchedule(){
   alert(`✅ Đã xóa sạch lịch trực Tháng ${state.month}/${state.year} về trống!`);
 }
 
-// 🎯 SMART AUTO-FILL VỚI THUẬT TOÁN DÀN TRẢI NGÀY OFF
+// 🎯 SMART AUTO-FILL VỚI THUẬT TOÁN DÀN TRẢI NGÀY OFF & ĐỔI MÃ WFH CHỦ NHẬT
 function autoFillSmart(){
   const n = daysInMonth(state.month, state.year);
   const { dailyForecast } = calculateMonthlyForecast();
   const visibleEmps = getVisibleEmployeesForCurrentMonth();
   const maxSunLimit = state.cfg.maxSundayHC;
 
-  // Reset ca OFF, S2, HOL cũ
+  // Reset ca OFF, S2, WFH, HOL cũ
   visibleEmps.forEach(e => {
     for(let d=1; d<=n; d++){
       if(!isEmpActiveOnDate(e, dateOf(d))) continue;
       let cell = getCellData(e.id, d);
-      if(cell.status === "OFF" || cell.status === "S2" || cell.status === "HOL") {
+      if(cell.status === "OFF" || cell.status === "S2" || cell.status === "WFH" || cell.status === "HOL") {
         setCellData(e.id, d, null, undefined, true);
       }
     }
@@ -1338,22 +1499,20 @@ function autoFillSmart(){
     }
   }
 
-  // 1. CHIA CA CHỦ NHẬT (Áp dụng chính xác maxSundayHC)
+  // 1. CHIA CA CHỦ NHẬT THEO 3 BƯỚC: (1) BPO Pass ưu tiên trong hạn mức tháng
+  //    (2) FTE giám sát theo tỉ lệ  (3) Random rotation phần dư cho FTE còn lại
   let currentMonthSunCount = {};
   visibleEmps.forEach(e => currentMonthSunCount[e.id] = 0);
 
   let sundays = [];
   for(let d=1; d<=n; d++) if(dateOf(d).getDay() === 0) sundays.push(d);
 
-  sundays.forEach(d => {
-    let eligibleEmps = visibleEmps.filter(e => {
-      if(!isEmpActiveOnDate(e, dateOf(d))) return false;
-      if(e.role === "Leader" || e.role === "SubLead") return false; 
-      if(e.type === "BPO" && !isBPOPassedProbation(e, dateOf(d))) return false; 
-      return true;
-    });
+  const bpoMonthlyCap = Math.floor(sundays.length * (Number(state.cfg.sundayCapPctBPO) / 100 || 0));
+  const ratioFTE = Number(state.cfg.fteRatioNum) || 0;
+  const ratioBPO = Number(state.cfg.fteRatioDenom) || 1;
 
-    eligibleEmps.sort((a, b) => {
+  const sortByFairness = (list, d) => {
+    list.sort((a, b) => {
       let prevA = countSundayDutyInMonth(a.id, state.month-1, state.year) + countSundayDutyInMonth(a.id, state.month-2, state.year);
       let prevB = countSundayDutyInMonth(b.id, state.month-1, state.year) + countSundayDutyInMonth(b.id, state.month-2, state.year);
       let totalA = prevA + currentMonthSunCount[a.id];
@@ -1361,30 +1520,101 @@ function autoFillSmart(){
       if (totalA !== totalB) return totalA - totalB;
       return Math.random() - 0.5;
     });
+    return list;
+  };
 
-    let assigned = 0;
-    eligibleEmps.forEach(e => {
-      let cell = getCellData(e.id, d);
-      if(cell.status) return;
+  sundays.forEach(d => {
+    const curDate = dateOf(d);
+    let assignedIds = [];
 
-      if(assigned < maxSunLimit) {
-        setCellData(e.id, d, "S2", undefined, true);
-        currentMonthSunCount[e.id]++;
-        assigned++;
-      } else {
-        setCellData(e.id, d, "OFF", undefined, true);
-      }
+    // BƯỚC 1: Nòng cốt BPO Pass, xoay vòng công bằng, chạm trần % CN/tháng thì dừng
+    let eligibleBPO = sortByFairness(visibleEmps.filter(e =>
+      e.type === "BPO" && isEmpActiveOnDate(e, curDate) && isEmpPassedProbation(e, curDate) && !getCellData(e.id, d).status
+    ), d);
+
+    eligibleBPO.forEach(e => {
+      if(bpoMonthlyCap > 0 && currentMonthSunCount[e.id] >= bpoMonthlyCap) return;
+      if(maxSunLimit > 0 && assignedIds.length >= maxSunLimit) return;
+      setCellData(e.id, d, "WFH", undefined, true);
+      currentMonthSunCount[e.id]++;
+      assignedIds.push(e.id);
     });
+    const bpoAssignedToday = assignedIds.length;
 
-    visibleEmps.forEach(e => {
-      if(dateOf(d).getDay() === 0 && isEmpActiveOnDate(e, dateOf(d))) {
-        let cell = getCellData(e.id, d);
-        if(!cell.status) setCellData(e.id, d, "OFF", undefined, true);
+    // BƯỚC 2: Thêm FTE giám sát theo tỉ lệ FTE : BPO (VD cứ 5 BPO có 1 FTE), luôn tôn trọng Max Trực CN
+    let neededFTE = (bpoAssignedToday > 0 && ratioFTE > 0) ? Math.ceil(bpoAssignedToday / ratioBPO) * ratioFTE : 0;
+    if(maxSunLimit > 0) neededFTE = Math.min(neededFTE, Math.max(0, maxSunLimit - assignedIds.length));
+
+    let eligibleFTE = sortByFairness(visibleEmps.filter(e =>
+      e.type === "FTE" && e.role !== "Leader" && e.role !== "SubLead" &&
+      isEmpActiveOnDate(e, curDate) && isEmpPassedProbation(e, curDate) && !getCellData(e.id, d).status
+    ), d);
+
+    let fteAssignedToday = 0;
+    for(let i = 0; i < eligibleFTE.length && fteAssignedToday < neededFTE; i++){
+      const e = eligibleFTE[i];
+      setCellData(e.id, d, "WFH", undefined, true);
+      currentMonthSunCount[e.id]++;
+      assignedIds.push(e.id);
+      fteAssignedToday++;
+    }
+
+    // BƯỚC 3: Thiếu ca CN (chưa đạt Max Trực CN) -> random rotation dàn đều cho FTE còn lại
+    const remainingSlots = Math.max(0, maxSunLimit - assignedIds.length);
+    if(remainingSlots > 0){
+      const remainingFTE = eligibleFTE.filter(e => !assignedIds.includes(e.id));
+      for(let i = 0; i < remainingFTE.length && i < remainingSlots; i++){
+        const e = remainingFTE[i];
+        setCellData(e.id, d, "WFH", undefined, true);
+        currentMonthSunCount[e.id]++;
+        assignedIds.push(e.id);
       }
+    }
+
+    // Phần chưa được gán ca (kể cả Leader/SubLead, BPO/FTE thử việc) -> nghỉ CN bình thường
+    visibleEmps.forEach(e => {
+      if(!isEmpActiveOnDate(e, curDate)) return;
+      let cell = getCellData(e.id, d);
+      if(!cell.status) setCellData(e.id, d, "OFF", undefined, true);
     });
   });
 
-  // 2. CHIA CA OFF DÀN TRẢI ĐỀU TỪ THỨ 2 ĐẾN THỨ 7 (DAILY BALANCING SPREAD)
+  // 1b. GÁN NGHỈ BÙ CỐ ĐỊNH TRONG TUẦN CHO FTE TRỰC CHỦ NHẬT (Hệ thống tự chọn & dàn đều T2-T7)
+  let weekdayUsage = { 1:0, 2:0, 3:0, 4:0, 5:0, 6:0 };
+  let fixedOffWeekdayMap = {};
+
+  visibleEmps
+    .filter(e => e.type === "FTE" && currentMonthSunCount[e.id] > 0)
+    .forEach(e => {
+      const bestWd = Object.keys(weekdayUsage).map(Number).reduce((a, b) => weekdayUsage[a] <= weekdayUsage[b] ? a : b);
+      fixedOffWeekdayMap[e.id] = bestWd;
+      weekdayUsage[bestWd]++;
+    });
+
+  visibleEmps.forEach(e => {
+    const fixedWd = fixedOffWeekdayMap[e.id];
+    if(fixedWd === undefined) return;
+
+    for(let d = 1; d <= n; d++){
+      const curDate = dateOf(d);
+      if(curDate.getDay() !== 0) continue;
+      if(!isEmpActiveOnDate(e, curDate)) continue;
+
+      const sunCell = getCellData(e.id, d);
+      const workedThisSunday = (sunCell.status === "S2" || sunCell.status === "OT" || sunCell.status === "WFH");
+      if(!workedThisSunday) continue;
+
+      // Tuần tính theo T2->CN: CN là ngày d, nên T2..T7 cùng tuần là d-6..d-1
+      const compDay = d - 7 + fixedWd;
+      if(compDay < 1 || compDay > n) continue;
+      if(!isEmpActiveOnDate(e, dateOf(compDay))) continue;
+
+      const compCell = getCellData(e.id, compDay);
+      if(!compCell.status) setCellData(e.id, compDay, "OFF", undefined, true);
+    }
+  });
+
+  // 2. CHIA CA OFF DÀN TRẢI ĐỀU CHO PHẦN OFF CÒN THIẾU (SAU KHI ĐÃ CÓ NGHỈ CN + NGHỈ BÙ CỐ ĐỊNH)
   let dailyOffCount = {}; 
   for(let d=1; d<=n; d++) dailyOffCount[d] = 0;
 
@@ -1399,7 +1629,6 @@ function autoFillSmart(){
   });
 
   visibleEmps.forEach(e => {
-    // Gọi hàm tính số ngày OFF chuẩn (có đè thủ công / placeholder tự động)
     let baseTargetOff = getEffectiveOffDays(e, state.month, state.year);
     
     let activeDaysInMonth = 0;
@@ -1473,7 +1702,7 @@ function renderAllUIOnly(){
 
   document.querySelectorAll('input[id^="cfg-"]').forEach(i => i.onchange = (e) => { 
     const key = i.id.replace("cfg-","");
-    const mapKey = { lastWL:'lastMonthWL', growth:'growthRate', fteT:'fteTarget', bpoT:'bpoTarget', maxSun:'maxSundayHC', claimPct:'claimPct', sunWL:'sundayWL', underTh:'underThreshold', overTh:'overThreshold', doubleDay:'doubleDayAdj', saleDay:'saleDayAdj', payDay:'payDayAdj' };
+    const mapKey = { lastWL:'lastMonthWL', growth:'growthRate', fteT:'fteTarget', bpoT:'bpoTarget', maxSun:'maxSundayHC', sundayCapBPO:'sundayCapPctBPO', ratioFTE:'fteRatioNum', ratioBPO:'fteRatioDenom', claimPct:'claimPct', sunWL:'sundayWL', underTh:'underThreshold', overTh:'overThreshold', doubleDay:'doubleDayAdj', saleDay:'saleDayAdj', payDay:'payDayAdj' };
     
     if(key === 'offFTE' || key === 'offBPO') {
       const rawVal = e.target.value.trim();
@@ -1493,9 +1722,28 @@ function renderAllUIOnly(){
     renderAll();
   });
 
+  // 📅 AUTO-MASKING dd/mm/yyyy: tự chèn "/" khi gõ liền dãy số (không render lại để không mất focus)
+  document.querySelectorAll('.date-mask').forEach(i => {
+    i.oninput = (e) => { e.target.value = maskDateInputValue(e.target.value); };
+  });
+
   document.querySelectorAll('tr[data-emp] [data-f]').forEach(i => i.onchange = (e) => { 
       const emp = state.employees.find(em => em.id === i.closest('tr').dataset.emp);
       const field = i.dataset.f;
+
+      if(i.classList.contains('date-mask')){
+        const result = resolveDateMaskCommit(e.target.value, true);
+        if(result === null){
+          e.target.value = isoToDMY(emp[field]); // sai cấu trúc -> reset về giá trị hợp lệ gần nhất đang lưu
+          return;
+        }
+        e.target.value = result.display; // ngày không tồn tại (VD 31/02) -> đã tự clamp về ngày hợp lệ gần nhất
+        emp[field] = result.iso;
+        saveLocalState();
+        renderAll();
+        return;
+      }
+
       let val = (i.type === 'checkbox') ? i.checked : e.target.value;
       emp[field] = val;
       saveLocalState();
@@ -1511,11 +1759,23 @@ function renderAllUIOnly(){
   document.querySelectorAll('tr[data-hol-d] [data-hd]').forEach(i => i.onchange = (e) => {
       const hId = i.closest('tr').dataset.holD;
       const item = state.holidaysDynamic.find(h => h.id === hId);
-      if(item) { 
-        let field = i.dataset.hd;
-        item[field] = field === 'year' ? Number(e.target.value) : e.target.value; 
-        saveLocalState(); 
+      if(!item) return;
+      const field = i.dataset.hd;
+
+      if(i.classList.contains('date-mask')){
+        const result = resolveDateMaskCommit(e.target.value, false);
+        if(result === null){
+          e.target.value = isoToDMY(item.date); // sai cấu trúc -> reset về giá trị hợp lệ gần nhất đang lưu
+          return;
+        }
+        e.target.value = result.display; // ngày không tồn tại -> đã tự clamp về ngày hợp lệ gần nhất
+        item.date = result.iso;
+        saveLocalState();
+        return;
       }
+
+      item[field] = field === 'year' ? Number(e.target.value) : e.target.value; 
+      saveLocalState(); 
   });
 
   document.querySelectorAll('[data-del]').forEach(b => b.onclick = (e) => {
