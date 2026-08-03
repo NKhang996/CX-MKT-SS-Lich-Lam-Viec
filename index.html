@@ -741,6 +741,10 @@ function getVisibleEmployeesForCurrentMonth(){
     offb.setHours(0,0,0,0);
     const hideFromMonth = new Date(offb.getFullYear(), offb.getMonth() + 1, 1);
     return monthStart < hideFromMonth;
+  }).sort((a, b) => {
+    const teamCmp = (a.team||"").localeCompare(b.team||"", 'vi');
+    if(teamCmp !== 0) return teamCmp;
+    return (a.name||"").localeCompare(b.name||"", 'vi');
   });
 }
 
