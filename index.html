@@ -308,7 +308,8 @@ const STATUS_DICT = {
   "AL":    { val: 0,   color:"var(--amber)",      bg:"var(--amber-dim)" },
   "AL1/2": { val: 0.5, color:"var(--amber)",      bg:"var(--amber-dim)" },
   "SL":    { val: 0,   color:"var(--coral)",      bg:"var(--coral-dim)" },
-  "HOL":   { val: 0,   color:"#f472b6",           bg:"#4a1e35" }
+  "HOL":   { val: 0,   color:"#f472b6",           bg:"#4a1e35" },
+  "UPL":   { val: 0,   color:"#94a3b8",           bg:"#334155" }
 };
 
 const CUSTOM_COLORS = [
@@ -350,7 +351,7 @@ const DEFAULT_CONFIG = {
   growthRate: 10,
   fteTarget: 750,
   bpoTarget: 600,
-  claimPct: 20,
+  fteWorkloadPct: 30,   // % Workload/ngày do FTE đảm nhận theo target (phần còn lại là BPO); FTE còn gánh thêm phần BPO không kham nổi
   sundayWL: 0,
   underThreshold: 85,
   overThreshold: 125,
@@ -437,7 +438,7 @@ function syncStateAndConfig(){
   state.cfg.growthRate = Number(state.cfg.growthRate) ?? 10;
   state.cfg.fteTarget = Number(state.cfg.fteTarget) || 750;
   state.cfg.bpoTarget = Number(state.cfg.bpoTarget) || 600;
-  state.cfg.claimPct = Number(state.cfg.claimPct) ?? 20;
+  state.cfg.fteWorkloadPct = Math.min(100, Math.max(0, Number(state.cfg.fteWorkloadPct) ?? 30));
   state.cfg.sundayWL = Number(state.cfg.sundayWL) || 0;
   state.cfg.underThreshold = Number(state.cfg.underThreshold) || 85;
   state.cfg.overThreshold = Number(state.cfg.overThreshold) || 125;
@@ -496,14 +497,14 @@ function openTopicLogic(topicKey){
       <p>• <b>Chọn Ca (S2, OT, OFF, WFH, AL, HOL...):</b> Nhấp chọn nút tên ca, sau đó nhấp vào ô ngày của nhân viên tương ứng.</p>
       <p>• <b>Cọ tô màu:</b> Chọn 1 màu rồi nhấp vào ô để tô nổi bật (không đổi ca trực), chọn "Xóa màu" để gỡ.</p>
       <p>• <b>Lịch Chủ Nhật:</b> Hệ thống tự đổi mã ca đi làm CN thành <b>WFH</b>.</p>
-      <p>• <b>Quy tắc AL/SL:</b> Nhân viên đang thử việc (chưa pass probation) <b>KHÔNG</b> được đăng ký ca AL/SL.</p>
+      <p>• <b>Quy tắc AL/SL/UPL:</b> Nhân viên đang thử việc (chưa Pass probation) <b>KHÔNG</b> được đăng ký AL/SL — dùng ca <b>UPL</b> (nghỉ không lương) thay thế. UPL không giới hạn đối tượng, có thể dùng cho bất kỳ nhân sự nào (kể cả đã Pass). Riêng <b>SL</b>: nhân sự loại BPO <b>không bao giờ</b> được đăng ký (dù đã Pass hay chưa).</p>
       <p>• <b>Đánh dấu Ngày Đặc Biệt (Spike):</b> Nhấp vào ô tiêu đề (thứ/ngày) trên đầu bảng lịch để xoay vòng: Bình thường → Ngày Sale → Ngày Đôi → Ngày Lương → Bình thường. Ngày đặc biệt sẽ nhân thêm hệ số vào Workload dự báo (xem tab Cấu hình).</p>
       <p>• <b>Auto-Fill Dàn Trải:</b> Tự động xếp Ngày Lễ, Ca trực Chủ Nhật (3 bước BPO/FTE), nghỉ bù cố định & OFF dàn trải cho cả tháng. Xem chi tiết công thức ở phần Cấu hình.</p>
     </div>`,
     'nhansu': `<div class="logic-section">
       <h3>🔑 Logic Thử Việc & Ramp-up (FTE & BPO)</h3>
       <p>• <b>Thời gian Thử việc:</b> Mặc định 2 tháng (60 ngày) tính từ ngày Onboarding.</p>
-      <p>• <b>Phân bổ Năng suất (Ramp-up %):</b> Tuần 1: 20%, Tuần 2: 50%, Tuần 3: 75%, Tuần 4 trở đi (hoặc đã Pass): 100%.</p>
+      <p>• <b>Phân bổ Năng suất (Ramp-up %):</b> Tuần 1 (ngày 0-6 kể từ Onboarding): 0%, Tuần 2: 20%, Tuần 3: 50%, Tuần 4: 75%, Tuần 5 trở đi (hoặc đã Pass): 100%. Mốc tăng tính theo đúng số ngày kể từ Onboarding (không quy về đầu tuần lịch T2-CN).</p>
       <p>• <b>Pass sớm (Early Pass):</b> Tích checkbox để kích hoạt ngay 100% năng suất & mở quyền đăng ký AL/SL, bỏ qua mốc 60 ngày.</p>
       <p>• <b>Cột "Hiệu suất":</b> Hiển thị % ramp-up tại ngày 01 của tháng đang xem — đây cũng là % dùng trong công thức <b>HC khả dụng</b> (xem tab Cấu hình) khi nhân sự BPO còn đang thử việc.</p>
       <p>• <b>Chức vụ (Role) vs Loại (Type):</b> "Chức vụ" (Leader/SubLead/FTE/BPO) dùng để loại Leader/SubLead khỏi vòng xoay trực Chủ Nhật; "Loại" (FTE/BPO) quyết định Target năng suất & luật ưu tiên trực CN (BPO Pass được ưu tiên xếp trước).</p>
@@ -523,7 +524,7 @@ function openTopicLogic(topicKey){
       </ul>
       <p>• ⚠️ <b>Lưu ý quan trọng:</b> "Số Chủ Nhật" ở đây chỉ là <b>con số tham chiếu</b> để tính TỔNG số ngày OFF/tháng, KHÔNG bắt buộc nhân sự phải nghỉ đúng vào Chủ Nhật. Hệ thống tự dàn trải các ngày OFF còn thiếu (sau khi đã trừ CN không trực + nghỉ bù cố định) vào bất kỳ ngày nào trong tuần (T2-T7) sao cho cân bằng workload nhất.</p>
       <p>• <b>2 ô "Số ngày OFF/Tháng":</b> Để trống = dùng công thức tự động ở trên. Nhập số cụ thể = ghi đè thủ công cho toàn bộ nhân sự nhóm đó trong tháng.</p>
-      <p>• <b>Phân bổ Workload Chủ Nhật:</b> BPO trực CN gánh tối đa WL Hỗ trợ theo Target BPO, toàn bộ WL Khiếu nại + phần WL Hỗ trợ dư sẽ do FTE đảm nhận.</p>
+      <p>• <b>Phân bổ Workload theo Target FTE/BPO:</b> BPO gánh tối đa phần Target BPO trong đúng năng lực thực tế của mình; phần Target BPO không kham nổi sẽ tự động chuyển qua cho FTE gánh thêm. Áp dụng mọi ngày, kể cả Chủ Nhật.</p>
     </div>
     <div class="logic-section">
       <h3>📅 Logic Phân Ca Chủ Nhật (3 Bước) & Trọng Số HC BPO Thử Việc</h3>
@@ -555,7 +556,7 @@ function openTopicLogic(topicKey){
       <h3>⚙️ Tham số Đầu vào Dự báo Workload</h3>
       <p>• <b>Workload Tháng Trước / Tỷ lệ Tăng trưởng (%):</b> Tổng Workload Dự kiến Tháng này = Workload Tháng Trước × (1 + Tăng trưởng%).</p>
       <p>• <b>Target FTE / Target BPO (case/ngày):</b> Năng suất chuẩn 1 người xử lý được/ngày khi đã Pass thử việc & ramp 100%. Dùng để tính Tổng Năng Lực Team.</p>
-      <p>• <b>% Ticket Khiếu nại:</b> % trong Tổng WL/ngày được xem là Workload Claim (khiếu nại); phần còn lại là Workload Support (hỗ trợ). BPO trực CN chỉ gánh Support, FTE gánh Claim + phần Support dư.</p>
+      <p>• <b>Tỉ lệ Target Workload FTE/BPO (%):</b> % trong Tổng WL/ngày được xem là Target của FTE; phần còn lại (100% − %FTE) là Target của BPO. Áp dụng cho MỌI ngày trong tháng (không riêng CN). Nếu BPO không xử lý hết phần Target của mình (do năng lực thực tế thấp hơn, thường gặp đầu ca khi WL dồn cao), phần dư sẽ tự động cộng thêm vào WL mà FTE phải nhận.</p>
       <p>• <b>Ghi đè Workload CN:</b> Nếu &gt; 0, mọi ngày Chủ Nhật sẽ dùng thẳng số này thay vì tính theo Trọng Số Ngày × Spike.</p>
       <p>• <b>Ngưỡng Thiếu (Alert Đỏ) / Ngưỡng Thừa (Alert Vàng):</b> Ngưỡng % SLA Coverage để tô màu cảnh báo trong bảng Dự báo — dưới ngưỡng Thiếu = đỏ (không đủ người), trên ngưỡng Thừa = vàng (dư người).</p>
     </div>`,
@@ -574,7 +575,10 @@ function openTopicLogic(topicKey){
       <p>• <b>🔷 HC Khả Dụng (quy đổi thử việc):</b> = FTE (làm việc, tính đủ 1) + BPO đã Pass (tính đủ 1) + BPO Thử việc × %Ramp-up hiện tại. Phản ánh đúng năng lực thực tế hơn "Overall HC" khi team còn nhiều BPO mới.</p>
       <p>• <b>Workload Dự kiến (Daily WL):</b> Theo công thức Trọng Số Ngày (xem tab Cấu hình) hoặc số Override thủ công.</p>
       <p>• <b>Override Workload (Thủ công):</b> Nhập số tại ô này để ghi đè trực tiếp Workload dự báo của đúng ngày đó, ưu tiên cao nhất so với công thức tự động.</p>
-      <p>• <b>Workload Claim / Support:</b> Claim = Daily WL × %Ticket Khiếu nại; Support = Daily WL − Claim.</p>
+      <p>• <b>Workload Target FTE / BPO:</b> Target FTE = Daily WL × %Target FTE (cấu hình); Target BPO = Daily WL − Target FTE.</p>
+      <p>• <b>⚠️ FTE Hỗ Trợ Thêm:</b> = max(0, Target BPO − Năng lực BPO thực tế trong ngày). Phần WL này BPO không kham nổi nên tự động dồn qua cho FTE xử lý. Nếu ngày đó không có BPO nào đi làm (VD: CN không xếp BPO trực), Năng lực BPO = 0 → toàn bộ Target BPO dồn hết qua FTE.</p>
+      <p>• <b>⚠️ % Daily WL do FTE gánh thay BPO:</b> = FTE Hỗ Trợ Thêm ÷ Daily WL × 100%. Cho biết tỉ trọng khối lượng công việc trong ngày mà FTE phải "gánh hộ" phần BPO không xử lý kịp — càng cao nghĩa là BPO càng quá tải/thiếu người.</p>
+      <p>• <b>Tổng WL FTE Thực Nhận:</b> = Target FTE + FTE Hỗ Trợ Thêm. Đây là tổng khối lượng thực tế FTE phải gánh trong ngày.</p>
       <p>• <b>Tổng Năng Lực Team (Total Cap):</b> = Σ(Target FTE × %Ramp-up mỗi FTE đang làm) + Σ(Target BPO × %Ramp-up mỗi BPO đang làm).</p>
       <p>• <b>Dư/Thiếu WL (Net Case Gap):</b> = Total Cap − Daily WL. Dương = dư năng lực, Âm = thiếu năng lực.</p>
       <p>• <b>Thừa/Thiếu HC Quy Đổi:</b> = Net Case Gap ÷ Target FTE — quy đổi phần dư/thiếu case ra số đầu người FTE tương đương.</p>
@@ -853,8 +857,9 @@ function calculateMonthlyForecast(){
       dayTotalWL = Math.round((totalWL / (totalWeight || 1)) * dayWeight);
     }
 
-    const claimWL = Math.round(dayTotalWL * (state.cfg.claimPct / 100));
-    const supportWL = dayTotalWL - claimWL;
+    // 🔹 Chia Workload/ngày theo tỉ lệ Target FTE/BPO (cấu hình được, mặc định 30/70) — áp dụng mọi ngày, không riêng CN
+    const fteTargetWL = Math.round(dayTotalWL * (state.cfg.fteWorkloadPct / 100));
+    const bpoTargetWL = dayTotalWL - fteTargetWL;
 
     let fteCapacity = 0, bpoCapacity = 0;
     let totalWorkingHC = 0;
@@ -879,14 +884,12 @@ function calculateMonthlyForecast(){
       }
     });
 
-    // CÂN ĐỐI WORKLOAD CHỦ NHẬT THEO LOGIC MỚI
-    if(isSun) {
-      // BPO trực CN làm tối đa supportWL trong hạn mức BPO target
-      const bpoSupportCapacity = Math.min(supportWL, bpoCapacity);
-      const remainingSupportWL = Math.max(0, supportWL - bpoSupportCapacity);
-      // FTE gánh toàn bộ Claim WL + phần Support WL chưa làm hết
-      const fteAssignedWL = claimWL + remainingSupportWL;
-    }
+    // 🔹 CÂN ĐỐI WORKLOAD THEO TARGET FTE/BPO — áp dụng MỌI NGÀY (không riêng CN)
+    // BPO xử lý tối đa phần Target BPO trong giới hạn năng lực thực của chính họ.
+    // Phần BPO không kham nổi (thường do đầu ca WL dồn cao) sẽ do FTE hỗ trợ thêm.
+    const bpoHandledWL = Math.min(bpoTargetWL, bpoCapacity);
+    const fteSupportWL = Math.max(0, bpoTargetWL - bpoCapacity);
+    const fteAssignedWL = fteTargetWL + fteSupportWL;
 
     const totalCapacity = fteCapacity + bpoCapacity;
     const overallCoverage = dayTotalWL > 0 ? (totalCapacity / dayTotalWL) * 100 : 100;
@@ -894,7 +897,8 @@ function calculateMonthlyForecast(){
     const hcGap = state.cfg.fteTarget > 0 ? (netGapWL / state.cfg.fteTarget).toFixed(1) : 0;
 
     dailyForecast.push({
-      day: d, weekday: VN_SHORT_WEEKDAY[wd], dayTotalWL, claimWL, supportWL,
+      day: d, weekday: VN_SHORT_WEEKDAY[wd], dayTotalWL,
+      fteTargetWL, bpoTargetWL, bpoHandledWL, fteSupportWL, fteAssignedWL,
       fteCapacity, bpoCapacity, totalCapacity,
       netGapWL, hcGap, overallCoverage, totalWorkingHC, availableHC,
       spikeFactor: spike, isOverride: state.overrideWL[mkKey]?.[d] !== undefined
@@ -921,7 +925,7 @@ function renderLich(){
   mList.forEach(item => {
     head1 += `<th style="text-align:center; color:var(--violet); font-size:10px;" title="Tháng ${item.m}/${item.y}">${item.label}</th>`;
   });
-  head1 += `<th>AL/SL</th><th>OFF DAY</th><th>CN THÁNG NÀY</th><th>WFH</th><th>OFF T7</th>`;
+  head1 += `<th>AL</th><th>SL</th><th>UPL</th><th>OFF DAY</th><th>CN THÁNG NÀY</th><th>WFH</th><th>OFF T7</th>`;
   
   for(let d=1; d<=n; d++){
     const wd = dateOf(d).getDay();
@@ -947,9 +951,14 @@ function renderLich(){
               </th>`;
   }
 
+  const toolTitles = {
+    SL: "Chỉ áp dụng cho FTE đã Pass thử việc — BPO không được đăng ký SL",
+    UPL: "Nghỉ không lương — không giới hạn đối tượng",
+    AL: "Chỉ áp dụng cho nhân sự đã Pass thử việc"
+  };
   const tools = Object.keys(STATUS_DICT).map(k => {
     const isActive = (activeTool === k && activeColor === null);
-    return `<button class="tool-btn ${isActive ? 'active' : ''}" onclick="activeTool='${k}';activeColor=null;renderAll()">${k}</button>`;
+    return `<button class="tool-btn ${isActive ? 'active' : ''}" title="${toolTitles[k]||''}" onclick="activeTool='${k}';activeColor=null;renderAll()">${k}</button>`;
   }).join("");
 
   const palette = CUSTOM_COLORS.map(c => {
@@ -961,7 +970,7 @@ function renderLich(){
   let dailySundayFTE = Array(n + 1).fill(0);
 
   const rows = visibleEmps.map(e=>{
-    let counts = { AL_SL:0, OFF:0, CN_Working:0, WFH:0, OFF_T7:0 };
+    let counts = { AL:0, SL:0, UPL:0, OFF:0, CN_Working:0, WFH:0, OFF_T7:0 };
     let dayCells = "";
     let consecutiveOff = 0; 
     let has3ConsecutiveOff = false;
@@ -997,7 +1006,9 @@ function renderLich(){
         }
       }
 
-      if(mk === "AL" || mk === "AL1/2" || mk === "SL") counts.AL_SL += (mk==="AL"||mk==="SL"?1:0.5);
+      if(mk === "AL" || mk === "AL1/2") counts.AL += (mk==="AL"?1:0.5);
+      if(mk === "SL") counts.SL += 1;
+      if(mk === "UPL") counts.UPL += 1;
       if(mk === "OFF" || mk === "OFF/2") {
         counts.OFF += (mk==="OFF"?1:0.5);
         if(wd===6) counts.OFF_T7++;
@@ -1029,7 +1040,9 @@ function renderLich(){
                 <td class="sticky-col col-team" style="${dynamicTeamStyle} font-weight:600">${e.team}</td>
                 <td style="text-align:center"><span class="tag ${tagClass}">${e.role}</span></td>
                 ${sundayMultiMonthCells}
-                <td style="text-align:center; color:var(--amber)" class="mono">${counts.AL_SL}</td>
+                <td style="text-align:center; color:var(--amber)" class="mono">${counts.AL}</td>
+                <td style="text-align:center; color:var(--coral)" class="mono">${counts.SL}</td>
+                <td style="text-align:center; color:var(--text-dim)" class="mono">${counts.UPL}</td>
                 <td style="text-align:center" class="mono">${counts.OFF}</td>
                 <td style="text-align:center; color:var(--teal); font-weight:700" class="mono">${counts.CN_Working}</td>
                 <td style="text-align:center" class="mono">${counts.WFH}</td>
@@ -1117,9 +1130,14 @@ function handleCellClick(empId, day){
   const curD = dateOf(day);
   if(!isEmpActiveOnDate(emp, curD)) return;
 
+  if(activeTool === "SL" && emp.type === "BPO") {
+    alert(`⚠️ Nhân sự ${emp.name} là BPO — KHÔNG ĐƯỢC đăng ký nghỉ SL (nghỉ bệnh). BPO chỉ có thể dùng AL/AL1/2 (nếu đã Pass) hoặc UPL (nếu đang thử việc).`);
+    return;
+  }
+
   if(activeTool === "AL" || activeTool === "AL1/2" || activeTool === "SL") {
     if(!isEmpPassedProbation(emp, curD)) {
-      alert(`⚠️ Nhân sự ${emp.name} đang trong thời gian thử việc, KHÔNG ĐƯỢC ĐĂNG KÝ nghỉ AL/SL!`);
+      alert(`⚠️ Nhân sự ${emp.name} đang trong thời gian thử việc, KHÔNG ĐƯỢC ĐĂNG KÝ nghỉ AL/SL! Dùng ca UPL (nghỉ không lương) thay thế.`);
       return;
     }
   }
@@ -1145,8 +1163,11 @@ function renderForecast(){
   let rAvailHC = `<tr><td class="rowlabel" style="color:var(--violet)">🔷 HC Khả Dụng (quy đổi thử việc)</td>`;
   let rTotal = `<tr><td class="rowlabel">Workload Dự kiến (Daily WL)</td>`;
   let rOverride = `<tr><td class="rowlabel" style="color:var(--amber)">✏️ Override Workload (Thủ công)</td>`;
-  let rClaim = `<tr><td class="rowlabel">Workload Claim (Khiếu nại)</td>`;
-  let rSupp = `<tr><td class="rowlabel">Workload Support (Hỗ trợ)</td>`;
+  let rFteTargetWL = `<tr><td class="rowlabel">Workload Target FTE (${state.cfg.fteWorkloadPct}%)</td>`;
+  let rBpoTargetWL = `<tr><td class="rowlabel">Workload Target BPO (${100-state.cfg.fteWorkloadPct}%)</td>`;
+  let rFteSupport = `<tr><td class="rowlabel" style="color:var(--coral)">⚠️ FTE Hỗ Trợ Thêm (BPO quá tải)</td>`;
+  let rFteSupportPct = `<tr><td class="rowlabel" style="color:var(--coral)">⚠️ % Daily WL do FTE gánh thay BPO</td>`;
+  let rFteAssigned = `<tr><td class="rowlabel" style="font-weight:700">Tổng WL FTE Thực Nhận</td>`;
   let rCapTotal = `<tr><td class="rowlabel" style="font-weight:700">Tổng Năng Lực Team (Total Cap)</td>`;
   let rGapWL = `<tr><td class="rowlabel" style="font-weight:700">Dư/Thiếu WL (Net Case Gap)</td>`;
   let rGapHC = `<tr><td class="rowlabel">Thừa/Thiếu HC Quy Đổi</td>`;
@@ -1168,8 +1189,12 @@ function renderForecast(){
     const overrideVal = state.overrideWL[monthKey()]?.[f.day] ?? '';
     rOverride += `<td><input class="override-inp mono" type="number" placeholder="—" value="${overrideVal}" onchange="setOverrideWL(${f.day}, this.value)"></td>`;
 
-    rClaim += `<td class="mono" style="color:var(--teal)">${f.claimWL}</td>`;
-    rSupp += `<td class="mono" style="color:var(--amber)">${f.supportWL}</td>`;
+    rFteTargetWL += `<td class="mono" style="color:var(--teal)">${f.fteTargetWL}</td>`;
+    rBpoTargetWL += `<td class="mono" style="color:var(--amber)">${f.bpoTargetWL}</td>`;
+    rFteSupport += `<td class="mono" style="${f.fteSupportWL>0?'color:var(--coral); font-weight:700':'color:var(--text-dim)'}">${f.fteSupportWL>0?'+'+Math.round(f.fteSupportWL):'—'}</td>`;
+    const fteSupportPct = f.dayTotalWL > 0 ? (f.fteSupportWL / f.dayTotalWL) * 100 : 0;
+    rFteSupportPct += `<td class="mono" style="${fteSupportPct>0?'color:var(--coral); font-weight:700':'color:var(--text-dim)'}">${fteSupportPct>0?'+'+fteSupportPct.toFixed(1)+'%':'—'}</td>`;
+    rFteAssigned += `<td class="mono" style="font-weight:700">${Math.round(f.fteAssignedWL)}</td>`;
     rCapTotal += `<td class="mono" style="font-weight:700; color:var(--teal)">${Math.round(f.totalCapacity)}</td>`;
 
     rGapWL += `<td class="mono" style="font-weight:700; color:${f.netGapWL<0?'var(--coral)':'var(--teal)'}">${f.netGapWL>0?'+':''}${Math.round(f.netGapWL)}</td>`;
@@ -1177,7 +1202,7 @@ function renderForecast(){
     rOverallCov += `<td class="mono ${alertClass}" style="font-weight:700">${Math.round(f.overallCoverage)}%</td>`;
   });
 
-  head += `</tr>`; rHC += `</tr>`; rAvailHC += `</tr>`; rTotal += `</tr>`; rOverride += `</tr>`; rClaim += `</tr>`; rSupp += `</tr>`;
+  head += `</tr>`; rHC += `</tr>`; rAvailHC += `</tr>`; rTotal += `</tr>`; rOverride += `</tr>`; rFteTargetWL += `</tr>`; rBpoTargetWL += `</tr>`; rFteSupport += `</tr>`; rFteSupportPct += `</tr>`; rFteAssigned += `</tr>`;
   rCapTotal += `</tr>`; rGapWL += `</tr>`; rGapHC += `</tr>`; rOverallCov += `</tr>`;
 
   return `
@@ -1188,7 +1213,8 @@ function renderForecast(){
       <label class="f">Tỷ lệ Tăng trưởng (%)<input type="number" id="cfg-growth" value="${state.cfg.growthRate}"></label>
       <label class="f">Target FTE (case/ngày)<input type="number" id="cfg-fteT" value="${state.cfg.fteTarget}"></label>
       <label class="f">Target BPO (case/ngày)<input type="number" id="cfg-bpoT" value="${state.cfg.bpoTarget}"></label>
-      <label class="f">% Ticket Khiếu nại<input type="number" id="cfg-claimPct" value="${state.cfg.claimPct}"></label>
+      <label class="f">Tỉ lệ Target Workload FTE (%)<input type="number" min="0" max="100" id="cfg-fteWorkloadPct" value="${state.cfg.fteWorkloadPct}"></label>
+      <label class="f" style="color:var(--text-dim)">→ Tỉ lệ Target BPO tương ứng<input type="number" disabled value="${100-state.cfg.fteWorkloadPct}"></label>
       <label class="f">Ghi đè Workload CN<input type="number" id="cfg-sunWL" placeholder="Tự động" value="${state.cfg.sundayWL || ''}"></label>
       <label class="f" style="color:var(--coral)">Ngưỡng Thiếu (Alert Đỏ)<input type="number" id="cfg-underTh" value="${state.cfg.underThreshold}"></label>
       <label class="f" style="color:var(--amber)">Ngưỡng Thừa (Alert Vàng)<input type="number" id="cfg-overTh" value="${state.cfg.overThreshold}"></label>
@@ -1210,7 +1236,7 @@ function renderForecast(){
   <div class="panel">
     <h2>⚖ Cân đối Workload & Số HC Thực tế Đi làm (WFM Details) <button class="info-icon-btn" onclick="openTopicLogic('forecast_detail')" title="Xem công thức">i</button></h2>
     <div class="grid-wrap"><table class="wl-table"><thead>${head}</thead><tbody>
-      ${rHC}${rAvailHC}${rTotal}${rOverride}${rClaim}${rSupp}
+      ${rHC}${rAvailHC}${rTotal}${rOverride}${rFteTargetWL}${rBpoTargetWL}${rFteSupport}${rFteSupportPct}${rFteAssigned}
       ${rCapTotal}
       ${rGapWL}${rGapHC}${rOverallCov}
     </tbody></table></div>
@@ -1392,7 +1418,7 @@ function copyToClipboardGSheet(){
   const visibleEmps = getVisibleEmployeesForCurrentMonth();
   let tsv = "";
 
-  let rHeader = ["Name","Region","Team","Role","CN M-3","CN M-2","CN M-1","CN M+1","AL/SL","OFF DAY","CN THÁNG NÀY","WFH","OFF T7"];
+  let rHeader = ["Name","Region","Team","Role","CN M-3","CN M-2","CN M-1","CN M+1","AL","SL","UPL","OFF DAY","CN THÁNG NÀY","WFH","OFF T7"];
   let dayHeaders = [];
   for(let d=1; d<=n; d++) {
     let dayStr = String(d).padStart(2, '0');
@@ -1409,7 +1435,7 @@ function copyToClipboardGSheet(){
   ];
 
   visibleEmps.forEach(e => {
-    let counts = { AL_SL:0, OFF:0, CN_Working:0, WFH:0, OFF_T7:0 };
+    let counts = { AL:0, SL:0, UPL:0, OFF:0, CN_Working:0, WFH:0, OFF_T7:0 };
     let daysData = [];
 
     for(let d=1; d<=n; d++){
@@ -1426,7 +1452,9 @@ function copyToClipboardGSheet(){
       const isWorking = (mk === "S2" || mk === "OT" || mk === "WFH");
 
       if(isWorking && wd === 0) counts.CN_Working++;
-      if(mk === "AL" || mk === "AL1/2" || mk === "SL") counts.AL_SL += (mk==="AL"||mk==="SL"?1:0.5);
+      if(mk === "AL" || mk === "AL1/2") counts.AL += (mk==="AL"?1:0.5);
+      if(mk === "SL") counts.SL += 1;
+      if(mk === "UPL") counts.UPL += 1;
       if(mk === "OFF" || mk === "OFF/2") {
         counts.OFF += (mk==="OFF"?1:0.5);
         if(wd===6) counts.OFF_T7++;
@@ -1436,7 +1464,7 @@ function copyToClipboardGSheet(){
     }
 
     let prevSunCounts = mList.map(item => countSundayDutyInMonth(e.id, item.m, item.y));
-    let row = [ e.name, e.region||'HCM', e.team, e.role, ...prevSunCounts, counts.AL_SL, counts.OFF, counts.CN_Working, counts.WFH, counts.OFF_T7, ...daysData ];
+    let row = [ e.name, e.region||'HCM', e.team, e.role, ...prevSunCounts, counts.AL, counts.SL, counts.UPL, counts.OFF, counts.CN_Working, counts.WFH, counts.OFF_T7, ...daysData ];
     tsv += row.join("\t") + "\n";
   });
 
@@ -1703,7 +1731,7 @@ function renderAllUIOnly(){
 
   document.querySelectorAll('input[id^="cfg-"]').forEach(i => i.onchange = (e) => { 
     const key = i.id.replace("cfg-","");
-    const mapKey = { lastWL:'lastMonthWL', growth:'growthRate', fteT:'fteTarget', bpoT:'bpoTarget', maxSun:'maxSundayHC', sundayCapBPO:'sundayCapPctBPO', ratioFTE:'fteRatioNum', ratioBPO:'fteRatioDenom', claimPct:'claimPct', sunWL:'sundayWL', underTh:'underThreshold', overTh:'overThreshold', doubleDay:'doubleDayAdj', saleDay:'saleDayAdj', payDay:'payDayAdj' };
+    const mapKey = { lastWL:'lastMonthWL', growth:'growthRate', fteT:'fteTarget', bpoT:'bpoTarget', maxSun:'maxSundayHC', sundayCapBPO:'sundayCapPctBPO', ratioFTE:'fteRatioNum', ratioBPO:'fteRatioDenom', fteWorkloadPct:'fteWorkloadPct', sunWL:'sundayWL', underTh:'underThreshold', overTh:'overThreshold', doubleDay:'doubleDayAdj', saleDay:'saleDayAdj', payDay:'payDayAdj' };
     
     if(key === 'offFTE' || key === 'offBPO') {
       const rawVal = e.target.value.trim();
