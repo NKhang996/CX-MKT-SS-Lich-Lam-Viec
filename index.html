@@ -744,6 +744,9 @@ function getVisibleEmployeesForCurrentMonth(){
   }).sort((a, b) => {
     const teamCmp = (a.team||"").localeCompare(b.team||"", 'vi');
     if(teamCmp !== 0) return teamCmp;
+    const orderA = a.sortOrder ?? 999999;
+    const orderB = b.sortOrder ?? 999999;
+    if(orderA !== orderB) return orderA - orderB;
     return (a.name||"").localeCompare(b.name||"", 'vi');
   });
 }
@@ -1331,7 +1334,8 @@ function renderNhanSu(){
     const isPassed = isEmpPassedProbation(e, dateOf(1));
 
     return `
-    <tr data-emp="${e.id}">
+    <tr data-emp="${e.id}" data-team="${e.team||''}" draggable="true" ondragstart="onEmpDragStart(event)" ondragover="onEmpDragOver(event)" ondrop="onEmpDrop(event)" ondragend="onEmpDragEnd(event)">
+      <td class="drag-handle" title="Kéo để đổi vị trí trong cùng Team" style="cursor:grab; text-align:center; color:var(--text-dim); user-select:none;">⠿</td>
       <td><input data-f="name" value="${e.name}"></td>
       <td><input data-f="mail" value="${e.mail||''}"></td>
       <td>
@@ -1359,12 +1363,13 @@ function renderNhanSu(){
 
   return `<div class="panel">
     <h2>Danh sách Nhân sự, Khu vực & Early Pass Thử Việc <button class="info-icon-btn" onclick="openTopicLogic('nhansu')" title="Xem hướng dẫn Offboard">i</button></h2>
+    <div class="sub" style="margin:-6px 0 12px; color:var(--text-dim)">💡 Kéo biểu tượng ⠿ để đổi vị trí nhân viên trong cùng 1 Team.</div>
     
     <datalist id="region-list">${regionOptions}</datalist>
     <datalist id="team-list">${teamOptions}</datalist>
 
     <div class="grid-wrap"><table class="emp-table">
-      <thead><tr><th>Họ tên</th><th>Mail</th><th>Khu vực</th><th>Team</th><th>Chức vụ</th><th>Loại</th><th>Onboarding</th><th>Offboard</th><th>Early Pass</th><th>Hiệu suất</th><th></th></tr></thead>
+      <thead><tr><th></th><th>Họ tên</th><th>Mail</th><th>Khu vực</th><th>Team</th><th>Chức vụ</th><th>Loại</th><th>Onboarding</th><th>Offboard</th><th>Early Pass</th><th>Hiệu suất</th><th></th></tr></thead>
       <tbody>${rows}</tbody>
     </table></div>
     <br><button class="btn-primary" onclick="addEmp()">＋ Thêm Nhân viên</button>
@@ -1372,9 +1377,62 @@ function renderNhanSu(){
 }
 
 function addEmp(){ 
-  state.employees.push({ id:uid(), name:"Nhân viên mới", mail:"", region:"HCM", team:"Team Mới", role:"FTE", type:"FTE", onboarding:"2026-08-01", offboardDate:"", earlyPass: false }); 
+  const maxOrder = Math.max(0, ...state.employees.map(e => e.sortOrder || 0));
+  state.employees.push({ id:uid(), name:"Nhân viên mới", mail:"", region:"HCM", team:"Team Mới", role:"FTE", type:"FTE", onboarding:"2026-08-01", offboardDate:"", earlyPass: false, sortOrder: maxOrder + 10 }); 
   saveLocalState();
   renderAll(); 
+}
+
+// 🔹 KÉO-THẢ ĐỔI VỊ TRÍ NHÂN VIÊN — CHỈ CHO PHÉP TRONG CÙNG 1 TEAM
+let dragEmpId = null;
+
+function onEmpDragStart(ev){
+  dragEmpId = ev.currentTarget.dataset.emp;
+  ev.dataTransfer.effectAllowed = "move";
+  ev.currentTarget.style.opacity = "0.5";
+}
+
+function onEmpDragEnd(ev){
+  ev.currentTarget.style.opacity = "";
+}
+
+function onEmpDragOver(ev){
+  ev.preventDefault();
+  ev.dataTransfer.dropEffect = "move";
+}
+
+function onEmpDrop(ev){
+  ev.preventDefault();
+  const targetId = ev.currentTarget.dataset.emp;
+  if(!dragEmpId || dragEmpId === targetId) return;
+
+  const dragEmp = state.employees.find(e => e.id === dragEmpId);
+  const targetEmp = state.employees.find(e => e.id === targetId);
+  if(!dragEmp || !targetEmp) return;
+
+  if((dragEmp.team||"") !== (targetEmp.team||"")){
+    alert("⚠️ Chỉ có thể kéo-thả đổi vị trí trong CÙNG 1 Team. Muốn đổi Team, hãy sửa ô Team trực tiếp.");
+    dragEmpId = null;
+    return;
+  }
+
+  const teamIds = getVisibleEmployeesForCurrentMonth()
+    .filter(e => (e.team||"") === (dragEmp.team||""))
+    .map(e => e.id);
+
+  const fromIdx = teamIds.indexOf(dragEmpId);
+  if(fromIdx > -1) teamIds.splice(fromIdx, 1);
+  const toIdx = teamIds.indexOf(targetId);
+  teamIds.splice(toIdx > -1 ? toIdx : teamIds.length, 0, dragEmpId);
+
+  teamIds.forEach((id, i) => {
+    const emp = state.employees.find(e => e.id === id);
+    if(emp) emp.sortOrder = (i + 1) * 10;
+  });
+
+  dragEmpId = null;
+  saveLocalState();
+  renderAll();
 }
 
 function renderCauHinh(){
