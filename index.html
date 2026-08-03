@@ -106,6 +106,8 @@
   
   .btn-primary{background:var(--teal-dim); color:var(--teal); border:1px solid #235952; padding:7px 12px; border-radius:7px; font-size:12px; font-weight:600; display:inline-flex; gap:6px; align-items:center;}
   .btn-primary:hover{background:#235952;}
+  #btnSaveCloud.has-changes{background:var(--coral-dim); color:var(--coral); border-color:#8a3a35; animation:pulseSave 1.4s ease-in-out infinite;}
+  @keyframes pulseSave{0%,100%{opacity:1;}50%{opacity:0.6;}}
   .btn-refresh{background:var(--violet-dim); color:var(--violet); border:1px solid #4c4182; padding:7px 12px; border-radius:7px; font-size:12px; font-weight:600; display:inline-flex; gap:6px; align-items:center;}
   .btn-refresh:hover{background:#4c4182;}
   .btn-excel{background:#1e3a29; color:#4ade80; border:1px solid #166534; padding:7px 12px; border-radius:7px; font-size:12px; font-weight:600; display:inline-flex; gap:6px; align-items:center;}
@@ -247,6 +249,7 @@
       </div>
       <div style="display:flex; gap:10px; align-items:center;">
         <button class="btn-info" onclick="openLogicModal()">ℹ️ Logic & Công thức WFM</button>
+        <button class="btn-primary" id="btnSaveCloud" onclick="handleSaveCloudClick()">☁️ Lưu lên Cloud</button>
         <div class="status-badge">
           <div class="status-dot" id="cloudStatusDot"></div>
           <span id="cloudStatusTxt">Local Browser Saved</span>
@@ -571,11 +574,12 @@ function openTopicLogic(topicKey){
     </div>`,
     'forecast_detail': `<div class="logic-section">
       <h3>⚖️ Công Thức Bảng Cân Đối Workload & HC</h3>
-      <p>• <b>Overall HC Đi Làm:</b> Đếm nguyên số nhân sự có ca S2/OT/WFH trong ngày (không quy đổi %, không phân biệt thử việc).</p>
-      <p>• <b>🔷 HC Khả Dụng (quy đổi thử việc):</b> = FTE (làm việc, tính đủ 1) + BPO đã Pass (tính đủ 1) + BPO Thử việc × %Ramp-up hiện tại. Phản ánh đúng năng lực thực tế hơn "Overall HC" khi team còn nhiều BPO mới.</p>
+      <p>• <b>Overall HC Đi Làm:</b> Đếm nguyên số nhân sự có ca S2/OT/WFH trong ngày (không quy đổi %, không phân biệt thử việc). Tách riêng 2 dòng con <b>↳ FTE Đi Làm</b> và <b>↳ BPO Đi Làm</b> để biết đang thiếu người ở phía nào.</p>
+      <p>• <b>🔷 HC Khả Dụng (quy đổi thử việc):</b> = FTE (làm việc, tính đủ 1) + BPO đã Pass (tính đủ 1) + BPO Thử việc × %Ramp-up hiện tại. Phản ánh đúng năng lực thực tế hơn "Overall HC" khi team còn nhiều BPO mới. Dòng con <b>↳ Hao Hụt HC do Thử Việc</b> = Overall HC − HC Khả Dụng, cho biết đang "hao" bao nhiêu đầu người quy đổi vì BPO còn ramp-up thấp.</p>
       <p>• <b>Workload Dự kiến (Daily WL):</b> Theo công thức Trọng Số Ngày (xem tab Cấu hình) hoặc số Override thủ công.</p>
       <p>• <b>Override Workload (Thủ công):</b> Nhập số tại ô này để ghi đè trực tiếp Workload dự báo của đúng ngày đó, ưu tiên cao nhất so với công thức tự động.</p>
       <p>• <b>Workload Target FTE / BPO:</b> Target FTE = Daily WL × %Target FTE (cấu hình); Target BPO = Daily WL − Target FTE.</p>
+      <p>• <b>% BPO Đáp Ứng Target BPO:</b> = Năng lực BPO thực tế (BPO Capacity) ÷ Target BPO WL × 100%. Dưới 100% nghĩa là BPO đang đuối, phần thiếu này chính là nguyên nhân của dòng "FTE Hỗ Trợ Thêm" bên dưới.</p>
       <p>• <b>⚠️ FTE Hỗ Trợ Thêm:</b> = max(0, Target BPO − Năng lực BPO thực tế trong ngày). Phần WL này BPO không kham nổi nên tự động dồn qua cho FTE xử lý. Nếu ngày đó không có BPO nào đi làm (VD: CN không xếp BPO trực), Năng lực BPO = 0 → toàn bộ Target BPO dồn hết qua FTE.</p>
       <p>• <b>⚠️ % Daily WL do FTE gánh thay BPO:</b> = FTE Hỗ Trợ Thêm ÷ Daily WL × 100%. Cho biết tỉ trọng khối lượng công việc trong ngày mà FTE phải "gánh hộ" phần BPO không xử lý kịp — càng cao nghĩa là BPO càng quá tải/thiếu người.</p>
       <p>• <b>Tổng WL FTE Thực Nhận:</b> = Target FTE + FTE Hỗ Trợ Thêm. Đây là tổng khối lượng thực tế FTE phải gánh trong ngày.</p>
@@ -607,7 +611,7 @@ function saveLocalState(){
   try {
     localStorage.setItem("spx_wfm_state_combined", JSON.stringify(state));
   } catch(e) { console.error("Save local error:", e); }
-  pushStateToCloud();
+  markUnsavedChanges();
 }
 
 function monthKey(m = state.month, y = state.year){ return `${y}-${String(m).padStart(2,"0")}`; }
@@ -660,14 +664,60 @@ function ensureMonthData(m = state.month, y = state.year){
   if(!state.overrideWL[k]) state.overrideWL[k] = {};
 }
 
-function pushStateToCloud() {
-  if (!db) return;
-  db.ref("spx_workload_app_combined").set(state);
+const ADMIN_SAVE_PASSWORD = "teamtocdai";
+let isAdminUnlockedThisSession = false;
+let hasUnsavedChanges = false;
+
+function markUnsavedChanges(){
+  hasUnsavedChanges = true;
+  const btn = document.getElementById("btnSaveCloud");
+  if(btn) btn.classList.add("has-changes");
+  const dot = document.getElementById("cloudStatusDot");
+  const txt = document.getElementById("cloudStatusTxt");
+  if(dot) dot.classList.remove("online");
+  if(txt) txt.textContent = "Có thay đổi chưa Lưu Cloud";
 }
 
+function handleSaveCloudClick(){
+  if(!db){ alert("⚠️ Không kết nối được Firebase."); return; }
+
+  if(!isAdminUnlockedThisSession){
+    const pwd = prompt("🔒 Nhập mật khẩu Admin để đẩy dữ liệu lên Cloud:");
+    if(pwd === null) return; // người dùng bấm Cancel
+    if(pwd !== ADMIN_SAVE_PASSWORD){
+      alert("❌ Sai mật khẩu Admin. Dữ liệu KHÔNG được lưu lên Cloud.");
+      return;
+    }
+    isAdminUnlockedThisSession = true;
+  }
+
+  pushStateToCloud();
+}
+
+function pushStateToCloud() {
+  if (!db) return;
+  syncStateAndConfig();
+  db.ref("spx_workload_app_combined").set(state).then(() => {
+    hasUnsavedChanges = false;
+    const btn = document.getElementById("btnSaveCloud");
+    if(btn) btn.classList.remove("has-changes");
+    const dot = document.getElementById("cloudStatusDot");
+    const txt = document.getElementById("cloudStatusTxt");
+    if(dot) dot.classList.add("online");
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2,'0');
+    const mm = String(now.getMinutes()).padStart(2,'0');
+    if(txt) txt.textContent = `✅ Đã Lưu Cloud lúc ${hh}:${mm}`;
+  }).catch(err => {
+    alert("❌ Lỗi khi lưu lên Cloud: " + err);
+  });
+}
+
+// Chỉ tải dữ liệu từ Cloud MỘT LẦN lúc mở trang/F5 — không tự đồng bộ real-time nữa,
+// để tránh dữ liệu nháp đang thao tác bị người khác Save đè lên giữa chừng.
 function listenCloudChanges() {
   if (!db) return;
-  db.ref("spx_workload_app_combined").on("value", (snapshot) => {
+  db.ref("spx_workload_app_combined").once("value").then((snapshot) => {
     const val = snapshot.val();
     if (val) {
       state = val;
@@ -675,7 +725,10 @@ function listenCloudChanges() {
       renderAll();
     }
     document.getElementById("cloudStatusDot").classList.add("online");
-    document.getElementById("cloudStatusTxt").textContent = "Cloud & Local Synced";
+    document.getElementById("cloudStatusTxt").textContent = "Đã tải dữ liệu Cloud";
+  }).catch(err => {
+    console.error("Load cloud error:", err);
+    document.getElementById("cloudStatusTxt").textContent = "⚠️ Không tải được Cloud";
   });
 }
 
@@ -863,6 +916,7 @@ function calculateMonthlyForecast(){
 
     let fteCapacity = 0, bpoCapacity = 0;
     let totalWorkingHC = 0;
+    let fteWorkingHC = 0, bpoWorkingHC = 0;
     let availableHC = 0; // 🔹 HC khả dụng = FTE + BPO_pass + (BPO_thử việc × %hiệu suất)
 
     visibleEmps.forEach(e => {
@@ -877,9 +931,11 @@ function calculateMonthlyForecast(){
         if(e.type === "FTE") {
           fteCapacity += state.cfg.fteTarget * rampPct;
           availableHC += 1;
+          fteWorkingHC++;
         } else {
           bpoCapacity += state.cfg.bpoTarget * rampPct;
           availableHC += isEmpPassedProbation(e, curDate) ? 1 : rampPct;
+          bpoWorkingHC++;
         }
       }
     });
@@ -896,11 +952,16 @@ function calculateMonthlyForecast(){
     const netGapWL = totalCapacity - dayTotalWL;
     const hcGap = state.cfg.fteTarget > 0 ? (netGapWL / state.cfg.fteTarget).toFixed(1) : 0;
 
+    // 🔹 % BPO đáp ứng được Target BPO của ngày, và độ hao hụt HC do còn nhân sự thử việc
+    const bpoTargetCoveragePct = bpoTargetWL > 0 ? (bpoCapacity / bpoTargetWL) * 100 : 100;
+    const hcProbationGap = totalWorkingHC - availableHC;
+
     dailyForecast.push({
       day: d, weekday: VN_SHORT_WEEKDAY[wd], dayTotalWL,
       fteTargetWL, bpoTargetWL, bpoHandledWL, fteSupportWL, fteAssignedWL,
       fteCapacity, bpoCapacity, totalCapacity,
       netGapWL, hcGap, overallCoverage, totalWorkingHC, availableHC,
+      fteWorkingHC, bpoWorkingHC, bpoTargetCoveragePct, hcProbationGap,
       spikeFactor: spike, isOverride: state.overrideWL[mkKey]?.[d] !== undefined
     });
   }
@@ -1160,11 +1221,15 @@ function renderForecast(){
 
   let head = `<tr><th class="rowlabel">Chỉ số / Ngày</th>`;
   let rHC = `<tr><td class="rowlabel" style="color:var(--teal)">Overall HC Đi Làm</td>`;
+  let rFteHC = `<tr><td class="rowlabel" style="color:var(--teal); padding-left:20px">↳ FTE Đi Làm</td>`;
+  let rBpoHC = `<tr><td class="rowlabel" style="color:var(--amber); padding-left:20px">↳ BPO Đi Làm</td>`;
   let rAvailHC = `<tr><td class="rowlabel" style="color:var(--violet)">🔷 HC Khả Dụng (quy đổi thử việc)</td>`;
+  let rHcProbationGap = `<tr><td class="rowlabel" style="color:var(--text-dim)">↳ Hao Hụt HC do Thử Việc</td>`;
   let rTotal = `<tr><td class="rowlabel">Workload Dự kiến (Daily WL)</td>`;
   let rOverride = `<tr><td class="rowlabel" style="color:var(--amber)">✏️ Override Workload (Thủ công)</td>`;
   let rFteTargetWL = `<tr><td class="rowlabel">Workload Target FTE (${state.cfg.fteWorkloadPct}%)</td>`;
   let rBpoTargetWL = `<tr><td class="rowlabel">Workload Target BPO (${100-state.cfg.fteWorkloadPct}%)</td>`;
+  let rBpoCoveragePct = `<tr><td class="rowlabel" style="color:var(--amber)">% BPO Đáp Ứng Target BPO</td>`;
   let rFteSupport = `<tr><td class="rowlabel" style="color:var(--coral)">⚠️ FTE Hỗ Trợ Thêm (BPO quá tải)</td>`;
   let rFteSupportPct = `<tr><td class="rowlabel" style="color:var(--coral)">⚠️ % Daily WL do FTE gánh thay BPO</td>`;
   let rFteAssigned = `<tr><td class="rowlabel" style="font-weight:700">Tổng WL FTE Thực Nhận</td>`;
@@ -1183,7 +1248,10 @@ function renderForecast(){
 
     head += `<th class="${alertClass}">${dayStr}<br><span style="font-size:9px;">${f.weekday}</span>${spikeTag}</th>`;
     rHC += `<td class="mono ${alertClass}" style="font-weight:700">${f.totalWorkingHC}</td>`;
+    rFteHC += `<td class="mono" style="color:var(--teal)">${f.fteWorkingHC}</td>`;
+    rBpoHC += `<td class="mono" style="color:var(--amber)">${f.bpoWorkingHC}</td>`;
     rAvailHC += `<td class="mono" style="color:var(--violet); font-weight:700">${f.availableHC.toFixed(1)}</td>`;
+    rHcProbationGap += `<td class="mono" style="${f.hcProbationGap>0?'color:var(--coral)':'color:var(--text-dim)'}">${f.hcProbationGap>0?'-'+f.hcProbationGap.toFixed(1):'—'}</td>`;
     rTotal += `<td class="mono">${f.dayTotalWL.toLocaleString()}</td>`;
     
     const overrideVal = state.overrideWL[monthKey()]?.[f.day] ?? '';
@@ -1191,6 +1259,8 @@ function renderForecast(){
 
     rFteTargetWL += `<td class="mono" style="color:var(--teal)">${f.fteTargetWL}</td>`;
     rBpoTargetWL += `<td class="mono" style="color:var(--amber)">${f.bpoTargetWL}</td>`;
+    const covAlert = f.bpoTargetCoveragePct < 100 ? 'color:var(--coral); font-weight:700' : 'color:var(--teal)';
+    rBpoCoveragePct += `<td class="mono" style="${covAlert}">${Math.round(f.bpoTargetCoveragePct)}%</td>`;
     rFteSupport += `<td class="mono" style="${f.fteSupportWL>0?'color:var(--coral); font-weight:700':'color:var(--text-dim)'}">${f.fteSupportWL>0?'+'+Math.round(f.fteSupportWL):'—'}</td>`;
     const fteSupportPct = f.dayTotalWL > 0 ? (f.fteSupportWL / f.dayTotalWL) * 100 : 0;
     rFteSupportPct += `<td class="mono" style="${fteSupportPct>0?'color:var(--coral); font-weight:700':'color:var(--text-dim)'}">${fteSupportPct>0?'+'+fteSupportPct.toFixed(1)+'%':'—'}</td>`;
@@ -1202,7 +1272,7 @@ function renderForecast(){
     rOverallCov += `<td class="mono ${alertClass}" style="font-weight:700">${Math.round(f.overallCoverage)}%</td>`;
   });
 
-  head += `</tr>`; rHC += `</tr>`; rAvailHC += `</tr>`; rTotal += `</tr>`; rOverride += `</tr>`; rFteTargetWL += `</tr>`; rBpoTargetWL += `</tr>`; rFteSupport += `</tr>`; rFteSupportPct += `</tr>`; rFteAssigned += `</tr>`;
+  head += `</tr>`; rHC += `</tr>`; rFteHC += `</tr>`; rBpoHC += `</tr>`; rAvailHC += `</tr>`; rHcProbationGap += `</tr>`; rTotal += `</tr>`; rOverride += `</tr>`; rFteTargetWL += `</tr>`; rBpoTargetWL += `</tr>`; rBpoCoveragePct += `</tr>`; rFteSupport += `</tr>`; rFteSupportPct += `</tr>`; rFteAssigned += `</tr>`;
   rCapTotal += `</tr>`; rGapWL += `</tr>`; rGapHC += `</tr>`; rOverallCov += `</tr>`;
 
   return `
@@ -1236,7 +1306,7 @@ function renderForecast(){
   <div class="panel">
     <h2>⚖ Cân đối Workload & Số HC Thực tế Đi làm (WFM Details) <button class="info-icon-btn" onclick="openTopicLogic('forecast_detail')" title="Xem công thức">i</button></h2>
     <div class="grid-wrap"><table class="wl-table"><thead>${head}</thead><tbody>
-      ${rHC}${rAvailHC}${rTotal}${rOverride}${rFteTargetWL}${rBpoTargetWL}${rFteSupport}${rFteSupportPct}${rFteAssigned}
+      ${rHC}${rFteHC}${rBpoHC}${rAvailHC}${rHcProbationGap}${rTotal}${rOverride}${rFteTargetWL}${rBpoTargetWL}${rBpoCoveragePct}${rFteSupport}${rFteSupportPct}${rFteAssigned}
       ${rCapTotal}
       ${rGapWL}${rGapHC}${rOverallCov}
     </tbody></table></div>
