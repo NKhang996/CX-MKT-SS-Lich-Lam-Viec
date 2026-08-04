@@ -1226,7 +1226,19 @@ function renderForecast(){
   const { totalWL, dailyForecast } = calculateMonthlyForecast();
   const n = daysInMonth(state.month, state.year);
 
+  // 🔹 Tổng HC toàn Team (không phân biệt ngày đi làm) & Workload tối đa quy đổi được nếu toàn bộ Team đi làm hết công suất
+  const visibleEmpsAll = getVisibleEmployeesForCurrentMonth();
+  const teamFteCount = visibleEmpsAll.filter(e => e.type === "FTE").length;
+  const teamBpoCount = visibleEmpsAll.filter(e => e.type === "BPO").length;
+  const teamTotalHC = teamFteCount + teamBpoCount;
+  const teamFteMaxWL = teamFteCount * state.cfg.fteTarget;
+  const teamBpoMaxWL = teamBpoCount * state.cfg.bpoTarget;
+  const teamMaxWL = teamFteMaxWL + teamBpoMaxWL;
+
   let head = `<tr><th class="rowlabel">Chỉ số / Ngày</th>`;
+  let rNeededHC = `<tr><td class="rowlabel" style="color:var(--violet); font-weight:700">🔹 Tổng HC Cần Thiết (Quy đổi từ WL)</td>`;
+  let rNeededFteHC = `<tr><td class="rowlabel" style="color:var(--teal); padding-left:20px">↳ FTE Cần Thiết</td>`;
+  let rNeededBpoHC = `<tr><td class="rowlabel" style="color:var(--amber); padding-left:20px">↳ BPO Cần Thiết</td>`;
   let rHC = `<tr><td class="rowlabel" style="color:var(--teal)">Overall HC Đi Làm</td>`;
   let rFteHC = `<tr><td class="rowlabel" style="color:var(--teal); padding-left:20px">↳ FTE Đi Làm</td>`;
   let rBpoHC = `<tr><td class="rowlabel" style="color:var(--amber); padding-left:20px">↳ BPO Đi Làm</td>`;
@@ -1254,6 +1266,14 @@ function renderForecast(){
     let spikeTag = f.spikeFactor > 1.15 ? '🔥🔥' : (f.spikeFactor > 1.0 ? '🔥' : '');
 
     head += `<th class="${alertClass}">${dayStr}<br><span style="font-size:9px;">${f.weekday}</span>${spikeTag}</th>`;
+
+    const neededFteHC = state.cfg.fteTarget > 0 ? (f.fteTargetWL / state.cfg.fteTarget) : 0;
+    const neededBpoHC = state.cfg.bpoTarget > 0 ? (f.bpoTargetWL / state.cfg.bpoTarget) : 0;
+    const neededTotalHC = neededFteHC + neededBpoHC;
+    rNeededHC += `<td class="mono ${alertClass}" style="font-weight:700">${neededTotalHC.toFixed(1)}</td>`;
+    rNeededFteHC += `<td class="mono" style="color:var(--teal)">${neededFteHC.toFixed(1)}</td>`;
+    rNeededBpoHC += `<td class="mono" style="color:var(--amber)">${neededBpoHC.toFixed(1)}</td>`;
+
     rHC += `<td class="mono ${alertClass}" style="font-weight:700">${f.totalWorkingHC}</td>`;
     rFteHC += `<td class="mono" style="color:var(--teal)">${f.fteWorkingHC}</td>`;
     rBpoHC += `<td class="mono" style="color:var(--amber)">${f.bpoWorkingHC}</td>`;
@@ -1279,7 +1299,7 @@ function renderForecast(){
     rOverallCov += `<td class="mono ${alertClass}" style="font-weight:700">${Math.round(f.overallCoverage)}%</td>`;
   });
 
-  head += `</tr>`; rHC += `</tr>`; rFteHC += `</tr>`; rBpoHC += `</tr>`; rAvailHC += `</tr>`; rHcProbationGap += `</tr>`; rTotal += `</tr>`; rOverride += `</tr>`; rFteTargetWL += `</tr>`; rBpoTargetWL += `</tr>`; rBpoCoveragePct += `</tr>`; rFteSupport += `</tr>`; rFteSupportPct += `</tr>`; rFteAssigned += `</tr>`;
+  head += `</tr>`; rNeededHC += `</tr>`; rNeededFteHC += `</tr>`; rNeededBpoHC += `</tr>`; rHC += `</tr>`; rFteHC += `</tr>`; rBpoHC += `</tr>`; rAvailHC += `</tr>`; rHcProbationGap += `</tr>`; rTotal += `</tr>`; rOverride += `</tr>`; rFteTargetWL += `</tr>`; rBpoTargetWL += `</tr>`; rBpoCoveragePct += `</tr>`; rFteSupport += `</tr>`; rFteSupportPct += `</tr>`; rFteAssigned += `</tr>`;
   rCapTotal += `</tr>`; rGapWL += `</tr>`; rGapHC += `</tr>`; rOverallCov += `</tr>`;
 
   return `
@@ -1311,8 +1331,21 @@ function renderForecast(){
   </div>
 
   <div class="panel">
+    <h2>👥 Tổng HC Đang Có (Toàn Team) & Workload Tối Đa Quy Đổi <button class="info-icon-btn" onclick="openTopicLogic('forecast_kpi')" title="Xem công thức">i</button></h2>
+    <div class="kpi-row">
+      <div class="kpi"><div class="lbl">TỔNG HC TOÀN TEAM</div><div class="val" style="color:var(--violet)">${teamTotalHC} HC</div></div>
+      <div class="kpi"><div class="lbl">↳ FTE (Toàn Team)</div><div class="val" style="color:var(--teal)">${teamFteCount} HC</div></div>
+      <div class="kpi"><div class="lbl">↳ BPO (Toàn Team)</div><div class="val" style="color:var(--amber)">${teamBpoCount} HC</div></div>
+      <div class="kpi"><div class="lbl">WORKLOAD TỐI ĐA QUY ĐỔI/NGÀY</div><div class="val" style="color:var(--green)">${Math.round(teamMaxWL).toLocaleString()} case</div></div>
+      <div class="kpi"><div class="lbl">↳ FTE Đảm Nhận Tối Đa</div><div class="val" style="color:var(--teal); font-size:14px">${Math.round(teamFteMaxWL).toLocaleString()} case</div></div>
+      <div class="kpi"><div class="lbl">↳ BPO Đảm Nhận Tối Đa</div><div class="val" style="color:var(--amber); font-size:14px">${Math.round(teamBpoMaxWL).toLocaleString()} case</div></div>
+    </div>
+  </div>
+
+  <div class="panel">
     <h2>⚖ Cân đối Workload & Số HC Thực tế Đi làm (WFM Details) <button class="info-icon-btn" onclick="openTopicLogic('forecast_detail')" title="Xem công thức">i</button></h2>
     <div class="grid-wrap"><table class="wl-table"><thead>${head}</thead><tbody>
+      ${rNeededHC}${rNeededFteHC}${rNeededBpoHC}
       ${rHC}${rFteHC}${rBpoHC}${rAvailHC}${rHcProbationGap}${rTotal}${rOverride}${rFteTargetWL}${rBpoTargetWL}${rBpoCoveragePct}${rFteSupport}${rFteSupportPct}${rFteAssigned}
       ${rCapTotal}
       ${rGapWL}${rGapHC}${rOverallCov}
