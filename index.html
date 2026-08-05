@@ -10,6 +10,7 @@
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
 
 <style>
   :root{
@@ -106,7 +107,7 @@
   
   .btn-primary{background:var(--teal-dim); color:var(--teal); border:1px solid #235952; padding:7px 12px; border-radius:7px; font-size:12px; font-weight:600; display:inline-flex; gap:6px; align-items:center;}
   .btn-primary:hover{background:#235952;}
-  #btnSaveCloud.has-changes{background:var(--coral-dim); color:var(--coral); border-color:#8a3a35; animation:pulseSave 1.4s ease-in-out infinite;}
+  #btnSaveCloud.has-changes, #btnSaveMySchedule.has-changes{background:var(--coral-dim); color:var(--coral); border-color:#8a3a35; animation:pulseSave 1.4s ease-in-out infinite;}
   @keyframes pulseSave{0%,100%{opacity:1;}50%{opacity:0.6;}}
   .btn-refresh{background:var(--violet-dim); color:var(--violet); border:1px solid #4c4182; padding:7px 12px; border-radius:7px; font-size:12px; font-weight:600; display:inline-flex; gap:6px; align-items:center;}
   .btn-refresh:hover{background:#4c4182;}
@@ -230,6 +231,28 @@
   .logic-section h3{margin:0 0 8px 0; color:var(--teal); font-size:14px; font-family:'Space Grotesk'; display:flex; align-items:center; gap:6px;}
   .logic-section p, .logic-section ul{font-size:12.5px; color:var(--text-dim); margin:4px 0; line-height:1.5;}
   .logic-section ul{padding-left:18px;}
+
+  /* ===== AUTH / PHÂN QUYỀN ===== */
+  .auth-box{display:flex; align-items:center; gap:8px;}
+  .btn-google{background:#fff; color:#3c4043; border:1px solid #dadce0; padding:7px 14px; border-radius:7px; font-size:12.5px; font-weight:600; display:inline-flex; gap:8px; align-items:center;}
+  .btn-google:hover{background:#f7f7f7;}
+  .btn-google img{width:16px; height:16px;}
+  .user-chip{display:flex; align-items:center; gap:8px; background:var(--surface-2); border:1px solid var(--border); border-radius:20px; padding:4px 10px 4px 4px;}
+  .user-chip img{width:24px; height:24px; border-radius:50%;}
+  .user-chip .u-name{font-size:12px; font-weight:600; line-height:1.15;}
+  .user-chip .u-role{font-size:9.5px; text-transform:uppercase; font-weight:700; letter-spacing:.3px;}
+  .user-chip .u-role.role-admin{color:var(--teal);}
+  .user-chip .u-role.role-employee{color:var(--amber);}
+  .user-chip .u-role.role-viewer{color:var(--text-faint);}
+  .btn-logout{background:none; border:none; color:var(--text-faint); font-size:14px; padding:2px 6px; border-radius:6px;}
+  .btn-logout:hover{color:var(--coral); background:var(--coral-dim);}
+
+  .locked-section{position:relative;}
+  .locked-section > .lock-overlay-target{opacity:.5; pointer-events:none; filter:grayscale(.3);}
+  .lock-banner{display:flex; align-items:center; gap:8px; background:var(--coral-dim); color:var(--coral); border:1px solid #8a3a35; border-radius:8px; padding:8px 12px; font-size:12px; font-weight:600; margin-bottom:12px;}
+
+  .cal-table td.daycell.cell-locked{cursor:not-allowed !important;}
+  .cal-table tr.row-own td.col-name{box-shadow: inset 3px 0 0 var(--teal);}
 </style>
 </head>
 <body>
@@ -249,11 +272,13 @@
       </div>
       <div style="display:flex; gap:10px; align-items:center;">
         <button class="btn-info" onclick="openLogicModal()">ℹ️ Logic & Công thức WFM</button>
-        <button class="btn-primary" id="btnSaveCloud" onclick="handleSaveCloudClick()">☁️ Lưu lên Cloud</button>
+        <button class="btn-primary" id="btnSaveCloud" onclick="handleSaveCloudClick()" style="display:none;">☁️ Lưu lên Cloud</button>
+        <button class="btn-primary" id="btnSaveMySchedule" onclick="handleSaveMyScheduleClick()" style="display:none;">☁️ Lưu lịch của tôi</button>
         <div class="status-badge">
           <div class="status-dot" id="cloudStatusDot"></div>
           <span id="cloudStatusTxt">Local Browser Saved</span>
         </div>
+        <div class="auth-box" id="authBox"></div>
         <div class="month-picker">
           <button id="prevMonth">‹</button>
           <div class="mval mono" id="monthLabel">—</div>
@@ -291,12 +316,149 @@ const firebaseConfig = {
 };
 
 let db = null;
+let auth = null;
 try {
   if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
     firebase.initializeApp(firebaseConfig);
     db = firebase.database();
+    auth = firebase.auth();
   }
 } catch(e) { console.error("Firebase init:", e); }
+
+// ==========================================
+// 🔐 ĐĂNG NHẬP GOOGLE & PHÂN QUYỀN
+// ==========================================
+// currentAuthUser: user Firebase Auth hiện tại (null nếu chưa đăng nhập)
+// currentRole: 'viewer' (chưa đăng nhập / email không có trong hệ thống) | 'employee' (đúng email 1 nhân viên) | 'admin' (nhân viên có role = "Leader")
+// currentEmpId: id nhân viên tương ứng (nếu currentRole === 'employee' hoặc 'admin' do trùng với 1 dòng nhân sự)
+let currentAuthUser = null;
+let currentRole = "viewer";
+let currentEmpId = null;
+
+function isAdmin(){ return currentRole === "admin"; }
+function isEmployeeSelf(empId){ return currentRole === "employee" && currentEmpId === empId; }
+// Admin được sửa mọi ô; nhân viên chỉ sửa được đúng dòng của mình
+function canEditEmpRow(empId){ return isAdmin() || isEmployeeSelf(empId); }
+// Các khu vực/chức năng "toàn cục" (Nhân sự, Cấu hình, Auto-Fill, Lưu Cloud...) chỉ Admin được đụng vào
+function canEditGlobal(){ return isAdmin(); }
+
+function googleSignIn(){
+  if(!auth){ alert("⚠️ Không kết nối được Firebase Auth."); return; }
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider).catch(err => {
+    console.error("Sign-in error:", err);
+    alert("❌ Đăng nhập thất bại: " + (err.message || err));
+  });
+}
+
+function googleSignOut(){
+  if(!auth) return;
+  auth.signOut();
+}
+
+// ==========================================
+// 🔑 WHITELIST EMAIL ADMIN (độc lập với field "role" trong danh sách Nhân sự)
+// Chỉ những email liệt kê dưới đây mới có quyền Admin (sửa toàn bộ hệ thống,
+// Lưu lên Cloud, sửa Nhân sự/Cấu hình...). Thêm/bớt email trực tiếp tại đây.
+// ==========================================
+const ADMIN_EMAILS = [
+  "khang.nguyentan@spxexpress.com"
+  // "them.email.admin@spxexpress.com",
+];
+
+function resolveRoleForUser(user){
+  if(!user || !user.email) { currentRole = "viewer"; currentEmpId = null; return; }
+  const email = user.email.trim().toLowerCase();
+  const emp = (state.employees || []).find(e => (e.mail || "").trim().toLowerCase() === email);
+
+  if(ADMIN_EMAILS.map(a => a.trim().toLowerCase()).includes(email)){
+    currentRole = "admin";
+    currentEmpId = emp ? emp.id : null; // vẫn map sang dòng của họ nếu có, để highlight dòng own row (không bắt buộc)
+    return;
+  }
+
+  if(!emp){ currentRole = "viewer"; currentEmpId = null; return; }
+  currentEmpId = emp.id;
+  currentRole = "employee";
+}
+
+function renderAuthUI(){
+  const box = document.getElementById("authBox");
+  if(!box) return;
+
+  if(!currentAuthUser){
+    box.innerHTML = `<button class="btn-google" onclick="googleSignIn()">
+      <img src="https://www.gstatic.com/images/branding/googleg/1x/googleg_standard_color_18dp.png" alt="">
+      Đăng nhập Google
+    </button>`;
+  } else {
+    const roleLabel = { admin: "🔑 Admin", employee: "👤 Nhân viên", viewer: "👁️ Chỉ xem (email lạ)" }[currentRole];
+    box.innerHTML = `<div class="user-chip">
+        <img src="${currentAuthUser.photoURL || ''}" alt="">
+        <div>
+          <div class="u-name">${currentAuthUser.displayName || currentAuthUser.email}</div>
+          <div class="u-role role-${currentRole}">${roleLabel}</div>
+        </div>
+        <button class="btn-logout" title="Đăng xuất" onclick="googleSignOut()">⏻</button>
+      </div>`;
+  }
+
+  const saveBtn = document.getElementById("btnSaveCloud");
+  if(saveBtn) saveBtn.style.display = isAdmin() ? "inline-flex" : "none";
+  const saveMineBtn = document.getElementById("btnSaveMySchedule");
+  if(saveMineBtn) saveMineBtn.style.display = (currentRole === "employee") ? "inline-flex" : "none";
+}
+
+function handleSaveMyScheduleClick(){
+  if(!db){ alert("⚠️ Không kết nối được Firebase."); return; }
+  if(currentRole !== "employee" || !currentEmpId){ alert("🔒 Bạn cần đăng nhập đúng email nhân viên để dùng chức năng này."); return; }
+  saveMyScheduleToCloud();
+}
+
+// Nhân viên chỉ được đẩy đúng phần lịch (marks) của chính mình lên Cloud:
+// tải bản Cloud mới nhất -> chỉ ghi đè đúng node lịch của mình -> lưu lại.
+// Cách này giảm rủi ro đè mất dữ liệu người khác đang có trên Cloud (vì không .set() toàn bộ state cục bộ của mình).
+function saveMyScheduleToCloud(){
+  const empId = currentEmpId;
+  const k = monthKey();
+  syncStateAndConfig();
+  const myMonthMarks = (state.marks[k] && state.marks[k][empId]) ? state.marks[k][empId] : {};
+
+  db.ref("spx_workload_app_combined").once("value").then(snapshot => {
+    const cloudState = snapshot.val() || {};
+    if(!cloudState.marks) cloudState.marks = {};
+    if(!cloudState.marks[k]) cloudState.marks[k] = {};
+    cloudState.marks[k][empId] = myMonthMarks;
+    return db.ref("spx_workload_app_combined").set(cloudState).then(() => cloudState);
+  }).then(mergedState => {
+    state = mergedState;
+    syncStateAndConfig();
+    resolveRoleForUser(currentAuthUser);
+    renderAuthUI();
+    renderAll();
+    hasUnsavedChanges = false;
+    const btnMine = document.getElementById("btnSaveMySchedule");
+    if(btnMine) btnMine.classList.remove("has-changes");
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2,'0');
+    const mm = String(now.getMinutes()).padStart(2,'0');
+    const dot = document.getElementById("cloudStatusDot");
+    const txt = document.getElementById("cloudStatusTxt");
+    if(dot) dot.classList.add("online");
+    if(txt) txt.textContent = `✅ Đã lưu lịch của bạn lúc ${hh}:${mm}`;
+  }).catch(err => {
+    alert("❌ Lỗi khi lưu lịch lên Cloud: " + err);
+  });
+}
+
+if(auth){
+  auth.onAuthStateChanged(user => {
+    currentAuthUser = user;
+    resolveRoleForUser(user);
+    renderAuthUI();
+    if(document.getElementById("content")) renderAll();
+  });
+}
 
 const VN_SHORT_WEEKDAY = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 const uid = () => Math.random().toString(36).slice(2,10);
@@ -664,14 +826,14 @@ function ensureMonthData(m = state.month, y = state.year){
   if(!state.overrideWL[k]) state.overrideWL[k] = {};
 }
 
-const ADMIN_SAVE_PASSWORD = "teamtocdai";
-let isAdminUnlockedThisSession = false;
 let hasUnsavedChanges = false;
 
 function markUnsavedChanges(){
   hasUnsavedChanges = true;
   const btn = document.getElementById("btnSaveCloud");
   if(btn) btn.classList.add("has-changes");
+  const btnMine = document.getElementById("btnSaveMySchedule");
+  if(btnMine) btnMine.classList.add("has-changes");
   const dot = document.getElementById("cloudStatusDot");
   const txt = document.getElementById("cloudStatusTxt");
   if(dot) dot.classList.remove("online");
@@ -680,17 +842,7 @@ function markUnsavedChanges(){
 
 function handleSaveCloudClick(){
   if(!db){ alert("⚠️ Không kết nối được Firebase."); return; }
-
-  if(!isAdminUnlockedThisSession){
-    const pwd = prompt("🔒 Nhập mật khẩu Admin để đẩy dữ liệu lên Cloud:");
-    if(pwd === null) return; // người dùng bấm Cancel
-    if(pwd !== ADMIN_SAVE_PASSWORD){
-      alert("❌ Sai mật khẩu Admin. Dữ liệu KHÔNG được lưu lên Cloud.");
-      return;
-    }
-    isAdminUnlockedThisSession = true;
-  }
-
+  if(!isAdmin()){ alert("🔒 Chỉ Admin (đăng nhập Google với vai trò Leader) mới được lưu lên Cloud."); return; }
   pushStateToCloud();
 }
 
@@ -722,6 +874,8 @@ function listenCloudChanges() {
     if (val) {
       state = val;
       syncStateAndConfig();
+      resolveRoleForUser(currentAuthUser);
+      renderAuthUI();
       renderAll();
     }
     document.getElementById("cloudStatusDot").classList.add("online");
@@ -809,6 +963,7 @@ function setCellData(empId, day, status, colorBg, skipSave=false){
 }
 
 function toggleSpikeDay(day){
+  if(!canEditGlobal()){ alert("🔒 Chỉ Admin mới được đặt Ngày Đặc Biệt."); return; }
   const k = monthKey();
   if(!state.spikeDays[k]) state.spikeDays[k] = {};
   const currentVal = state.spikeDays[k][day];
@@ -1013,7 +1168,7 @@ function renderLich(){
     let monthStr = String(state.month).padStart(2, '0');
     let holTitle = holInfo ? ` [${holInfo.name}]` : '';
     
-    head1 += `<th class="${thClass} day-header col-idx-${d}" onclick="toggleSpikeDay(${d})" title="${holTitle} Nhấp để xoay vòng Ngày Đặc Biệt">
+    head1 += `<th class="${thClass} day-header col-idx-${d}" onclick="${isAdmin() ? `toggleSpikeDay(${d})` : ''}" title="${holTitle}${isAdmin() ? ' Nhấp để xoay vòng Ngày Đặc Biệt' : ' (Chỉ Admin chỉnh được Ngày Đặc Biệt)'}">
                 <div>${VN_SHORT_WEEKDAY[wd]}${spikeTag}${holInfo?'🎉':''}</div>
                 <div style="font-size:10px; opacity:0.8">${dayStr}/${monthStr}</div>
               </th>`;
@@ -1089,7 +1244,8 @@ function renderLich(){
       if(customBg) cellStyle = `background:${customBg} !important; border:1px solid rgba(255,255,255,0.2);`;
       else if(mk && STATUS_DICT[mk]) cellStyle = `background:${STATUS_DICT[mk].bg}; color:${STATUS_DICT[mk].color}; border:1px solid ${STATUS_DICT[mk].color};`;
 
-      dayCells += `<td class="daycell ${cellClass} col-idx-${d}" style="${cellStyle}" onclick="handleCellClick('${e.id}',${d})">${mk||""}</td>`;
+      const lockedCls = canEditEmpRow(e.id) ? "" : "cell-locked";
+      dayCells += `<td class="daycell ${cellClass} ${lockedCls} col-idx-${d}" style="${cellStyle}" onclick="handleCellClick('${e.id}',${d})">${mk||""}</td>`;
     }
 
     const tagClass = e.role === "Leader" ? "tag-lead" : (e.type==="FTE"?"tag-fte":"tag-bpo");
@@ -1116,7 +1272,8 @@ function renderLich(){
                 <td style="text-align:center" class="mono">${counts.WFH}</td>
                 <td style="text-align:center" class="mono">${counts.OFF_T7}</td>`;
 
-    return `<tr>${meta}${dayCells}</tr>`;
+    const ownRowCls = isEmployeeSelf(e.id) ? "row-own" : "";
+    return `<tr class="${ownRowCls}">${meta}${dayCells}</tr>`;
   }).join("");
 
   let overallCells = "";
@@ -1139,26 +1296,36 @@ function renderLich(){
     ${overallCells}
   </tr></tfoot>`;
 
+  const toolbarLocked = (currentRole === "viewer");
+  const toolbarBanner = toolbarLocked
+    ? `<div class="lock-banner">👁️ Bạn đang xem ở chế độ chỉ đọc — đăng nhập Google để chỉnh sửa lịch của chính bạn.</div>`
+    : (currentRole === "employee"
+        ? `<div class="lock-banner" style="background:var(--teal-dim); color:var(--teal); border-color:#235952;">👤 Bạn chỉ có thể chỉnh sửa các ô lịch trên dòng của chính mình.</div>`
+        : "");
+
   return `
-  <div class="panel sticky-panel">
+  <div class="panel sticky-panel locked-section">
     <h2>🎨 Chọn ca & Tô màu thủ công <button class="info-icon-btn" onclick="openTopicLogic('palette')" title="Xem hướng dẫn">i</button></h2>
-    <div class="toolbar">
-      <div class="tool-group">
-        <button class="tool-btn ${activeTool==='(Xóa)' && activeColor===null?'active':''}" onclick="activeTool='(Xóa)';activeColor=null;renderAll()">Trống (Xóa)</button>
-        ${tools}
-      </div>
-      <div class="palette-wrap">
-        <span style="font-size:11px; color:var(--text-dim); font-weight:600">🎨 Cọ tô màu:</span>
-        ${palette}
-      </div>
-    </div>
-    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px">
-        <div style="display:flex; gap:8px">
-          <button class="btn-primary" onclick="autoFillSmart()">✨ Auto-Fill Dàn Trải Lịch Trực (T2-T7)</button>
-          <button class="btn-danger" onclick="clearMonthSchedule()">🗑️ Xóa hết lịch tháng này</button>
-          <button class="btn-refresh" onclick="renderAll()">🔄 Refresh Toàn Bộ</button>
-          <button class="btn-excel" onclick="copyToClipboardGSheet()">📋 Copy sang Google Sheet</button>
+    ${toolbarBanner}
+    <div class="${toolbarLocked ? 'lock-overlay-target' : ''}">
+      <div class="toolbar">
+        <div class="tool-group">
+          <button class="tool-btn ${activeTool==='(Xóa)' && activeColor===null?'active':''}" onclick="activeTool='(Xóa)';activeColor=null;renderAll()">Trống (Xóa)</button>
+          ${tools}
         </div>
+        <div class="palette-wrap">
+          <span style="font-size:11px; color:var(--text-dim); font-weight:600">🎨 Cọ tô màu:</span>
+          ${palette}
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px">
+          <div style="display:flex; gap:8px">
+            <button class="btn-primary" onclick="autoFillSmart()" ${isAdmin()?'':'disabled title="Chỉ Admin"'}>✨ Auto-Fill Dàn Trải Lịch Trực (T2-T7)</button>
+            <button class="btn-danger" onclick="clearMonthSchedule()" ${isAdmin()?'':'disabled title="Chỉ Admin"'}>🗑️ Xóa hết lịch tháng này</button>
+            <button class="btn-refresh" onclick="renderAll()">🔄 Refresh Toàn Bộ</button>
+            <button class="btn-excel" onclick="copyToClipboardGSheet()">📋 Copy sang Google Sheet</button>
+          </div>
+      </div>
     </div>
   </div>
 
@@ -1197,6 +1364,12 @@ function handleCellClick(empId, day){
   const emp = state.employees.find(e => e.id === empId);
   const curD = dateOf(day);
   if(!isEmpActiveOnDate(emp, curD)) return;
+
+  if(!canEditEmpRow(empId)){
+    if(currentRole === "viewer") alert("👁️ Bạn đang ở chế độ chỉ xem. Vui lòng đăng nhập Google để chỉnh sửa lịch của mình.");
+    else alert(`🔒 Bạn chỉ được chỉnh sửa lịch của chính mình, không thể sửa lịch của ${emp ? emp.name : "nhân viên khác"}.`);
+    return;
+  }
 
   if(activeTool === "SL" && emp.type === "BPO") {
     alert(`⚠️ Nhân sự ${emp.name} là BPO — KHÔNG ĐƯỢC đăng ký nghỉ SL (nghỉ bệnh). BPO chỉ có thể dùng AL/AL1/2 (nếu đã Pass) hoặc UPL (nếu đang thử việc).`);
@@ -1394,22 +1567,26 @@ function renderNhanSu(){
     </tr>`;
   }).join("");
 
-  return `<div class="panel">
+  const locked = !isAdmin();
+  return `<div class="panel locked-section">
     <h2>Danh sách Nhân sự, Khu vực & Early Pass Thử Việc <button class="info-icon-btn" onclick="openTopicLogic('nhansu')" title="Xem hướng dẫn Offboard">i</button></h2>
-    <div class="sub" style="margin:-6px 0 12px; color:var(--text-dim)">💡 Kéo biểu tượng ⠿ để đổi vị trí nhân viên trong cùng 1 Team.</div>
+    ${locked ? `<div class="lock-banner">🔒 Chỉ Admin (Leader) mới được sửa thông tin nhân sự. Bạn đang xem ở chế độ chỉ đọc.</div>` : `<div class="sub" style="margin:-6px 0 12px; color:var(--text-dim)">💡 Kéo biểu tượng ⠿ để đổi vị trí nhân viên trong cùng 1 Team.</div>`}
     
     <datalist id="region-list">${regionOptions}</datalist>
     <datalist id="team-list">${teamOptions}</datalist>
 
-    <div class="grid-wrap"><table class="emp-table">
-      <thead><tr><th></th><th>Họ tên</th><th>Mail</th><th>Khu vực</th><th>Team</th><th>Chức vụ</th><th>Loại</th><th>Onboarding</th><th>Offboard</th><th>Early Pass</th><th>Hiệu suất</th><th></th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table></div>
-    <br><button class="btn-primary" onclick="addEmp()">＋ Thêm Nhân viên</button>
+    <div class="${locked ? 'lock-overlay-target' : ''}">
+      <div class="grid-wrap"><table class="emp-table">
+        <thead><tr><th></th><th>Họ tên</th><th>Mail</th><th>Khu vực</th><th>Team</th><th>Chức vụ</th><th>Loại</th><th>Onboarding</th><th>Offboard</th><th>Early Pass</th><th>Hiệu suất</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+      <br><button class="btn-primary" onclick="addEmp()">＋ Thêm Nhân viên</button>
+    </div>
   </div>`;
 }
 
 function addEmp(){ 
+  if(!canEditGlobal()){ alert("🔒 Chỉ Admin mới được thêm nhân viên."); return; }
   const maxOrder = Math.max(0, ...state.employees.map(e => e.sortOrder || 0));
   state.employees.push({ id:uid(), name:"Nhân viên mới", mail:"", region:"HCM", team:"Team Mới", role:"FTE", type:"FTE", onboarding:"2026-08-01", offboardDate:"", earlyPass: false, sortOrder: maxOrder + 10 }); 
   saveLocalState();
@@ -1436,6 +1613,7 @@ function onEmpDragOver(ev){
 
 function onEmpDrop(ev){
   ev.preventDefault();
+  if(!canEditGlobal()) return;
   const targetId = ev.currentTarget.dataset.emp;
   if(!dragEmpId || dragEmpId === targetId) return;
 
@@ -1490,7 +1668,10 @@ function renderCauHinh(){
     </tr>
   `).join("");
 
+  const cauhinhLocked = !isAdmin();
   return `
+  ${cauhinhLocked ? `<div class="lock-banner">🔒 Chỉ Admin (Leader) mới được sửa Cấu hình hệ thống. Bạn đang xem ở chế độ chỉ đọc.</div>` : ``}
+  <div class="${cauhinhLocked ? 'lock-overlay-target' : ''}">
   <div class="panel">
     <h2>Cấu hình Quy tắc Ca Trực & Hạn mức Cảnh báo <button class="info-icon-btn" onclick="openTopicLogic('cauhinh')" title="Xem giải thích">i</button></h2>
     <div style="display:flex;gap:20px;flex-wrap:wrap">
@@ -1558,22 +1739,27 @@ function renderCauHinh(){
         <br><button class="btn-primary" onclick="addHolDyn()">＋ Thêm Lễ Linh Hoạt</button>
       </div>
     </div>
+  </div>
   </div>`;
 }
 
 function addHolFixed(){
+  if(!canEditGlobal()){ alert("🔒 Chỉ Admin mới được sửa Ngày Lễ."); return; }
   state.holidaysFixed.push({ id: uid(), date: "10-20", name: "Ngày Phụ Nữ VN" });
   saveLocalState(); renderAll();
 }
 function delHolFixed(id){
+  if(!canEditGlobal()){ alert("🔒 Chỉ Admin mới được sửa Ngày Lễ."); return; }
   state.holidaysFixed = state.holidaysFixed.filter(h => h.id !== id);
   saveLocalState(); renderAll();
 }
 function addHolDyn(){
+  if(!canEditGlobal()){ alert("🔒 Chỉ Admin mới được sửa Ngày Lễ."); return; }
   state.holidaysDynamic.push({ id: uid(), year: state.year, date: `${state.year}-03-08`, name: "Ngày Lễ Linh Hoạt" });
   saveLocalState(); renderAll();
 }
 function delHolDyn(id){
+  if(!canEditGlobal()){ alert("🔒 Chỉ Admin mới được sửa Ngày Lễ."); return; }
   state.holidaysDynamic = state.holidaysDynamic.filter(h => h.id !== id);
   saveLocalState(); renderAll();
 }
@@ -1657,6 +1843,7 @@ function checkConsecutiveOffThreshold(empId, day, totalDaysInMonth) {
 }
 
 function clearMonthSchedule(){
+  if(!canEditGlobal()){ alert("🔒 Chỉ Admin mới được xóa hết lịch tháng."); return; }
   const k = monthKey();
   if(!confirm(`⚠️ Bạn có chắc muốn XÓA TRỐNG toàn bộ lịch xếp của Tháng ${state.month}/${state.year} không?`)) return;
   if(state.marks && state.marks[k]) delete state.marks[k];
@@ -1667,6 +1854,7 @@ function clearMonthSchedule(){
 
 // 🎯 SMART AUTO-FILL VỚI THUẬT TOÁN DÀN TRẢI NGÀY OFF & ĐỔI MÃ WFH CHỦ NHẬT
 function autoFillSmart(){
+  if(!canEditGlobal()){ alert("🔒 Chỉ Admin mới được dùng Auto-Fill dàn trải lịch trực."); return; }
   const n = daysInMonth(state.month, state.year);
   const { dailyForecast } = calculateMonthlyForecast();
   const visibleEmps = getVisibleEmployeesForCurrentMonth();
@@ -1895,6 +2083,7 @@ function renderAllUIOnly(){
   else if(tab==="cauhinh") el.innerHTML = renderCauHinh();
 
   document.querySelectorAll('input[id^="cfg-"]').forEach(i => i.onchange = (e) => { 
+    if(!canEditGlobal()){ alert("🔒 Chỉ Admin mới được sửa Cấu hình."); renderAll(); return; }
     const key = i.id.replace("cfg-","");
     const mapKey = { lastWL:'lastMonthWL', growth:'growthRate', fteT:'fteTarget', bpoT:'bpoTarget', maxSun:'maxSundayHC', sundayCapBPO:'sundayCapPctBPO', ratioFTE:'fteRatioNum', ratioBPO:'fteRatioDenom', fteWorkloadPct:'fteWorkloadPct', sunWL:'sundayWL', underTh:'underThreshold', overTh:'overThreshold', doubleDay:'doubleDayAdj', saleDay:'saleDayAdj', payDay:'payDayAdj' };
     
@@ -1909,6 +2098,7 @@ function renderAllUIOnly(){
   });
 
   document.querySelectorAll('input[id^="dw-"]').forEach(i => i.onchange = (e) => {
+    if(!canEditGlobal()){ alert("🔒 Chỉ Admin mới được sửa Cấu hình."); renderAll(); return; }
     const dayIndex = Number(i.id.replace("dw-", ""));
     if(!state.cfg.dayWeights) state.cfg.dayWeights = {};
     state.cfg.dayWeights[dayIndex] = Number(e.target.value);
@@ -1922,6 +2112,7 @@ function renderAllUIOnly(){
   });
 
   document.querySelectorAll('tr[data-emp] [data-f]').forEach(i => i.onchange = (e) => { 
+      if(!canEditGlobal()){ alert("🔒 Chỉ Admin mới được sửa thông tin nhân sự."); renderAll(); return; }
       const emp = state.employees.find(em => em.id === i.closest('tr').dataset.emp);
       const field = i.dataset.f;
 
@@ -1945,12 +2136,14 @@ function renderAllUIOnly(){
   });
 
   document.querySelectorAll('tr[data-hol-f] [data-hf]').forEach(i => i.onchange = (e) => {
+      if(!canEditGlobal()){ alert("🔒 Chỉ Admin mới được sửa Ngày Lễ."); renderAll(); return; }
       const hId = i.closest('tr').dataset.holF;
       const item = state.holidaysFixed.find(h => h.id === hId);
       if(item) { item[i.dataset.hf] = e.target.value; saveLocalState(); }
   });
 
   document.querySelectorAll('tr[data-hol-d] [data-hd]').forEach(i => i.onchange = (e) => {
+      if(!canEditGlobal()){ alert("🔒 Chỉ Admin mới được sửa Ngày Lễ."); renderAll(); return; }
       const hId = i.closest('tr').dataset.holD;
       const item = state.holidaysDynamic.find(h => h.id === hId);
       if(!item) return;
@@ -1973,6 +2166,7 @@ function renderAllUIOnly(){
   });
 
   document.querySelectorAll('[data-del]').forEach(b => b.onclick = (e) => {
+    if(!canEditGlobal()){ alert("🔒 Chỉ Admin mới được xóa nhân viên."); return; }
     if(confirm("Bạn có chắc chắn muốn xóa hẳn nhân viên này khỏi hệ thống?")) {
       state.employees = state.employees.filter(em => em.id !== e.target.dataset.del);
       saveLocalState();
@@ -2004,6 +2198,7 @@ document.getElementById("prevMonth").onclick = () => { state.month = state.month
 document.getElementById("nextMonth").onclick = () => { state.month = state.month===12?1:state.month+1; if(state.month===1) state.year++; renderAll(); };
 
 loadLocalState();
+renderAuthUI();
 renderAll();
 listenCloudChanges();
 </script>
