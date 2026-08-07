@@ -453,30 +453,18 @@ function googleSignOut(){
 // Lưu lên Cloud, sửa Nhân sự/Cấu hình...). Thêm/bớt email trực tiếp tại đây.
 // ==========================================
 // regions: "ALL" => Manager (Tổng quan, quản mọi miền). Mảng miền => Sub-lead/Leader chỉ quản (các) miền đó.
-// 1. Biến toàn cục lưu danh xưng Admin
-let currentAdminTitle = null;
-
-// 2. Danh sách Admin bổ sung thuộc tính title để phân biệt hiển thị
 const ADMIN_EMAILS = [
-  { email: "ngoc.buiuyen@spxexpress.com", regions: "ALL", title: "Manager" },
-  { email: "khang.nguyentan@spxexpress.com", regions: "ALL", title: "Leader HCM" },
-  { email: "anh.nguyenthi.lan@spxexpress.com", regions: "ALL", title: "Leader HN" },
-  { email: "hoangminh.tran@spxexpress.com", regions: ["HCM"], title: "Sub-lead Cháo Bầu (HCM)" },
-  { email: "nghia.nguyenhuu@spxexpress.com", regions: ["HCM"], title: "Sub-lead Cá Nướng (HCM)" },
-  { email: "hoainam.dinh@spxexpress.com", regions: ["HN"], title: "Sub-lead Hồ Gươm (HN)" },
-  { email: "huong.thupham@spxexpress.com", regions: ["HN"], title: "Sub-lead Hồ Tây (HN)" }
+  { email: "ngoc.buiuyen@spxexpress.com", regions: "ALL" },              // Manager Tổng quan (không thuộc danh sách nhân sự)
+  { email: "khang.nguyentan@spxexpress.com", regions: ["HCM"] },         // Leader HCM
+  { email: "anh.nguyenthi.lan@spxexpress.com", regions: ["HN"] },        // Leader HN
+  { email: "hoangminh.tran@spxexpress.com", regions: ["HCM"] },          // SubLead Cháo Bầu (HCM)
+  { email: "nghia.nguyenhuu@spxexpress.com", regions: ["HCM"] },         // SubLead Cá Nướng (HCM)
+  { email: "hoainam.dinh@spxexpress.com", regions: ["HN"] },             // SubLead Hồ Gươm (HN)
+  { email: "huong.thupham@spxexpress.com", regions: ["HN"] }             // SubLead Hồ Tây (HN)
 ];
 
-// 3. Hàm phân giải vai trò người dùng
 function resolveRoleForUser(user){
-  if(!user || !user.email) { 
-    currentRole = "viewer"; 
-    currentEmpId = null; 
-    currentAdminRegions = null; 
-    currentAdminTitle = null;
-    return; 
-  }
-  
+  if(!user || !user.email) { currentRole = "viewer"; currentEmpId = null; currentAdminRegions = null; return; }
   const email = user.email.trim().toLowerCase();
   const emp = (state.employees || []).find(e => (e.mail || "").trim().toLowerCase() === email);
 
@@ -484,10 +472,8 @@ function resolveRoleForUser(user){
   if(adminEntry){
     currentRole = "admin";
     currentAdminRegions = adminEntry.regions;
-    currentAdminTitle = adminEntry.title;
-    currentEmpId = emp ? emp.id : null;
-
-    // Sub-lead theo miền: mặc định khóa bộ lọc lịch vào đúng miền mình quản lý
+    currentEmpId = emp ? emp.id : null; // vẫn map sang dòng của họ nếu có, để highlight dòng own row (không bắt buộc)
+    // Sub-lead theo miền: mặc định khóa bộ lọc lịch vào đúng miền mình quản
     if(currentAdminRegions !== "ALL" && Array.isArray(currentAdminRegions) && currentAdminRegions.length > 0){
       calFilter.region = currentAdminRegions[0];
     } else {
@@ -497,13 +483,11 @@ function resolveRoleForUser(user){
   }
 
   currentAdminRegions = null;
-  currentAdminTitle = null;
   if(!emp){ currentRole = "viewer"; currentEmpId = null; return; }
   currentEmpId = emp.id;
   currentRole = "employee";
 }
 
-// 4. Hàm render giao diện xác thực
 function renderAuthUI(){
   const box = document.getElementById("authBox");
   if(!box) return;
@@ -515,12 +499,9 @@ function renderAuthUI(){
     </button>`;
   } else {
     let roleLabel = { admin: "🔑 Admin", employee: "👤 Nhân viên", viewer: "👁️ Chỉ xem (email lạ)" }[currentRole];
-    
-    // Nếu thuộc nhóm Admin (Manager / Leader / Sub-lead), lấy trực tiếp từ currentAdminTitle
     if(currentRole === "admin"){
-      roleLabel = `🔑 ${currentAdminTitle || 'Admin'}`;
+      roleLabel = (currentAdminRegions === "ALL") ? "🔑 Manager (Tổng quan)" : `🔑 Sub-lead (${(currentAdminRegions||[]).join(", ")})`;
     }
-
     box.innerHTML = `<div class="user-chip">
         <img src="${currentAuthUser.photoURL || ''}" alt="">
         <div>
@@ -536,6 +517,7 @@ function renderAuthUI(){
   const saveMineBtn = document.getElementById("btnSaveMySchedule");
   if(saveMineBtn) saveMineBtn.style.display = (currentRole === "employee") ? "inline-flex" : "none";
 }
+
 function handleSaveMyScheduleClick(){
   if(!db){ alert("⚠️ Không kết nối được Firebase."); return; }
   if(currentRole !== "employee" || !currentEmpId){ alert("🔒 Bạn cần đăng nhập đúng email nhân viên để dùng chức năng này."); return; }
@@ -2140,36 +2122,6 @@ function renderForecast(){
   </div>`;
 }
 
-// 🔄 Đồng bộ danh sách nhân sự GỐC (trong code, INITIAL_EMPLOYEES) vào state hiện tại (thường đang là bản tải từ Cloud).
-// Match theo EMAIL: nhân sự đã có -> cập nhật thông tin (tên, DOB, mã NV, miền, team, chức vụ, ngày onboard);
-// nhân sự chưa có -> thêm mới. KHÔNG xóa ai đang có sẵn trong hệ thống (an toàn cho dữ liệu Cloud hiện tại).
-function syncEmployeesFromBuiltIn(){
-  if(!isManagerAdmin()){ alert("🔒 Chỉ Manager (phạm vi Tổng quan) mới được đồng bộ danh sách nhân sự gốc."); return; }
-  if(!confirm(`Đồng bộ sẽ:\n• CẬP NHẬT thông tin (Tên, DOB, Mã NV, Miền, Team, Chức vụ, Onboarding) cho nhân sự đã có trong hệ thống — match theo Email.\n• THÊM MỚI nhân sự chưa có.\n• KHÔNG xóa bất kỳ ai đang có sẵn, KHÔNG đụng tới lịch/cấu hình đã lưu.\n\nSau khi đồng bộ xong, nhớ bấm "☁️ Lưu lên Cloud" để lưu lại, nếu không lần tải trang sau sẽ mất thay đổi.\n\nTiếp tục?`)) return;
-
-  let updated = 0, added = 0;
-  INITIAL_EMPLOYEES.forEach(src => {
-    const existing = state.employees.find(e => (e.mail||'').trim().toLowerCase() === (src.mail||'').trim().toLowerCase());
-    if(existing){
-      existing.name = src.name;
-      existing.staffId = src.staffId;
-      existing.dob = src.dob;
-      existing.region = src.region;
-      existing.team = src.team;
-      existing.role = src.role;
-      existing.type = src.type;
-      existing.onboarding = src.onboarding;
-      updated++;
-    } else {
-      state.employees.push({ ...src, id: uid(), offboardDate: src.offboardDate || "" });
-      added++;
-    }
-  });
-  saveLocalState();
-  renderAll();
-  alert(`✅ Đã đồng bộ xong: cập nhật ${updated} nhân sự, thêm mới ${added} nhân sự.\n⚠️ Đừng quên bấm "☁️ Lưu lên Cloud" ở góc trên để lưu thay đổi này lên Firebase!`);
-}
-
 function renderNhanSu(){
   const visibleEmps = getFilteredVisibleEmployees();
   
@@ -2235,7 +2187,7 @@ function renderNhanSu(){
         <tbody>${rows}</tbody>
       </table></div>
       <br><button class="btn-primary" onclick="addEmp()" ${isAdmin()?'':'disabled title="Chỉ Admin/Sub-lead"'}>＋ Thêm Nhân viên</button>
-      ${isManagerAdmin() ? `<button class="btn-refresh" onclick="syncEmployeesFromBuiltIn()" title="Nạp lại danh sách nhân sự gốc trong code (merge theo Email, không xóa ai)">🔄 Đồng bộ danh sách nhân sự gốc</button>` : ''}
+      <button class="btn-refresh" onclick="autoSortEmployeesByRole()" ${isAdmin()?'title="Tự động sắp xếp lại trong từng Team theo Chức vụ: SubLead → FTE → BPO"':'disabled title="Chỉ Admin/Sub-lead"'}>🔀 Tự động sắp xếp (SubLead → FTE → BPO)</button>
     </div>
   </div>`;
 }
@@ -2251,6 +2203,35 @@ function addEmp(){
 }
 
 // 🔹 KÉO-THẢ ĐỔI VỊ TRÍ NHÂN VIÊN — CHỈ CHO PHÉP TRONG CÙNG 1 TEAM
+// 🔀 Tự động sắp xếp lại thứ tự hiển thị trong TỪNG Team theo Chức vụ: SubLead -> FTE -> BPO (Leader lên đầu nếu có).
+// Chỉ sắp xếp trong phạm vi nhân sự mà người dùng hiện tại được quyền sửa. Sau khi auto-sort, vẫn có thể
+// kéo-thả (⠿) để chỉnh tay lại từng trường hợp riêng lẻ — kéo-thả sẽ ghi đè sortOrder của auto-sort.
+const ROLE_SORT_PRIORITY = { "Leader": 0, "SubLead": 1, "FTE": 2, "BPO": 3 };
+function autoSortEmployeesByRole(){
+  if(!isAdmin()){ alert("🔒 Chỉ Admin/Sub-lead mới được sắp xếp lại nhân sự."); return; }
+  if(!confirm("🔀 Sắp xếp lại thứ tự nhân sự trong từng Team theo Chức vụ: SubLead → FTE → BPO?\nCác vị trí đã kéo-thả tay trước đó (trong phạm vi bạn quản lý) sẽ bị ghi đè.")) return;
+
+  const groups = {};
+  state.employees.forEach(e => {
+    if(!canEditEmpRow(e.id)) return; // giữ nguyên thứ tự của nhân sự ngoài phạm vi quản lý
+    const key = e.team || "";
+    (groups[key] = groups[key] || []).push(e);
+  });
+
+  Object.values(groups).forEach(list => {
+    list.sort((a, b) => {
+      const pa = ROLE_SORT_PRIORITY[a.role] ?? 99;
+      const pb = ROLE_SORT_PRIORITY[b.role] ?? 99;
+      if(pa !== pb) return pa - pb;
+      return (a.name || "").localeCompare(b.name || "", 'vi');
+    });
+    list.forEach((emp, i) => { emp.sortOrder = (i + 1) * 10; });
+  });
+
+  saveLocalState();
+  renderAll();
+}
+
 let dragEmpId = null;
 
 function onEmpDragStart(ev){
