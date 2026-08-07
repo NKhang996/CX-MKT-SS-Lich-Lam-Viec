@@ -315,7 +315,7 @@
   <nav id="sidebar">
     <div class="brand">
       <div class="brand-mark">SPX</div>
-      <div class="brand-text">Workload Planner<span>Multi-Region Pro</span></div>
+      <div class="brand-text">Workload Planner<span>Seller Success</span></div>
     </div>
     <div class="navgroup" id="navgroup"></div>
   </nav>
@@ -715,7 +715,7 @@ function renderRegionScopeTabs(){
   const visibleRegionTabs = isScopedSubLead ? currentAdminRegions.slice() : allRegions;
 
   let html = `<div class="panel" style="padding:10px 16px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-    <span style="font-size:12px; font-weight:700; color:var(--text-dim);">🌏 Phạm vi xem:</span>`;
+    <span style="font-size:12px; font-weight:700; color:var(--text-dim);">🌏 Phạm vi xem & xử lý:</span>`;
 
   if(!isScopedSubLead){
     html += `<button class="tool-btn ${calFilter.region==='ALL'?'active':''}" onclick="calFilter.region='ALL'; renderAll();">📊 Tổng quan (Tất cả)</button>`;
@@ -2001,7 +2001,7 @@ function renderRegionWorkloadConfigPanel(){
 
   return `
   <div class="panel">
-    <h2>⚙ Cấu hình Workload/Target theo Từng Miền <button class="info-icon-btn" onclick="openTopicLogic('forecast_cfg')" title="Xem công thức">i</button></h2>
+    <h2>⚙ Cấu hình Workload/Target theo Từng Team <button class="info-icon-btn" onclick="openTopicLogic('forecast_cfg')" title="Xem công thức">i</button></h2>
     <div class="sub" style="margin:-4px 0 10px; color:var(--text-faint); font-size:11px;">ℹ️ Khi xem "Tổng quan", các miền được CỘNG GỘP lại theo tỉ trọng WL tháng của từng miền. Sub-lead chỉ sửa được miền mình quản lý.</div>
     ${sections}
   </div>`;
