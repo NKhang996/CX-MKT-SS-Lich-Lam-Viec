@@ -455,8 +455,8 @@ function googleSignOut(){
 // regions: "ALL" => Manager (Tổng quan, quản mọi miền). Mảng miền => Sub-lead/Leader chỉ quản (các) miền đó.
 const ADMIN_EMAILS = [
   { email: "ngoc.buiuyen@spxexpress.com", regions: "ALL" },              // Manager Tổng quan (không thuộc danh sách nhân sự)
-  { email: "khang.nguyentan@spxexpress.com", regions: "ALL" },         // Leader HCM
-  { email: "anh.nguyenthi.lan@spxexpress.com", regions: "ALL" },        // Leader HN
+  { email: "khang.nguyentan@spxexpress.com", regions: ["HCM"] },         // Leader HCM
+  { email: "anh.nguyenthi.lan@spxexpress.com", regions: ["HN"] },        // Leader HN
   { email: "hoangminh.tran@spxexpress.com", regions: ["HCM"] },          // SubLead Cháo Bầu (HCM)
   { email: "nghia.nguyenhuu@spxexpress.com", regions: ["HCM"] },         // SubLead Cá Nướng (HCM)
   { email: "hoainam.dinh@spxexpress.com", regions: ["HN"] },             // SubLead Hồ Gươm (HN)
@@ -702,7 +702,7 @@ function renderRegionScopeTabs(){
   const visibleRegionTabs = isScopedSubLead ? currentAdminRegions.slice() : allRegions;
 
   let html = `<div class="panel" style="padding:10px 16px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-    <span style="font-size:12px; font-weight:700; color:var(--text-dim);">🌏 Phạm vi xử lý:</span>`;
+    <span style="font-size:12px; font-weight:700; color:var(--text-dim);">🌏 Phạm vi xem:</span>`;
 
   if(!isScopedSubLead){
     html += `<button class="tool-btn ${calFilter.region==='ALL'?'active':''}" onclick="calFilter.region='ALL'; renderAll();">📊 Tổng quan (Tất cả)</button>`;
@@ -1151,7 +1151,7 @@ function getVisibleEmployeesForCurrentMonth(){
   monthStart.setHours(0,0,0,0);
   return state.employees.filter(emp => {
     if(!emp.offboardDate) return true;
-    const offb = new Date(emp.offboardDate);
+    const offb = parseLocalDate(emp.offboardDate);
     offb.setHours(0,0,0,0);
     const hideFromMonth = new Date(offb.getFullYear(), offb.getMonth() + 1, 1);
     return monthStart < hideFromMonth;
@@ -1676,7 +1676,7 @@ function renderLich(){
     <td class="sticky-col col-name" style="color:var(--teal)">📊 OVERALL HC</td>
     <td class="sticky-col col-region"></td>
     <td class="sticky-col col-team"></td>
-    <td colspan="${1 + numMCols + 5}" style="text-align:right; font-size:11px; color:var(--text-dim)">Tổng làm (S2+OT+WFH) / (CN: Trực/Max):</td>
+    <td colspan="${1 + numMCols + 7}" style="text-align:right; font-size:11px; color:var(--text-dim)">Tổng làm (S2+OT+WFH) / (CN: Trực/Max):</td>
     ${overallCells}
   </tr></tfoot>`;
 
