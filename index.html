@@ -453,18 +453,30 @@ function googleSignOut(){
 // Lưu lên Cloud, sửa Nhân sự/Cấu hình...). Thêm/bớt email trực tiếp tại đây.
 // ==========================================
 // regions: "ALL" => Manager (Tổng quan, quản mọi miền). Mảng miền => Sub-lead/Leader chỉ quản (các) miền đó.
+// 1. Biến toàn cục lưu danh xưng Admin
+let currentAdminTitle = null;
+
+// 2. Danh sách Admin bổ sung thuộc tính title để phân biệt hiển thị
 const ADMIN_EMAILS = [
-  { email: "ngoc.buiuyen@spxexpress.com", regions: "ALL" },              // Manager Tổng quan (không thuộc danh sách nhân sự)
-  { email: "khang.nguyentan@spxexpress.com", regions: ["HCM"] },         // Leader HCM
-  { email: "anh.nguyenthi.lan@spxexpress.com", regions: ["HN"] },        // Leader HN
-  { email: "hoangminh.tran@spxexpress.com", regions: ["HCM"] },          // SubLead Cháo Bầu (HCM)
-  { email: "nghia.nguyenhuu@spxexpress.com", regions: ["HCM"] },         // SubLead Cá Nướng (HCM)
-  { email: "hoainam.dinh@spxexpress.com", regions: ["HN"] },             // SubLead Hồ Gươm (HN)
-  { email: "huong.thupham@spxexpress.com", regions: ["HN"] }             // SubLead Hồ Tây (HN)
+  { email: "ngoc.buiuyen@spxexpress.com", regions: "ALL", title: "Manager (Tổng quan)" },
+  { email: "khang.nguyentan@spxexpress.com", regions: "ALL", title: "Leader HCM" },
+  { email: "anh.nguyenthi.lan@spxexpress.com", regions: "ALL", title: "Leader HN" },
+  { email: "hoangminh.tran@spxexpress.com", regions: ["HCM"], title: "Sub-lead Cháo Bầu (HCM)" },
+  { email: "nghia.nguyenhuu@spxexpress.com", regions: ["HCM"], title: "Sub-lead Cá Nướng (HCM)" },
+  { email: "hoainam.dinh@spxexpress.com", regions: ["HN"], title: "Sub-lead Hồ Gươm (HN)" },
+  { email: "huong.thupham@spxexpress.com", regions: ["HN"], title: "Sub-lead Hồ Tây (HN)" }
 ];
 
+// 3. Hàm phân giải vai trò người dùng
 function resolveRoleForUser(user){
-  if(!user || !user.email) { currentRole = "viewer"; currentEmpId = null; currentAdminRegions = null; return; }
+  if(!user || !user.email) { 
+    currentRole = "viewer"; 
+    currentEmpId = null; 
+    currentAdminRegions = null; 
+    currentAdminTitle = null;
+    return; 
+  }
+  
   const email = user.email.trim().toLowerCase();
   const emp = (state.employees || []).find(e => (e.mail || "").trim().toLowerCase() === email);
 
@@ -472,8 +484,10 @@ function resolveRoleForUser(user){
   if(adminEntry){
     currentRole = "admin";
     currentAdminRegions = adminEntry.regions;
-    currentEmpId = emp ? emp.id : null; // vẫn map sang dòng của họ nếu có, để highlight dòng own row (không bắt buộc)
-    // Sub-lead theo miền: mặc định khóa bộ lọc lịch vào đúng miền mình quản
+    currentAdminTitle = adminEntry.title;
+    currentEmpId = emp ? emp.id : null;
+
+    // Sub-lead theo miền: mặc định khóa bộ lọc lịch vào đúng miền mình quản lý
     if(currentAdminRegions !== "ALL" && Array.isArray(currentAdminRegions) && currentAdminRegions.length > 0){
       calFilter.region = currentAdminRegions[0];
     } else {
@@ -483,11 +497,13 @@ function resolveRoleForUser(user){
   }
 
   currentAdminRegions = null;
+  currentAdminTitle = null;
   if(!emp){ currentRole = "viewer"; currentEmpId = null; return; }
   currentEmpId = emp.id;
   currentRole = "employee";
 }
 
+// 4. Hàm render giao diện xác thực
 function renderAuthUI(){
   const box = document.getElementById("authBox");
   if(!box) return;
@@ -499,9 +515,12 @@ function renderAuthUI(){
     </button>`;
   } else {
     let roleLabel = { admin: "🔑 Admin", employee: "👤 Nhân viên", viewer: "👁️ Chỉ xem (email lạ)" }[currentRole];
+    
+    // Nếu thuộc nhóm Admin (Manager / Leader / Sub-lead), lấy trực tiếp từ currentAdminTitle
     if(currentRole === "admin"){
-      roleLabel = (currentAdminRegions === "ALL") ? "🔑 Manager (Tổng quan)" : `🔑 Sub-lead (${(currentAdminRegions||[]).join(", ")})`;
+      roleLabel = `🔑 ${currentAdminTitle || 'Admin'}`;
     }
+
     box.innerHTML = `<div class="user-chip">
         <img src="${currentAuthUser.photoURL || ''}" alt="">
         <div>
@@ -516,12 +535,6 @@ function renderAuthUI(){
   if(saveBtn) saveBtn.style.display = isAdmin() ? "inline-flex" : "none";
   const saveMineBtn = document.getElementById("btnSaveMySchedule");
   if(saveMineBtn) saveMineBtn.style.display = (currentRole === "employee") ? "inline-flex" : "none";
-}
-
-function handleSaveMyScheduleClick(){
-  if(!db){ alert("⚠️ Không kết nối được Firebase."); return; }
-  if(currentRole !== "employee" || !currentEmpId){ alert("🔒 Bạn cần đăng nhập đúng email nhân viên để dùng chức năng này."); return; }
-  saveMyScheduleToCloud();
 }
 
 // Nhân viên chỉ được đẩy đúng phần lịch (marks) của chính mình lên Cloud:
