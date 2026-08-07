@@ -455,8 +455,8 @@ function googleSignOut(){
 // regions: "ALL" => Manager (Tổng quan, quản mọi miền). Mảng miền => Sub-lead/Leader chỉ quản (các) miền đó.
 const ADMIN_EMAILS = [
   { email: "ngoc.buiuyen@spxexpress.com", regions: "ALL" },              // Manager Tổng quan (không thuộc danh sách nhân sự)
-  { email: "khang.nguyentan@spxexpress.com", regions: "ALL" },         // Leader HCM
-  { email: "anh.nguyenthi.lan@spxexpress.com", regions: "ALL" },        // Leader HN
+  { email: "khang.nguyentan@spxexpress.com", regions: ["HCM"] },         // Leader HCM
+  { email: "anh.nguyenthi.lan@spxexpress.com", regions: ["HN"] },        // Leader HN
   { email: "hoangminh.tran@spxexpress.com", regions: ["HCM"] },          // SubLead Cháo Bầu (HCM)
   { email: "nghia.nguyenhuu@spxexpress.com", regions: ["HCM"] },         // SubLead Cá Nướng (HCM)
   { email: "hoainam.dinh@spxexpress.com", regions: ["HN"] },             // SubLead Hồ Gươm (HN)
@@ -731,7 +731,7 @@ function getSundaysInMonth(m = state.month, y = state.year) {
 function isEmpPassedProbation(emp, curDate){
   if(emp.earlyPass) return true;
   if(!emp.onboarding) return true;
-  const onb = new Date(emp.onboarding);
+  const onb = parseLocalDate(emp.onboarding);
   const cur = new Date(curDate);
   return Math.floor((cur - onb) / (1000 * 60 * 60 * 24)) >= 60;
 }
@@ -990,6 +990,14 @@ function saveLocalState(){
 function monthKey(m = state.month, y = state.year){ return `${y}-${String(m).padStart(2,"0")}`; }
 function daysInMonth(m = state.month, y = state.year){ return new Date(y,m,0).getDate(); }
 function dateOf(day, m = state.month, y = state.year){ return new Date(y, m-1, day); }
+// 🔹 Parse chuỗi ngày "yyyy-mm-dd" thành Date theo giờ LOCAL (tránh lệch ngày do new Date() hiểu là UTC)
+function parseLocalDate(dateStr){
+  if(!dateStr) return new Date(NaN);
+  const parts = String(dateStr).split("-").map(Number);
+  if(parts.length !== 3 || parts.some(isNaN)) return new Date(NaN);
+  const [y, m, d] = parts;
+  return new Date(y, m - 1, d);
+}
 
 // 📅 HELPER: MASK NHẬP NGÀY THÁNG dd/mm/yyyy (dữ liệu lưu nội bộ vẫn là ISO yyyy-mm-dd)
 function isoToDMY(iso){
@@ -1179,11 +1187,11 @@ function getFilteredVisibleEmployees(){
 function isEmpActiveOnDate(emp, curDate){
   const cur = new Date(curDate); cur.setHours(0,0,0,0);
   if(emp.onboarding) {
-    const onb = new Date(emp.onboarding); onb.setHours(0,0,0,0);
+    const onb = parseLocalDate(emp.onboarding); onb.setHours(0,0,0,0);
     if(cur < onb) return false;
   }
   if(emp.offboardDate) {
-    const offb = new Date(emp.offboardDate); offb.setHours(0,0,0,0);
+    const offb = parseLocalDate(emp.offboardDate); offb.setHours(0,0,0,0);
     if(cur >= offb) return false;
   }
   return true;
@@ -1194,7 +1202,7 @@ function getEmpPerformancePct(emp, currentDate){
   if(!isEmpActiveOnDate(emp, currentDate)) return 0;
   if(isEmpPassedProbation(emp, currentDate)) return 1.0;
   if(!emp.onboarding) return 1.0;
-  const onb = new Date(emp.onboarding);
+  const onb = parseLocalDate(emp.onboarding);
   const cur = new Date(currentDate);
   const diffDays = Math.floor((cur - onb) / (1000 * 60 * 60 * 24));
   if(diffDays < 7) return 0;
@@ -1590,11 +1598,11 @@ function renderLich(){
       // 🎉 Icon sự kiện: sinh nhật / kỷ niệm Onboard / kỷ niệm Pass thử việc
       let eventIcons = "";
       if(e.dob){
-        const dob = new Date(e.dob);
-        if(!isNaN(dob) && dob.getDate() === curDate.getDate() && dob.getMonth() === curDate.getMonth()) eventIcons += "🎂";
+        const dob = parseLocalDate(e.dob);
+        if(dob && !isNaN(dob) && dob.getDate() === curDate.getDate() && dob.getMonth() === curDate.getMonth()) eventIcons += "🎂";
       }
       if(e.onboarding){
-        const onb = new Date(e.onboarding);
+        const onb = parseLocalDate(e.onboarding);
         if(!isNaN(onb) && curDate >= onb && onb.getDate() === curDate.getDate() && onb.getMonth() === curDate.getMonth() && curDate.getFullYear() > onb.getFullYear()) eventIcons += "🎉";
         const passDate = new Date(onb); passDate.setDate(passDate.getDate() + 60);
         if(!isNaN(passDate) && curDate >= passDate && passDate.getDate() === curDate.getDate() && passDate.getMonth() === curDate.getMonth()) eventIcons += "✅";
