@@ -451,9 +451,9 @@ function googleSignOut(){
 // ==========================================
 // regions: "ALL" => Manager (Tổng quan, quản mọi miền). Mảng miền => Sub-lead/Leader chỉ quản (các) miền đó.
 const ADMIN_EMAILS = [
-  { email: "ngoc.buiuyen@spxexpress.com", regions: "ALL" },              // Manager Tổng quan (không thuộc danh sách nhân sự)
-  { email: "khang.nguyentan@spxexpress.com", regions: ["HCM"] },         // Leader HCM
-  { email: "anh.nguyenthi.lan@spxexpress.com", regions: ["HN"] },        // Leader HN
+  { email: "ngoc.buiuyen@spxexpress.com", regions: "ALL" },              // Manager Tổng quan
+  { email: "khang.nguyentan@spxexpress.com", regions: ["ALL"] },         // Leader HCM
+  { email: "anh.nguyenthi.lan@spxexpress.com", regions: ["ALL"] },        // Leader HN
   { email: "hoangminh.tran@spxexpress.com", regions: ["HCM"] },          // SubLead Cháo Bầu (HCM)
   { email: "nghia.nguyenhuu@spxexpress.com", regions: ["HCM"] },         // SubLead Cá Nướng (HCM)
   { email: "hoainam.dinh@spxexpress.com", regions: ["HN"] },             // SubLead Hồ Gươm (HN)
@@ -600,21 +600,18 @@ const INITIAL_EMPLOYEES = [
   { name:"Lê Thị Hoàng Nguyên", mail:"hoangnguyen.lethi01@spxexpress.com", staffId:"SPXVN26646", dob:"2004-12-01", role:"FTE", team:"Cháo Bầu", region:"HCM", type:"FTE", onboarding:"2026-07-20", offboardDate:"", earlyPass: false },
   { name:"Phan Thị Linh", mail:"linh.phanthi@spxexpress.com", staffId:"SPXVN4962", dob:"1995-12-05", role:"FTE", team:"Cháo Bầu", region:"HCM", type:"FTE", onboarding:"2022-04-12", offboardDate:"", earlyPass: false },
   { name:"Trần Thị Thu Thủy", mail:"thuthuy.tranthi@spxexpress.com", staffId:"SPXVN11505", dob:"1994-04-16", role:"FTE", team:"Cháo Bầu", region:"HCM", type:"FTE", onboarding:"2023-12-04", offboardDate:"", earlyPass: false },
-  // ⚠️ DOB nguồn CSV ghi năm 2024 (bất thường, khả năng lỗi nhập liệu) — giữ nguyên theo dữ liệu gốc, cần kiểm tra lại
-  { name:"Tô Nguyên Bảo", mail:"nguyenbao.to@spx-sales.com", staffId:"EX_SPXVN001182", dob:"2024-03-22", role:"FTE", team:"Cháo Bầu", region:"HCM", type:"FTE", onboarding:"2026-01-21", offboardDate:"", earlyPass: false },
+  { name:"Tô Nguyên Bảo", mail:"nguyenbao.to@spx-sales.com", staffId:"EX_SPXVN001182", dob:"2004-03-22", role:"FTE", team:"Cháo Bầu", region:"HCM", type:"FTE", onboarding:"2026-01-21", offboardDate:"", earlyPass: false },
   { name:"Trần Đăng Khoa", mail:"dangkhoa.tran07@spx-sales.com", staffId:"EX_SPXVN001698", dob:"2004-04-07", role:"BPO", team:"Cháo Bầu", region:"HCM", type:"BPO", onboarding:"2026-07-22", offboardDate:"", earlyPass: true },
   { name:"Mai Trọng Nghĩa", mail:"trongnghia.mai@spx-sales.com", staffId:"EX_SPXVN001705", dob:"2004-10-22", role:"BPO", team:"Cháo Bầu", region:"HCM", type:"BPO", onboarding:"2026-07-27", offboardDate:"", earlyPass: false },
 
   // ===== HCM — Cá Nướng =====
   { name:"Nguyễn Hữu Nghĩa", mail:"nghia.nguyenhuu@spxexpress.com", staffId:"SPXVN1166", dob:"1996-01-25", role:"SubLead", team:"Cá Nướng", region:"HCM", type:"FTE", onboarding:"2021-06-07", offboardDate:"", earlyPass: false },
   { name:"Dương Minh Phương", mail:"phuong.duongminh@spxexpress.com", staffId:"SPXVN10697", dob:"1999-03-25", role:"FTE", team:"Cá Nướng", region:"HCM", type:"FTE", onboarding:"2023-10-16", offboardDate:"", earlyPass: false },
-  // ⚠️ CSV nguồn ghi email này là vy.lethanh@shopee.com (khác domain hệ thống) — đã giữ nguyên email cũ trong hệ thống để không phá đăng nhập, cần xác nhận lại với nhân sự
   { name:"Lê Nguyễn Thanh Vy", mail:"vy.lethanh@spxexpress.com", staffId:"SPXVN2749", dob:"1996-03-11", role:"FTE", team:"Cá Nướng", region:"HCM", type:"FTE", onboarding:"2021-11-02", offboardDate:"", earlyPass: false },
   { name:"Huỳnh Mỹ Loan Anh", mail:"loananh.huynhmy@spxexpress.com", staffId:"SPXVN11506", dob:"1997-12-03", role:"FTE", team:"Cá Nướng", region:"HCM", type:"FTE", onboarding:"2023-12-04", offboardDate:"", earlyPass: false },
   { name:"Nhan Bích Tâm", mail:"bichtam.nhan01@spxexpress.com", staffId:"SPXVN26648", dob:"2004-09-07", role:"FTE", team:"Cá Nướng", region:"HCM", type:"FTE", onboarding:"2026-07-20", offboardDate:"", earlyPass: false },
   { name:"Châu Hiệp Phát", mail:"hiepphat.chau01@spx-sales.com", staffId:"EX_SPXVN001544", dob:"2005-04-10", role:"BPO", team:"Cá Nướng", region:"HCM", type:"BPO", onboarding:"2026-07-27", offboardDate:"", earlyPass: true },
   { name:"Nguyễn Quỳnh Cẩm Tú", mail:"camtu.nguyenquynh@spx-sales.com", staffId:"EX_SPXVN001704", dob:"2004-10-01", role:"BPO", team:"Cá Nướng", region:"HCM", type:"BPO", onboarding:"2026-07-27", offboardDate:"", earlyPass: false },
-  // ⚠️ Định dạng DOB nguồn khác thường (dd/mm/yyyy thay vì tên tháng) — để trống chờ xác nhận lại thay vì đoán sai
   { name:"Trần Mạnh Cường", mail:"manhcuong.tran04@spx-sales.com", staffId:"", dob:"", role:"BPO", team:"Cá Nướng", region:"HCM", type:"BPO", onboarding:"2026-08-05", offboardDate:"", earlyPass: false },
 
   // ===== HN — Hồ Gươm =====
