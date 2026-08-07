@@ -455,8 +455,8 @@ function googleSignOut(){
 // regions: "ALL" => Manager (Tổng quan, quản mọi miền). Mảng miền => Sub-lead/Leader chỉ quản (các) miền đó.
 const ADMIN_EMAILS = [
   { email: "ngoc.buiuyen@spxexpress.com", regions: "ALL" },              // Manager Tổng quan (không thuộc danh sách nhân sự)
-  { email: "khang.nguyentan@spxexpress.com", regions: ["HCM"] },         // Leader HCM
-  { email: "anh.nguyenthi.lan@spxexpress.com", regions: ["HN"] },        // Leader HN
+  { email: "khang.nguyentan@spxexpress.com", regions: "ALL" },         // Leader HCM
+  { email: "anh.nguyenthi.lan@spxexpress.com", regions: "ALL" },        // Leader HN
   { email: "hoangminh.tran@spxexpress.com", regions: ["HCM"] },          // SubLead Cháo Bầu (HCM)
   { email: "nghia.nguyenhuu@spxexpress.com", regions: ["HCM"] },         // SubLead Cá Nướng (HCM)
   { email: "hoainam.dinh@spxexpress.com", regions: ["HN"] },             // SubLead Hồ Gươm (HN)
@@ -702,7 +702,7 @@ function renderRegionScopeTabs(){
   const visibleRegionTabs = isScopedSubLead ? currentAdminRegions.slice() : allRegions;
 
   let html = `<div class="panel" style="padding:10px 16px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-    <span style="font-size:12px; font-weight:700; color:var(--text-dim);">🌏 Phạm vi xem:</span>`;
+    <span style="font-size:12px; font-weight:700; color:var(--text-dim);">🌏 Phạm vi xử lý:</span>`;
 
   if(!isScopedSubLead){
     html += `<button class="tool-btn ${calFilter.region==='ALL'?'active':''}" onclick="calFilter.region='ALL'; renderAll();">📊 Tổng quan (Tất cả)</button>`;
