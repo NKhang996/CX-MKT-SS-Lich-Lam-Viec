@@ -274,24 +274,26 @@
 
   /* CHỜ DUYỆT */
   .cal-table td.daycell.cell-pending{background-image: repeating-linear-gradient(45deg, rgba(232,163,61,0.18), rgba(232,163,61,0.18) 4px, transparent 4px, transparent 8px) !important; outline: 1px dashed var(--amber);}
-  .pending-dot{position:absolute; top:0; left:1px; font-size:8px; line-height:1;}
   .cal-table td.daycell{position:relative;}
-  /* 🎉 Icon sự kiện (sinh nhật/onboard/pass) làm NỀN CHÌM phía sau mã ca — kích thước tỉ lệ theo ô,
-     không cố định px cứng, để luôn cân đối dù ô lịch to/nhỏ khác nhau trên các màn hình. */
+  /* 📌 4 GÓC CỦA Ô LỊCH — mỗi loại badge 1 góc riêng để không đè lên nhau:
+     Trên-trái: ⏳ chờ duyệt | Trên-phải: 🎂🎉✅ sự kiện | Dưới-trái: 🔁 đổi ca đã duyệt | Dưới-phải: 🔻🔸 hiệu suất thử việc */
+  .pending-dot{position:absolute; top:0; left:1px; font-size:8px; line-height:1; z-index:3;}
   .event-icon{
-    position:absolute; inset:0;
-    display:flex; align-items:center; justify-content:center;
-    font-size: clamp(13px, 60%, 22px);
-    line-height:1;
-    opacity:0.32;
-    z-index:0;
+    position:absolute; top:0; right:1px;
+    font-size:14px; line-height:1;
+    z-index:3;
     pointer-events:none;
-    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35));
+    filter: drop-shadow(0 1px 1.5px rgba(0,0,0,0.6));
   }
-  body.light-theme .event-icon{ opacity:0.4; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.15)); }
-  .cal-table td.daycell .cell-status-text{ position:relative; z-index:1; }
-  .pending-dot, .swap-badge{ z-index:2; }
-  .swap-badge{position:absolute; bottom:0; right:1px; font-size:8px; line-height:1;}
+  body.light-theme .event-icon{ filter: drop-shadow(0 1px 1.5px rgba(0,0,0,0.35)); }
+  .swap-badge{position:absolute; bottom:0; left:1px; font-size:9px; line-height:1; z-index:3;}
+  .perf-badge{
+    position:absolute; bottom:0; right:1px;
+    font-size:12px; line-height:1;
+    z-index:3;
+    cursor:help;
+    filter: drop-shadow(0 1px 1.5px rgba(0,0,0,0.5));
+  }
 
   /* NHẬT KÝ THAY ĐỔI */
   .log-table td, .log-table th{padding:6px 8px; font-size:11.5px;}
@@ -943,6 +945,7 @@ function openTopicLogic(topicKey){
       <p>• <b>Quy tắc AL/SL/UPL:</b> Nhân viên đang thử việc (chưa Pass probation) <b>KHÔNG</b> được đăng ký AL/SL — dùng ca <b>UPL</b> (nghỉ không lương) thay thế. UPL không giới hạn đối tượng, có thể dùng cho bất kỳ nhân sự nào (kể cả đã Pass). Riêng <b>SL</b>: nhân sự loại BPO <b>không bao giờ</b> được đăng ký (dù đã Pass hay chưa).</p>
       <p>• <b>Đánh dấu Ngày Đặc Biệt (Spike):</b> Nhấp vào ô tiêu đề (thứ/ngày) trên đầu bảng lịch để xoay vòng: Bình thường → Ngày Sale → Ngày Đôi → Ngày Lương → Bình thường. Ngày đặc biệt sẽ nhân thêm hệ số vào Workload dự báo (xem tab Cấu hình).</p>
       <p>• <b>Auto-Fill Dàn Trải:</b> Tự động xếp Ngày Lễ, Ca trực Chủ Nhật (3 bước BPO/FTE), nghỉ bù cố định & OFF dàn trải cho cả tháng. Xem chi tiết công thức ở phần Cấu hình.</p>
+      <p>• <b>Icon góc ô lịch:</b> Góc trên-trái ⏳ = đang chờ Admin duyệt; Góc trên-phải 🎂🎉✅ = sinh nhật / kỷ niệm Onboard / kỷ niệm Pass thử việc; Góc dưới-trái 🔁 = đổi ca đã được duyệt; Góc dưới-phải 🔻/🔸 = hiệu suất ramp-up của nhân sự <b>đang thử việc</b> tại đúng ngày đó (🔻 = dưới 100%, 🔸 = đã đạt 100% nhưng chưa chính thức Pass mốc 60 ngày) — chỉ hiện trên ngày đi làm (S2/OT/WFH), rê chuột để xem % chi tiết.</p>
     </div>`,
     'nhansu': `<div class="logic-section">
       <h3>🔑 Logic Thử Việc & Ramp-up (FTE & BPO)</h3>
@@ -1683,7 +1686,7 @@ function renderLich(){
       }
       if(mk === "WFH") counts.WFH++;
 
-      dayInfo.push({ d, isActive:true, curDate, isSun, cell, mk, notWorkingType });
+      dayInfo.push({ d, isActive:true, curDate, isSun, cell, mk, notWorkingType, isWorking });
     }
 
     // 🔹 PASS 2: xác định các chuỗi ngày nghỉ liên tiếp (OFF/AL/SL/HOL/UPL) để tô màu GỘP theo cụm
@@ -1715,7 +1718,7 @@ function renderLich(){
         dayCells += `<td class="daycell disabled col-idx-${info.d}" title="Chưa Onboarding hoặc Đã Offboard">-</td>`;
         continue;
       }
-      const { d, curDate, isSun, cell, mk, notWorkingType } = info;
+      const { d, curDate, isSun, cell, mk, notWorkingType, isWorking } = info;
       const customBg = cell.colorBg;
 
       let cellClass = isSun ? "sun-cell" : "";
@@ -1765,17 +1768,30 @@ function renderLich(){
       if(e.onboarding){
         const onb = parseLocalDate(e.onboarding);
         if(!isNaN(onb) && curDate >= onb && onb.getDate() === curDate.getDate() && onb.getMonth() === curDate.getMonth() && curDate.getFullYear() > onb.getFullYear()) eventIcons += "🎉";
-        const passDate = new Date(onb); passDate.setDate(passDate.getDate() + 60);
-        if(!isNaN(passDate) && curDate >= passDate && passDate.getDate() === curDate.getDate() && passDate.getMonth() === curDate.getMonth()) eventIcons += "✅";
       }
+      const passDateForIcon = getPassDate(e);
+      if(passDateForIcon && !isNaN(passDateForIcon) && curDate >= passDateForIcon && passDateForIcon.getDate() === curDate.getDate() && passDateForIcon.getMonth() === curDate.getMonth()) eventIcons += "✅";
       const eventTitle = eventIcons ? `title="${eventIcons.includes('🎂')?'🎂 Sinh nhật! ':''}${eventIcons.includes('🎉')?'🎉 Kỷ niệm Onboard! ':''}${eventIcons.includes('✅')?'✅ Kỷ niệm Pass thử việc!':''}"` : '';
       const eventTag = eventIcons ? `<span class="event-icon" ${eventTitle}>${eventIcons}</span>` : '';
+
+      // 🔻🔸 Icon hiệu suất cho nhân sự CHƯA PASS thử việc — chỉ hiện trên NGÀY ĐI LÀM (không hiện ở ngày OFF/AL/SL/...)
+      // 🔻 = hiệu suất ramp-up hiện tại < 100%.  🔸 = đã ramp tới 100% nhưng vẫn chưa chính thức Pass mốc 60 ngày.
+      let perfBadge = "";
+      if(isWorking && !isEmpPassedProbation(e, curDate)){
+        const pct = getEmpPerformancePct(e, curDate);
+        const pctLabel = Math.round(pct * 100);
+        const perfIcon = pct < 1 ? "🔻" : "🔸";
+        const perfNote = pct < 1
+          ? `Đang thử việc — Hiệu suất tính tới ngày ${d}/${state.month}: ${pctLabel}%`
+          : `Đang thử việc — Hiệu suất đã đạt ${pctLabel}% tính tới ngày ${d}/${state.month} (chưa chính thức Pass mốc 60 ngày)`;
+        perfBadge = `<span class="perf-badge" title="${perfNote}">${perfIcon}</span>`;
+      }
 
       // 🔁 Badge case đổi ngày nghỉ đã được duyệt
       const swapBadge = cell.swapApproved ? `<span class="swap-badge" title="Đổi ngày nghỉ đã được Admin duyệt">🔁</span>` : '';
 
       const lockedCls = canEditEmpRow(e.id) ? "" : "cell-locked";
-      dayCells += `<td class="daycell ${cellClass} ${lockedCls} col-idx-${d}" style="${cellStyle}" onclick="handleCellClick('${e.id}',${d})">${eventTag}<span class="cell-status-text">${mk||""}</span>${pendingBadge}${swapBadge}</td>`;
+      dayCells += `<td class="daycell ${cellClass} ${lockedCls} col-idx-${d}" style="${cellStyle}" onclick="handleCellClick('${e.id}',${d})">${eventTag}<span class="cell-status-text">${mk||""}</span>${pendingBadge}${swapBadge}${perfBadge}</td>`;
     }
     const maxOffCap = Number(getRegionCfg(e.region || "HCM").maxOffPerMonthWarn) || 8;
     const overOffCap = counts.OFF > maxOffCap;
