@@ -1,10 +1,13 @@
 {
-  "hosting": {
-    "public": ".",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ]
-  }
+  "type": "service_account",
+  "project_id": "spx-workload-hcm",
+  "private_key_id": "916ab2ba50eddddae5ec1047f6ae59b17503c6d8",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCzUMYPozvH2YAZ\nz11GouI+zC1oCixqwO9eY/2lnyfIg2x+/MNWZt5/cUe6ROnQTsN8MF7pZDaf+mre\nzbUB2iPLPRNeB9MVRXMixnMHiXVQH8bxlJxGuGSu66rLCLJWGDZsdLx5VtIT33tX\n2hTVVWkcTH023fjQkd9LJmjSVXycwoWz9S2UeItS3h5Q7p4oxdxABo2MnpLSGfOk\nTwESd+BgqEtSdFuhXs4AvZg2+RaTzZQn04ZyHgu56SftMuuitwLw5f65Vr1kq3sS\nYWRcQnX5j9+hmD652qcOmvNcckNnYZuaeEqCOfOm1Q7vnoOVqMxLzSSbsq97BFuh\nxg7PdtrzAgMBAAECggEAEmR6bvfadbpzVMe7ygyCsgKbCl0MxvBo57Ylj2Y+nDxl\nawsTIDAnVKFybtfgYbZKf9kC9ePfudNjldyPWz7G8B2gzcLLXcGvYxrsM+g0s8C7\n/7iIul+cgtf3v0vyOuQl5O7+YWB3O4REmwi/8qKISFeiJPgUrD63eCEFnG7Eptwd\no4Bwi5WoHDJPmmYNJCSE+qbY02Q0eokmNE0WXtcIZIImxIC+4WckQs86tfiZosHB\n71M22eTWHwdwy9g54o9IlElLoBHNTY92R1zJtBpYU4s4QZBsEjuq7QLCqJwznqA4\n5aKPVkUE7OMz+MOX0/FmYU6xay/Fj2c7eguRTvt1sQKBgQDiz6yPLJP71MtWUut7\nB1k4gwxN1TDfnUNnaliwCLqP17l8aB2mK2nFv+ouqeRMLTTZoxB6+uZYsOwGIPNi\nmej+cNtGSaTvAkUcd1YEQmSdwg2DoNHHetidX6cz+2rT6Ta8DbgiqcEKCQ6sGP0w\nJTeetPZLPShX5MX+UXxypSKHAwKBgQDKZFjqnyF8X8MoSip7VGRtlyRzt1AnEIvn\nAWD6+suumsXliyF8acavdVR0pQenfzCGvD466BacbODHkYX+Iox79Rg5Zy3vpHN2\nqWYwI8QsS6jhrrS+5+9TojtPy2ZrGc/shcH3NRu1tNksNauKlpyRUhJDObg5AyZV\nFv8TFXZhUQKBgHqPqjl750OQC4jMKf9DS00kU4PDjjNnscKyTtZhAR81fT/iqxLe\nJrv7Jrqsh3c6fnKUkRVDezG1+PSe3aYMcUD9DyB+LygQW/Qz8EFA90ngUJkuT+2x\nTlhMFfgbBfEY9sDL0RK6FFwt5MXOgxJ/Kf0S4Hxrwd8s+mig89Sns26tAoGAd2cM\nLh8DmmTEthhLR8daGG16y+nyF5njb72YgXlEgRY+elXCw6uD1C/cS5SxF1gqQNL9\nw7L45AA3/IUWEABB8T9/sx30M9VJaVA3QV9YdOmOENcJOzeKMkUbyM+u9LCdwmSH\nMljaqDCxjyt6sKB6biGFNLPww3HgQ4L1qUSYOoECgYB86qhpOd7CPgj4JJKEWRcr\npqrFKdCL0jgPrHTjznMpSFJe7ZxJzPrJgyqlbUeW/+oUVCpys+UMqMNBy6cwwFzR\nUOYEzgWHJW1oeyRCRtLqIbbMvyNjTDgmIIabtzsEieD210I8lwff86r6wCL/pxl6\ntReHRWSVPBqK+9IwU9wCxw==\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-fbsvc@spx-workload-hcm.iam.gserviceaccount.com",
+  "client_id": "117763833060638811872",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40spx-workload-hcm.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
 }
