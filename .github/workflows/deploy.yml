@@ -2,7 +2,7 @@ name: Deploy to Firebase Hosting
 on:
   push:
     branches:
-      - main # Đổi thành master nếu nhánh chính của bạn tên là master
+      - main # Hoặc master tùy theo nhánh của bạn
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -13,4 +13,5 @@ jobs:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
           channelId: live
-          projectId: spx-workload-hcm
+          projectId: 'SPX-Workload-HCM'
+          firebaseToolsVersion: latest # Ép dùng bản mới nhất
