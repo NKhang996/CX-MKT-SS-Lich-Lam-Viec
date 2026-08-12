@@ -830,6 +830,7 @@ function syncStateAndConfig(){
       if(e.dob === undefined) e.dob = "";
       if(e.staffId === undefined) e.staffId = "";
       if(e.earlyPass === undefined) e.earlyPass = false;
+      if(e.perfOverride === undefined) e.perfOverride = null;
     });
   }
 
@@ -953,6 +954,8 @@ function openTopicLogic(topicKey){
       <p>• <b>Phân bổ Năng suất (Ramp-up %):</b> Tuần 1 (ngày 0-6 kể từ Onboarding): 0%, Tuần 2: 20%, Tuần 3: 50%, Tuần 4: 75%, Tuần 5 trở đi (hoặc đã Pass): 100%. Mốc tăng tính theo đúng số ngày kể từ Onboarding (không quy về đầu tuần lịch T2-CN).</p>
       <p>• <b>Pass sớm (Early Pass):</b> Tích checkbox để kích hoạt ngay 100% năng suất & mở quyền đăng ký AL/SL, bỏ qua mốc 60 ngày.</p>
       <p>• <b>Cột "Hiệu suất":</b> Hiển thị % ramp-up tại ngày 01 của tháng đang xem — đây cũng là % dùng trong công thức <b>HC khả dụng</b> (xem tab Cấu hình) khi nhân sự BPO còn đang thử việc.</p>
+      <p>• <b>Cột "Ghi đè Capacity %":</b> Admin/Sub-lead có thể nhập tay 1 số 0-100 cho nhân sự <b>FTE/BPO</b> để hạ thấp % năng lực quy đổi của người đó khi cần. Giá trị này <b>cố định theo từng nhân sự</b> (không theo tháng), để trống = dùng công thức %Ramp-up tự động như cũ. <b>Chỉ ảnh hưởng</b> tới dòng "Tổng Năng Lực Team (Total Cap)" trong tab Dự báo Workload — KHÔNG đổi cột "Hiệu suất" bên trái, KHÔNG đổi badge 🔻/🔸 trên lịch, KHÔNG đổi dòng "🔷 HC Khả Dụng", KHÔNG đổi quyền đăng ký AL/SL/UPL.</p>
+      <p>• <b>Leader/SubLead — Capacity cố định 0%:</b> Vì không trực tiếp xử lý case (dành thời gian cho quản lý), mọi nhân sự Chức vụ = Leader hoặc SubLead <b>luôn tự động có Capacity = 0%</b> khi tính Tổng Năng Lực Team — cột "Hiệu suất" hiển thị "—" và ô "Ghi đè Capacity %" bị khóa cứng ở 0%, không thể chỉnh tay.</p>
       <p>• <b>Chức vụ (Role) vs Loại (Type):</b> "Chức vụ" (Leader/SubLead/FTE/BPO) dùng để loại Leader/SubLead khỏi vòng xoay trực Chủ Nhật; "Loại" (FTE/BPO) quyết định Target năng suất & luật ưu tiên trực CN (BPO Pass được ưu tiên xếp trước).</p>
     </div>
     <div class="logic-section">
@@ -1037,7 +1040,7 @@ function openTopicLogic(topicKey){
       <p>• <b>⚠️ FTE Hỗ Trợ Thêm:</b> = max(0, Target BPO − Năng lực BPO thực tế trong ngày). Phần WL này BPO không kham nổi nên tự động dồn qua cho FTE xử lý. Nếu ngày đó không có BPO nào đi làm (VD: CN không xếp BPO trực), Năng lực BPO = 0 → toàn bộ Target BPO dồn hết qua FTE.</p>
       <p>• <b>⚠️ % Daily WL do FTE gánh thay BPO:</b> = FTE Hỗ Trợ Thêm ÷ Daily WL × 100%. Cho biết tỉ trọng khối lượng công việc trong ngày mà FTE phải "gánh hộ" phần BPO không xử lý kịp — càng cao nghĩa là BPO càng quá tải/thiếu người.</p>
       <p>• <b>Tổng WL FTE Thực Nhận:</b> = Target FTE + FTE Hỗ Trợ Thêm. Đây là tổng khối lượng thực tế FTE phải gánh trong ngày.</p>
-      <p>• <b>Tổng Năng Lực Team (Total Cap):</b> = Σ(Target FTE × %Ramp-up mỗi FTE đang làm) + Σ(Target BPO × %Ramp-up mỗi BPO đang làm).</p>
+      <p>• <b>Tổng Năng Lực Team (Total Cap):</b> = Σ(Target FTE × %Ramp-up mỗi FTE đang làm) + Σ(Target BPO × %Ramp-up mỗi BPO đang làm). Nhân sự Leader/SubLead luôn tính Capacity = 0% (không trực tiếp xử lý case). Với FTE/BPO thường, nếu có "Ghi đè Capacity %" (nhập tay tại tab Nhân sự), hệ thống dùng thẳng số đó thay cho %Ramp-up tự động khi cộng vào Total Cap.</p>
       <p>• <b>Dư/Thiếu WL (Net Case Gap):</b> = Total Cap − Daily WL. Dương = dư năng lực, Âm = thiếu năng lực.</p>
       <p>• <b>Thừa/Thiếu HC Quy Đổi:</b> = Net Case Gap ÷ Target FTE — quy đổi phần dư/thiếu case ra số đầu người FTE tương đương.</p>
       <p>• <b>⭐ SLA Coverage Tổng thể (%):</b> = Total Cap ÷ Daily WL × 100%. So với 2 Ngưỡng Cảnh báo để tô màu Đỏ/Vàng/Xanh.</p>
@@ -1328,6 +1331,26 @@ function getEmpPerformancePct(emp, currentDate){
   return 1.0;
 }
 
+// 🔹 Nhân sự thuộc nhóm quản lý (Leader/SubLead) — không trực tiếp xử lý case, nên Capacity mặc định = 0%
+function isManagementRole(emp){
+  return emp && (emp.role === "Leader" || emp.role === "SubLead");
+}
+
+// 🔹 % HIỆU SUẤT DÙNG RIÊNG CHO TÍNH NĂNG LỰC TEAM (fteCapacity/bpoCapacity) TRONG DỰ BÁO WORKLOAD
+// Nếu nhân sự có "Ghi đè Hiệu suất Capacity" (emp.perfOverride, 0-100) -> dùng thẳng số đó thay vì %Ramp-up tự động.
+// ⚠️ Field này CỐ ĐỊNH theo từng nhân sự (không theo tháng) và CHỈ ảnh hưởng tới Tổng Năng Lực Team (Total Cap)
+// trong tab Dự báo Workload — KHÔNG đổi cột "Hiệu suất" tự động ở tab Nhân sự, KHÔNG đổi badge 🔻/🔸 trên lịch,
+// KHÔNG đổi quyền đăng ký AL/SL/UPL, KHÔNG đổi dòng "🔷 HC Khả Dụng". Dùng khi cần chủ động hạ % năng lực quy đổi
+// của 1 nhân sự (VD: SubLead dành nhiều thời gian cho việc quản lý nên không thể đóng góp 100% năng suất xử lý case).
+// 🔸 Leader/SubLead: LUÔN CỐ ĐỊNH 0% (không do quản lý case trực tiếp) — bỏ qua hoàn toàn perfOverride, không cho sửa.
+function getEffectiveCapacityPct(emp, curDate){
+  if(isManagementRole(emp)) return 0;
+  if(emp.perfOverride !== null && emp.perfOverride !== undefined && emp.perfOverride !== "" && !isNaN(emp.perfOverride)){
+    return Math.max(0, Math.min(100, Number(emp.perfOverride))) / 100;
+  }
+  return getEmpPerformancePct(emp, curDate);
+}
+
 function getCellData(empId, day, m = state.month, y = state.year){
   const mkKey = monthKey(m, y);
   const mData = state.marks[mkKey]?.[empId]?.[day];
@@ -1540,13 +1563,16 @@ function calculateMonthlyForecast(scopeRegion){
 
       if(isWorking){
         totalWorkingHC++;
+        // rampPct: %Ramp-up THẬT (dùng cho HC Khả Dụng — không bị ảnh hưởng bởi Ghi đè Hiệu suất Capacity)
+        // capacityPct: %dùng để cộng vào Tổng Năng Lực Team — ưu tiên Ghi đè (perfOverride) nếu nhân sự có set
         const rampPct = getEmpPerformancePct(e, curDate);
+        const capacityPct = getEffectiveCapacityPct(e, curDate);
         if(e.type === "FTE") {
-          fteCapacity += rc.fteTarget * rampPct;
+          fteCapacity += rc.fteTarget * capacityPct;
           availableHC += 1;
           fteWorkingHC++;
         } else {
-          bpoCapacity += rc.bpoTarget * rampPct;
+          bpoCapacity += rc.bpoTarget * capacityPct;
           availableHC += isEmpPassedProbation(e, curDate) ? 1 : rampPct;
           bpoWorkingHC++;
         }
@@ -2383,7 +2409,12 @@ function renderNhanSu(){
       <td><input type="text" inputmode="numeric" maxlength="10" class="date-mask" placeholder="dd/mm/yyyy" data-f="onboarding" value="${isoToDMY(e.onboarding||'2024-01-01')}" ${rowLocked?'disabled':''}></td>
       <td><input type="text" inputmode="numeric" maxlength="10" class="date-mask" placeholder="dd/mm/yyyy" data-f="offboardDate" value="${isoToDMY(e.offboardDate||'')}" style="color:var(--coral)" ${rowLocked?'disabled':''}></td>
       <td style="text-align:center"><input type="checkbox" data-f="earlyPass" ${e.earlyPass?'checked':''} title="Đánh dấu để bỏ qua thời gian thử việc" ${rowLocked?'disabled':''}></td>
-      <td style="text-align:center; font-weight:700" class="mono">${isPassed?'100% (Passed)':autoRampPct+'%'}</td>
+      <td style="text-align:center; font-weight:700" class="mono">${isManagementRole(e)?'—':(isPassed?'100% (Passed)':autoRampPct+'%')}</td>
+      <td style="text-align:center">
+        ${isManagementRole(e)
+          ? `<input type="number" value="0" disabled style="width:64px; text-align:center; color:var(--text-faint);" title="Leader/SubLead luôn cố định Capacity = 0% (không trực tiếp xử lý case) — không thể chỉnh.">`
+          : `<input type="number" min="0" max="100" step="1" data-f="perfOverride" placeholder="Auto" value="${e.perfOverride===null||e.perfOverride===undefined?'':e.perfOverride}" style="width:64px; text-align:center; ${e.perfOverride!==null&&e.perfOverride!==undefined?'color:var(--violet); font-weight:700;':''}" title="Ghi đè % Hiệu suất dùng để tính Tổng Năng Lực Team (Total Cap) trong Dự báo Workload. Để trống = dùng %Ramp-up tự động như cũ. KHÔNG đổi cột Hiệu suất bên trái, badge trên lịch, hay quyền AL/SL/UPL." ${rowLocked?'disabled':''}>`}
+      </td>
       <td style="text-align:center; font-weight:700; color:${alColor}" class="mono" title="${alTitle}">${q.remainingAL}${q.carryExpiringSoon?' ⏰':''}</td>
       <td style="text-align:center; font-weight:700; color:${q.remainingSL<0?'var(--coral)':'var(--teal)'}" class="mono" title="${slTitle}">${q.baseSL>0?q.remainingSL:'—'}</td>
       <td><button class="icon-btn" data-del="${e.id}" title="Xóa nhân viên" ${rowLocked?'disabled':''}>✕</button></td>
@@ -2402,7 +2433,7 @@ function renderNhanSu(){
 
     <div>
       <div class="grid-wrap"><table class="emp-table">
-        <thead><tr><th></th><th>Họ tên</th><th>Mail</th><th>Khu vực</th><th>Team</th><th>Chức vụ</th><th>Loại</th><th>Ngày sinh</th><th>Onboarding</th><th>Offboard</th><th>Early Pass</th><th>Hiệu suất</th><th title="Quỹ AL còn lại năm ${state.year}">AL còn lại</th><th title="Quỹ SL còn lại năm ${state.year}">SL còn lại</th><th></th></tr></thead>
+        <thead><tr><th></th><th>Họ tên</th><th>Mail</th><th>Khu vực</th><th>Team</th><th>Chức vụ</th><th>Loại</th><th>Ngày sinh</th><th>Onboarding</th><th>Offboard</th><th>Early Pass</th><th>Hiệu suất</th><th title="Ghi đè % dùng cho Tổng Năng Lực Team (Total Cap) trong Dự báo Workload — để trống = tự động. Không đổi cột Hiệu suất bên trái.">Ghi đè Capacity %</th><th title="Quỹ AL còn lại năm ${state.year}">AL còn lại</th><th title="Quỹ SL còn lại năm ${state.year}">SL còn lại</th><th></th></tr></thead>
         <tbody>${rows}</tbody>
       </table></div>
       <br><button class="btn-primary" onclick="addEmp()" ${isAdmin()?'':'disabled title="Chỉ Admin/Sub-lead"'}>＋ Thêm Nhân viên</button>
@@ -2416,7 +2447,7 @@ function addEmp(){
   const defaultRegion = (currentAdminRegions !== "ALL" && Array.isArray(currentAdminRegions) && currentAdminRegions[0]) ? currentAdminRegions[0] : "HCM";
   if(!canAddEmpToRegion(defaultRegion)){ alert("🔒 Bạn không có quyền thêm nhân sự cho miền này."); return; }
   const maxOrder = Math.max(0, ...state.employees.map(e => e.sortOrder || 0));
-  state.employees.push({ id:uid(), name:"Nhân viên mới", mail:"", region:defaultRegion, team:"Team Mới", role:"FTE", type:"FTE", onboarding:"2026-08-01", offboardDate:"", dob:"", earlyPass: false, sortOrder: maxOrder + 10 }); 
+  state.employees.push({ id:uid(), name:"Nhân viên mới", mail:"", region:defaultRegion, team:"Team Mới", role:"FTE", type:"FTE", onboarding:"2026-08-01", offboardDate:"", dob:"", earlyPass: false, perfOverride: null, sortOrder: maxOrder + 10 }); 
   saveLocalState();
   renderAll(); 
 }
@@ -3078,6 +3109,15 @@ function renderAllUIOnly(){
         }
         e.target.value = result.display; // ngày không tồn tại (VD 31/02) -> đã tự clamp về ngày hợp lệ gần nhất
         emp[field] = result.iso;
+        saveLocalState();
+        renderAll();
+        return;
+      }
+
+      // 🔹 Ghi đè % Hiệu suất Capacity — để trống = null (dùng công thức tự động), có nhập = clamp 0-100
+      if(field === 'perfOverride'){
+        const raw = e.target.value.trim();
+        emp.perfOverride = (raw === "" || isNaN(raw)) ? null : Math.max(0, Math.min(100, Number(raw)));
         saveLocalState();
         renderAll();
         return;
