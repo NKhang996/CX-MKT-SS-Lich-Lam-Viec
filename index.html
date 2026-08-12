@@ -1032,7 +1032,7 @@ function openTopicLogic(topicKey){
     'forecast_detail': `<div class="logic-section">
       <h3>⚖️ Công Thức Bảng Cân Đối Workload & HC</h3>
       <p>• <b>Overall HC Đi Làm:</b> Đếm nguyên số nhân sự có ca S2/OT/WFH trong ngày (không quy đổi %, không phân biệt thử việc). Tách riêng 2 dòng con <b>↳ FTE Đi Làm</b> và <b>↳ BPO Đi Làm</b> để biết đang thiếu người ở phía nào.</p>
-      <p>• <b>🔷 HC Khả Dụng (quy đổi thử việc):</b> = FTE (làm việc, tính đủ 1) + BPO đã Pass (tính đủ 1) + BPO Thử việc × %Ramp-up hiện tại. Phản ánh đúng năng lực thực tế hơn "Overall HC" khi team còn nhiều BPO mới. Dòng con <b>↳ Hao Hụt HC do Thử Việc</b> = Overall HC − HC Khả Dụng, cho biết đang "hao" bao nhiêu đầu người quy đổi vì BPO còn ramp-up thấp.</p>
+      <p>• <b>🔷 HC Khả Dụng (quy đổi thử việc):</b> = FTE (làm việc, tính đủ 1, <b>KHÔNG gồm Leader/SubLead</b>) + BPO đã Pass (tính đủ 1) + BPO Thử việc × %Ramp-up hiện tại. Phản ánh đúng năng lực thực tế hơn "Overall HC" khi team còn nhiều BPO mới hoặc có Leader/SubLead đi làm nhưng không trực tiếp xử lý case. Dòng con <b>↳ Hao Hụt HC (Thử Việc + Leader/SubLead)</b> = Overall HC − HC Khả Dụng, cho biết đang "hao" bao nhiêu đầu người quy đổi vì BPO còn ramp-up thấp <b>và/hoặc</b> vì có Leader/SubLead trong số HC đi làm (họ vẫn được đếm ở "Overall HC Đi Làm" để theo dõi công, nhưng không đóng góp năng lực xử lý case).</p>
       <p>• <b>Workload Dự kiến (Daily WL):</b> Theo công thức Trọng Số Ngày (xem tab Cấu hình) hoặc số Override thủ công.</p>
       <p>• <b>Override Workload (Thủ công):</b> Nhập số tại ô này để ghi đè trực tiếp Workload dự báo của đúng ngày đó, ưu tiên cao nhất so với công thức tự động.</p>
       <p>• <b>Workload Target FTE / BPO:</b> Target FTE = Daily WL × %Target FTE (cấu hình); Target BPO = Daily WL − Target FTE.</p>
@@ -1569,7 +1569,9 @@ function calculateMonthlyForecast(scopeRegion){
         const capacityPct = getEffectiveCapacityPct(e, curDate);
         if(e.type === "FTE") {
           fteCapacity += rc.fteTarget * capacityPct;
-          availableHC += 1;
+          // 🔸 HC Khả Dụng chỉ tính năng lực xử lý case thực tế — Leader/SubLead không góp mặt ở đây (khớp Capacity 0%),
+          // nhưng vẫn được tính đủ trong "Overall HC Đi Làm"/"fteWorkingHC" bên dưới để theo dõi công đi làm bình thường.
+          availableHC += isManagementRole(e) ? 0 : 1;
           fteWorkingHC++;
         } else {
           bpoCapacity += rc.bpoTarget * capacityPct;
@@ -2246,7 +2248,7 @@ function renderForecast(){
   let rFteHC = `<tr><td class="rowlabel" style="color:var(--teal); padding-left:20px">↳ FTE Đi Làm</td>`;
   let rBpoHC = `<tr><td class="rowlabel" style="color:var(--amber); padding-left:20px">↳ BPO Đi Làm</td>`;
   let rAvailHC = `<tr><td class="rowlabel" style="color:var(--violet)">🔷 HC Khả Dụng (quy đổi thử việc)</td>`;
-  let rHcProbationGap = `<tr><td class="rowlabel" style="color:var(--text-dim)">↳ Hao Hụt HC do Thử Việc</td>`;
+  let rHcProbationGap = `<tr><td class="rowlabel" style="color:var(--text-dim)">↳ Hao Hụt HC (Thử Việc + Leader/SubLead)</td>`;
   let rTotal = `<tr><td class="rowlabel">Workload Dự kiến (Daily WL)</td>`;
   let rOverride = `<tr><td class="rowlabel" style="color:var(--amber)">✏️ Override Workload (Thủ công)</td>`;
   let rFteTargetWL = `<tr><td class="rowlabel">Workload Target FTE (theo % từng miền)</td>`;
