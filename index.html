@@ -268,6 +268,11 @@
   .cal-table td.daycell.cell-locked{cursor:not-allowed !important;}
   .cal-table tr.row-own td.col-name{box-shadow: inset 3px 0 0 var(--teal);}
 
+  /* 👑 Dòng phân tách Leader/SubLead trong bảng Lịch Tổng quan/HCM/HN — chỉ để nhận diện team, không sửa được ở đây */
+  .cal-table tr.lead-separator-row{background:var(--surface-2);}
+  .cal-table tr.lead-separator-row td.col-name{background:var(--surface-2); color:var(--violet);}
+  .cal-table tr.lead-separator-row td.lead-separator-fill{background:repeating-linear-gradient(135deg, var(--surface-2), var(--surface-2) 8px, var(--surface-3) 8px, var(--surface-3) 16px); color:var(--text-faint); font-size:11px; font-style:italic; text-align:center; cursor:default; user-select:none;}
+
   /* CẢNH BÁO NGHỈ LIÊN TIẾP */
   .cal-table td.daycell.streak-off-run.streak-pos-start,
   .cal-table td.daycell.streak-off-run.streak-pos-mid{border-right-color:transparent !important;}
@@ -1526,10 +1531,10 @@ function renderNav(){
     b.innerHTML = `<span class="ic">${i.ic}</span><span>${i.label}</span>`;
     b.onclick = ()=>{
       tab=i.id;
-      // 🔹 Tab ảo "👑 Lead/SubLead" (calFilter.region="LEADSUB") chỉ có ý nghĩa ở trang Nhân sự.
-      // Rời khỏi trang Nhân sự mà vẫn đang ở tab này thì tự động trả về "ALL" để không làm sai lệch
-      // các tính toán Workload/Lịch ở những trang khác.
-      if(tab !== "nhansu" && calFilter.region === "LEADSUB"){
+      // 🔹 Tab ảo "👑 Lead/SubLead" (calFilter.region="LEADSUB") chỉ có ý nghĩa ở trang Lịch.
+      // Rời khỏi trang Lịch mà vẫn đang ở tab này thì tự động trả về "ALL" để không làm sai lệch
+      // các tính toán Workload/Nhân sự ở những trang khác.
+      if(tab !== "lich" && calFilter.region === "LEADSUB"){
         calFilter.region = (currentRole === "employee") ? (state.employees.find(e=>e.id===currentEmpId)?.region || "HCM")
           : (isAdmin() && currentAdminRegions !== "ALL" && Array.isArray(currentAdminRegions) ? currentAdminRegions[0] : "ALL");
       }
@@ -1910,14 +1915,30 @@ function renderLich(){
                 <td style="text-align:center" class="mono">${counts.OFF_T7}</td>`;
 
     const ownRowCls = isEmployeeSelf(e.id) ? "row-own" : "";
-    return { id: e.id, name: e.name, team: e.team, region: e.region||"HCM", statuses: statusesUsedThisMonth, hasPending: hasPendingThisRow, workingFlags, sundayDutyFlags, html: `<tr class="${ownRowCls}">${meta}${dayCells}</tr>` };
+
+    // 👑 Leader/SubLead: ở các tab Tổng quan/HCM/HN chỉ hiện 1 thanh phân tách mảnh (không hiện lịch/thống kê ngày).
+    // Lịch làm việc thật của họ vẫn được tính đầy đủ ở trên (counts/workingFlags/sundayDutyFlags) để không đổi cách
+    // tính OVERALL HC — chỉ ẩn phần HIỂN THỊ. Muốn xem/sửa lịch thật của Leader/SubLead thì qua tab 👑 Lead/SubLead.
+    const isMgmtRole = (e.role === "Leader" || e.role === "SubLead");
+    if(isMgmtRole && calFilter.region !== "LEADSUB"){
+      const restColspan = 1 + mList.length + 7 + n; // CHỨC VỤ + cột CN M-x + 7 cột thống kê + n cột ngày
+      const sepHtml = `<tr class="lead-separator-row">
+        <td colspan="3" class="sticky-col col-name" style="${dynamicTeamStyle} font-weight:700;">👑 Team ${e.team} — ${e.name} <span style="opacity:.75; font-weight:600; text-transform:none;">(${e.role})</span></td>
+        <td colspan="${restColspan}" class="lead-separator-fill" title="Lịch làm việc của ${e.name} — xem &amp; chỉnh tại tab 👑 Lead/SubLead">— Lịch làm việc xem &amp; chỉnh tại tab 👑 Lead/SubLead —</td>
+      </tr>`;
+      return { id: e.id, name: e.name, team: e.team, region: e.region||"HCM", role: e.role, statuses: statusesUsedThisMonth, hasPending: hasPendingThisRow, workingFlags, sundayDutyFlags, html: sepHtml };
+    }
+
+    return { id: e.id, name: e.name, team: e.team, region: e.region||"HCM", role: e.role, statuses: statusesUsedThisMonth, hasPending: hasPendingThisRow, workingFlags, sundayDutyFlags, html: `<tr class="${ownRowCls}">${meta}${dayCells}</tr>` };
   });
 
   // ===== BỘ LỌC: Nhân sự / Miền / Ca làm / Trạng thái duyệt — ẩn/hiện dòng VÀ cũng tính lại OVERALL HC theo đúng tập đang lọc =====
   const search = (calFilter.search || "").trim().toLowerCase();
   const filteredRowsData = rows.filter(r => {
     if(search && !(r.name.toLowerCase().includes(search) || r.team.toLowerCase().includes(search))) return false;
-    if(calFilter.region !== "ALL" && r.region !== calFilter.region) return false;
+    if(calFilter.region === "LEADSUB"){
+      if(r.role !== "Leader" && r.role !== "SubLead") return false;
+    } else if(calFilter.region !== "ALL" && r.region !== calFilter.region) return false;
     if(calFilter.status !== "ALL" && !r.statuses.has(calFilter.status)) return false;
     if(calFilter.approval === "PENDING" && !r.hasPending) return false;
     if(calFilter.approval === "NONE" && r.hasPending) return false;
@@ -1976,10 +1997,11 @@ function renderLich(){
         : "");
 
   return `
-  ${renderRegionScopeTabs()}
+  ${renderRegionScopeTabs({ showLeadSubTab: true })}
   ${(isAdmin() && getPendingListInScope().length > 0) ? renderPendingListPanel() : ''}
   <div class="panel sticky-panel locked-section">
     <h2>🎨 Chọn ca & Tô màu thủ công <button class="info-icon-btn" onclick="openTopicLogic('palette')" title="Xem hướng dẫn">i</button></h2>
+    ${calFilter.region==='LEADSUB' ? `<div class="lock-banner" style="background:var(--violet-dim); color:var(--violet); border-color:#4a3a7a;">👑 Đang xem &amp; chỉnh lịch làm việc gộp của toàn bộ Leader/SubLead (mọi miền).</div>` : ''}
     ${toolbarBanner}
     <div class="${toolbarLocked ? 'lock-overlay-target' : ''}">
       <div class="toolbar">
@@ -2692,16 +2714,16 @@ function renderNhanSu(){
 
   const anyEditable = visibleEmps.some(e => canEditEmpRow(e.id));
   return `
-  ${renderRegionScopeTabs({ showLeadSubTab: true })}
+  ${renderRegionScopeTabs()}
   <div class="panel locked-section">
-    <h2>Danh sách Nhân sự, Khu vực & Early Pass Thử Việc ${calFilter.region==='LEADSUB' ? '<span style="color:var(--violet); font-weight:700;">— 👑 Đang xem gộp Leader/SubLead mọi miền</span>' : ''} <button class="info-icon-btn" onclick="openTopicLogic('nhansu')" title="Xem hướng dẫn Offboard">i</button></h2>
+    <h2>Danh sách Nhân sự, Khu vực & Early Pass Thử Việc <button class="info-icon-btn" onclick="openTopicLogic('nhansu')" title="Xem hướng dẫn Offboard">i</button></h2>
     ${!anyEditable ? `<div class="lock-banner">🔒 Bạn không có quyền sửa nhân sự trong phạm vi đang xem. Đang ở chế độ chỉ đọc.</div>` : `<div class="sub" style="margin:-6px 0 12px; color:var(--text-dim)">💡 Kéo biểu tượng ⠿ để đổi vị trí nhân viên trong cùng 1 Team. Cột AL/SL còn lại tính theo năm dương lịch ${state.year} — nhân sự cũ (Onboard trước năm ${state.year}) nhận Full quota (AL dư năm trước dùng được tới hết tháng 6); nhân sự mới Onboard trong năm ${state.year} được tính Prorate theo tháng Pass thử việc. Rê chuột vào ô để xem chi tiết.</div>`}
     
     <datalist id="region-list">${regionOptions}</datalist>
     <datalist id="team-list">${teamOptions}</datalist>
 
     <div>
-      <div class="grid-wrap"><table class="emp-table">
+      <div class="grid-wrap" id="empTableContainer"><table class="emp-table">
         <thead><tr><th></th><th>Họ tên</th><th>Mail</th><th>Khu vực</th><th>Team</th><th>Chức vụ</th><th>Loại</th><th>Ngày sinh</th><th>Onboarding</th><th>Offboard</th><th>Early Pass</th><th>Hiệu suất</th><th title="Quỹ AL còn lại năm ${state.year}">AL còn lại</th><th title="Quỹ SL còn lại năm ${state.year}">SL còn lại</th><th></th></tr></thead>
         <tbody>${rows}</tbody>
       </table></div>
@@ -3434,11 +3456,20 @@ function renderAll(){
   const container = document.getElementById("calendarTableContainer");
   let scrollTop = 0;
   let scrollLeft = 0;
-  
   if (container) {
     scrollTop = container.scrollTop;
     scrollLeft = container.scrollLeft;
   }
+
+  // 🔹 Bảng Nhân sự cũng nằm trong khung cuộn riêng (.grid-wrap, max-height 72vh) — cần giữ nguyên vị trí
+  // cuộn y hệt bảng Lịch, tránh bị nhảy về đầu bảng mỗi khi nhập xong 1 trường / thêm nhân viên mới.
+  const empContainer = document.getElementById("empTableContainer");
+  let empScrollTop = 0;
+  if (empContainer) empScrollTop = empContainer.scrollTop;
+
+  // 🔹 Giữ luôn vị trí cuộn của toàn trang (phòng trường hợp nội dung dài hơn cả viewport)
+  const pageScrollEl = document.scrollingElement || document.documentElement;
+  const pageScrollTop = pageScrollEl ? pageScrollEl.scrollTop : 0;
 
   renderAllUIOnly();
 
@@ -3447,6 +3478,11 @@ function renderAll(){
     newContainer.scrollTop = scrollTop;
     newContainer.scrollLeft = scrollLeft;
   }
+
+  const newEmpContainer = document.getElementById("empTableContainer");
+  if (newEmpContainer) newEmpContainer.scrollTop = empScrollTop;
+
+  if (pageScrollEl) pageScrollEl.scrollTop = pageScrollTop;
 }
 
 document.getElementById("prevMonth").onclick = () => { state.month = state.month===1?12:state.month-1; if(state.month===12) state.year--; renderAll(); };
