@@ -324,6 +324,31 @@
   .pending-list-row:hover{background:var(--surface-2);}
   .pending-list-row .plr-name{flex:1; min-width:0; font-weight:600;}
   .pending-list-row .plr-diff{font-family:'IBM Plex Mono',monospace; color:var(--text-dim); font-size:11px;}
+
+  /* 📤 REPORT WORKLOAD NGÀY LỄ — thẻ giấy trắng độc lập theme, dùng chung cho xem trong app / copy mail / in PDF */
+  .holiday-report-doc{background:#ffffff; color:#1a2126; border-radius:12px; padding:24px 26px; font-family:'Inter',Arial,sans-serif; box-shadow:0 2px 14px rgba(0,0,0,0.28);}
+  .holiday-report-doc *{box-sizing:border-box;}
+  .hr-doc-header{display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #1a2126; padding-bottom:12px; margin-bottom:16px; flex-wrap:wrap; gap:8px;}
+  .hr-doc-title{font-size:19px; font-weight:800; margin:0;}
+  .hr-doc-sub{font-size:12.5px; color:#555; margin-top:3px;}
+  .hr-doc-growth{font-size:13px; font-weight:800; padding:6px 12px; border-radius:20px; white-space:nowrap;}
+  .hr-doc-kpi-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:16px 0;}
+  .hr-doc-kpi{border:1px solid #d8dce0; border-radius:9px; padding:10px 12px; background:#f7f8fa;}
+  .hr-doc-kpi .k-lbl{font-size:10.5px; font-weight:700; color:#666; text-transform:uppercase; letter-spacing:.03em;}
+  .hr-doc-kpi .k-val{font-size:19px; font-weight:800; margin-top:3px; font-family:'IBM Plex Mono',monospace;}
+  .hr-doc-kpi .k-sub{font-size:11px; color:#777; margin-top:2px;}
+  .hr-doc-table{width:100%; border-collapse:collapse; margin:14px 0; font-size:12.5px;}
+  .hr-doc-table th, .hr-doc-table td{border:1px solid #d8dce0; padding:7px 10px; text-align:left;}
+  .hr-doc-table th{background:#eef1f4; font-weight:700; font-size:11px; text-transform:uppercase; color:#555;}
+  .hr-doc-table td.num{font-family:'IBM Plex Mono',monospace; text-align:right; font-weight:700;}
+  .hr-doc-conclusion{border-radius:9px; padding:14px 16px; font-size:13.5px; font-weight:700; line-height:1.6; margin-top:14px;}
+  .hr-doc-footer{margin-top:16px; font-size:10.5px; color:#999; border-top:1px solid #e2e5e8; padding-top:8px;}
+
+  @media print{
+    body *{visibility:hidden !important;}
+    #holidayReportPrintArea, #holidayReportPrintArea *{visibility:visible !important;}
+    #holidayReportPrintArea{position:absolute; left:0; top:0; width:100%; box-shadow:none !important;}
+  }
 </style>
 </head>
 <body>
@@ -344,7 +369,7 @@
       <div style="display:flex; gap:10px; align-items:center;">
         <button class="btn-info" onclick="openLogicModal()">ℹ️ Logic & Công thức WFM</button>
         <button class="btn-primary" id="btnSaveCloud" onclick="handleSaveCloudClick()" style="display:none;">☁️ Lưu lên Cloud</button>
-        <button class="btn-primary" id="btnSaveMySchedule" onclick="handleSaveMyScheduleClick()" style="display:none;">☁️ Lưu lịch của tôi</button>
+        <button class="btn-primary" id="btnSaveMySchedule" onclick="saveMyScheduleToCloud()" style="display:none;">☁️ Lưu lịch của tôi</button>
         <div class="status-badge">
           <div class="status-dot" id="cloudStatusDot"></div>
           <span id="cloudStatusTxt">Local Browser Saved</span>
@@ -517,6 +542,9 @@ function resolveRoleForUser(user){
   if(!emp){ currentRole = "viewer"; currentEmpId = null; return; }
   currentEmpId = emp.id;
   currentRole = "employee";
+  // 🔒 Member chỉ được xem đúng Miền của mình — khóa cứng bộ lọc Miền ngay khi đăng nhập,
+  // không cho phép đổi sang Miền khác hay xem "Tổng quan" gộp cả 2 miền.
+  calFilter.region = emp.region || "HCM";
 }
 
 // 4. Hàm render giao diện xác thực
@@ -557,16 +585,30 @@ function renderAuthUI(){
 // tải bản Cloud mới nhất -> chỉ ghi đè đúng node lịch của mình -> lưu lại.
 // Cách này giảm rủi ro đè mất dữ liệu người khác đang có trên Cloud (vì không .set() toàn bộ state cục bộ của mình).
 function saveMyScheduleToCloud(){
+  if(!db){ alert("⚠️ Không kết nối được Firebase."); return; }
   const empId = currentEmpId;
   const k = monthKey();
   syncStateAndConfig();
   const myMonthMarks = (state.marks[k] && state.marks[k][empId]) ? state.marks[k][empId] : {};
+  // 🔹 Yêu cầu đổi ca đang chờ duyệt của chính mình (nếu có) — PHẢI đẩy lên Cloud cùng lúc,
+  // nếu không Admin ở phiên khác/F5 lại sẽ không bao giờ thấy được yêu cầu này.
+  const myMonthPending = (state.pendingChanges?.[k] && state.pendingChanges[k][empId]) ? state.pendingChanges[k][empId] : {};
 
   db.ref("spx_workload_app_combined").once("value").then(snapshot => {
     const cloudState = snapshot.val() || {};
     if(!cloudState.marks) cloudState.marks = {};
     if(!cloudState.marks[k]) cloudState.marks[k] = {};
     cloudState.marks[k][empId] = myMonthMarks;
+
+    if(!cloudState.pendingChanges) cloudState.pendingChanges = {};
+    if(!cloudState.pendingChanges[k]) cloudState.pendingChanges[k] = {};
+    if(Object.keys(myMonthPending).length > 0){
+      cloudState.pendingChanges[k][empId] = myMonthPending;
+    } else if(cloudState.pendingChanges[k][empId]){
+      // Đã hủy hết yêu cầu chờ duyệt cục bộ -> cũng xóa trên Cloud để đồng bộ
+      delete cloudState.pendingChanges[k][empId];
+    }
+
     return db.ref("spx_workload_app_combined").set(cloudState).then(() => cloudState);
   }).then(mergedState => {
     state = mergedState;
@@ -727,9 +769,28 @@ let activeTool = "S2";
 let activeColor = null;      
 let calFilter = { search: "", region: "ALL", status: "ALL", approval: "ALL" };
 
-function renderRegionScopeTabs(){
-  // Manager (ALL) và Viewer thấy đủ Tổng quan + từng miền. Sub-lead theo miền bị khóa cứng vào miền của mình.
+// 📤 State cho trang "Dự báo Workload": sub-tab (bảng chi tiết / report ngày lễ) + ngày đang chọn để xuất report
+let forecastSubTab = "table";
+let forecastReportDay = null;
+
+function renderRegionScopeTabs(opts){
+  opts = opts || {};
   const allRegions = Array.from(new Set(state.employees.map(e => e.region || "HCM")));
+
+  // 🔒 Member (role "employee"): chỉ được xem đúng 1 Miền của chính mình — không có nút "Tổng quan",
+  // không có nút Miền khác, không có tab Lead/SubLead (không liên quan tới member thường).
+  if(currentRole === "employee"){
+    const myEmp = state.employees.find(e => e.id === currentEmpId);
+    const myRegion = myEmp ? (myEmp.region || "HCM") : "HCM";
+    calFilter.region = myRegion; // luôn ép về đúng miền của mình, phòng trường hợp state cũ còn sót giá trị khác
+    return `<div class="panel" style="padding:10px 16px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+      <span style="font-size:12px; font-weight:700; color:var(--text-dim);">🌏 Phạm vi xem:</span>
+      <button class="tool-btn active" disabled>${myRegion}</button>
+      <span style="font-size:11px; color:var(--text-faint); margin-left:6px;">🔒 Bạn chỉ xem được dữ liệu của miền mình.</span>
+    </div>`;
+  }
+
+  // Manager (ALL) và Viewer thấy đủ Tổng quan + từng miền. Sub-lead theo miền bị khóa cứng vào miền của mình.
   const isScopedSubLead = isAdmin() && currentAdminRegions !== "ALL";
   const visibleRegionTabs = isScopedSubLead ? currentAdminRegions.slice() : allRegions;
 
@@ -742,6 +803,10 @@ function renderRegionScopeTabs(){
   visibleRegionTabs.forEach(r => {
     html += `<button class="tool-btn ${calFilter.region===r?'active':''}" onclick="calFilter.region='${r}'; renderAll();">${r}</button>`;
   });
+  // 👑 Tab riêng gộp Leader/SubLead của mọi miền (chỉ Admin thấy, chỉ dùng ở trang Nhân sự)
+  if(opts.showLeadSubTab && isAdmin()){
+    html += `<button class="tool-btn ${calFilter.region==='LEADSUB'?'active':''}" onclick="calFilter.region='LEADSUB'; renderAll();" title="Xem gộp toàn bộ Leader/SubLead của mọi miền">👑 Lead/SubLead</button>`;
+  }
   if(isScopedSubLead){
     html += `<span style="font-size:11px; color:var(--text-faint); margin-left:6px;">🔒 Bạn chỉ quản lý được miền được phân công.</span>`;
   }
@@ -830,7 +895,6 @@ function syncStateAndConfig(){
       if(e.dob === undefined) e.dob = "";
       if(e.staffId === undefined) e.staffId = "";
       if(e.earlyPass === undefined) e.earlyPass = false;
-      if(e.perfOverride === undefined) e.perfOverride = null;
     });
   }
 
@@ -927,6 +991,17 @@ function getHolidayInfo(day, m = state.month, y = state.year){
   return null;
 }
 
+// 🎉 Danh sách các ngày lễ rơi vào tháng/năm đang xem, dùng để gợi ý nhanh khi chọn ngày xuất Report
+function getHolidayDaysInMonth(m = state.month, y = state.year){
+  const n = daysInMonth(m, y);
+  const list = [];
+  for(let d = 1; d <= n; d++){
+    const info = getHolidayInfo(d, m, y);
+    if(info) list.push({ day: d, name: info.name });
+  }
+  return list;
+}
+
 function openTopicLogic(topicKey){
   const titles = {
     'palette': '🎨 Hướng Dẫn Sử Dụng Cọ Tô Màu & Chọn Ca',
@@ -954,8 +1029,6 @@ function openTopicLogic(topicKey){
       <p>• <b>Phân bổ Năng suất (Ramp-up %):</b> Tuần 1 (ngày 0-6 kể từ Onboarding): 0%, Tuần 2: 20%, Tuần 3: 50%, Tuần 4: 75%, Tuần 5 trở đi (hoặc đã Pass): 100%. Mốc tăng tính theo đúng số ngày kể từ Onboarding (không quy về đầu tuần lịch T2-CN).</p>
       <p>• <b>Pass sớm (Early Pass):</b> Tích checkbox để kích hoạt ngay 100% năng suất & mở quyền đăng ký AL/SL, bỏ qua mốc 60 ngày.</p>
       <p>• <b>Cột "Hiệu suất":</b> Hiển thị % ramp-up tại ngày 01 của tháng đang xem — đây cũng là % dùng trong công thức <b>HC khả dụng</b> (xem tab Cấu hình) khi nhân sự BPO còn đang thử việc.</p>
-      <p>• <b>Cột "Ghi đè Capacity %":</b> Admin/Sub-lead có thể nhập tay 1 số 0-100 cho nhân sự <b>FTE/BPO</b> để hạ thấp % năng lực quy đổi của người đó khi cần. Giá trị này <b>cố định theo từng nhân sự</b> (không theo tháng), để trống = dùng công thức %Ramp-up tự động như cũ. <b>Chỉ ảnh hưởng</b> tới dòng "Tổng Năng Lực Team (Total Cap)" trong tab Dự báo Workload — KHÔNG đổi cột "Hiệu suất" bên trái, KHÔNG đổi badge 🔻/🔸 trên lịch, KHÔNG đổi dòng "🔷 HC Khả Dụng", KHÔNG đổi quyền đăng ký AL/SL/UPL.</p>
-      <p>• <b>Leader/SubLead — Capacity cố định 0%:</b> Vì không trực tiếp xử lý case (dành thời gian cho quản lý), mọi nhân sự Chức vụ = Leader hoặc SubLead <b>luôn tự động có Capacity = 0%</b> khi tính Tổng Năng Lực Team — cột "Hiệu suất" hiển thị "—" và ô "Ghi đè Capacity %" bị khóa cứng ở 0%, không thể chỉnh tay.</p>
       <p>• <b>Chức vụ (Role) vs Loại (Type):</b> "Chức vụ" (Leader/SubLead/FTE/BPO) dùng để loại Leader/SubLead khỏi vòng xoay trực Chủ Nhật; "Loại" (FTE/BPO) quyết định Target năng suất & luật ưu tiên trực CN (BPO Pass được ưu tiên xếp trước).</p>
     </div>
     <div class="logic-section">
@@ -1032,7 +1105,7 @@ function openTopicLogic(topicKey){
     'forecast_detail': `<div class="logic-section">
       <h3>⚖️ Công Thức Bảng Cân Đối Workload & HC</h3>
       <p>• <b>Overall HC Đi Làm:</b> Đếm nguyên số nhân sự có ca S2/OT/WFH trong ngày (không quy đổi %, không phân biệt thử việc). Tách riêng 2 dòng con <b>↳ FTE Đi Làm</b> và <b>↳ BPO Đi Làm</b> để biết đang thiếu người ở phía nào.</p>
-      <p>• <b>🔷 HC Khả Dụng (quy đổi thử việc):</b> = FTE (làm việc, tính đủ 1, <b>KHÔNG gồm Leader/SubLead</b>) + BPO đã Pass (tính đủ 1) + BPO Thử việc × %Ramp-up hiện tại. Phản ánh đúng năng lực thực tế hơn "Overall HC" khi team còn nhiều BPO mới hoặc có Leader/SubLead đi làm nhưng không trực tiếp xử lý case. Dòng con <b>↳ Hao Hụt HC (Thử Việc + Leader/SubLead)</b> = Overall HC − HC Khả Dụng, cho biết đang "hao" bao nhiêu đầu người quy đổi vì BPO còn ramp-up thấp <b>và/hoặc</b> vì có Leader/SubLead trong số HC đi làm (họ vẫn được đếm ở "Overall HC Đi Làm" để theo dõi công, nhưng không đóng góp năng lực xử lý case).</p>
+      <p>• <b>🔷 HC Khả Dụng (quy đổi thử việc):</b> = FTE (làm việc, tính đủ 1) + BPO đã Pass (tính đủ 1) + BPO Thử việc × %Ramp-up hiện tại. Phản ánh đúng năng lực thực tế hơn "Overall HC" khi team còn nhiều BPO mới. Dòng con <b>↳ Hao Hụt HC do Thử Việc</b> = Overall HC − HC Khả Dụng, cho biết đang "hao" bao nhiêu đầu người quy đổi vì BPO còn ramp-up thấp.</p>
       <p>• <b>Workload Dự kiến (Daily WL):</b> Theo công thức Trọng Số Ngày (xem tab Cấu hình) hoặc số Override thủ công.</p>
       <p>• <b>Override Workload (Thủ công):</b> Nhập số tại ô này để ghi đè trực tiếp Workload dự báo của đúng ngày đó, ưu tiên cao nhất so với công thức tự động.</p>
       <p>• <b>Workload Target FTE / BPO:</b> Target FTE = Daily WL × %Target FTE (cấu hình); Target BPO = Daily WL − Target FTE.</p>
@@ -1040,7 +1113,7 @@ function openTopicLogic(topicKey){
       <p>• <b>⚠️ FTE Hỗ Trợ Thêm:</b> = max(0, Target BPO − Năng lực BPO thực tế trong ngày). Phần WL này BPO không kham nổi nên tự động dồn qua cho FTE xử lý. Nếu ngày đó không có BPO nào đi làm (VD: CN không xếp BPO trực), Năng lực BPO = 0 → toàn bộ Target BPO dồn hết qua FTE.</p>
       <p>• <b>⚠️ % Daily WL do FTE gánh thay BPO:</b> = FTE Hỗ Trợ Thêm ÷ Daily WL × 100%. Cho biết tỉ trọng khối lượng công việc trong ngày mà FTE phải "gánh hộ" phần BPO không xử lý kịp — càng cao nghĩa là BPO càng quá tải/thiếu người.</p>
       <p>• <b>Tổng WL FTE Thực Nhận:</b> = Target FTE + FTE Hỗ Trợ Thêm. Đây là tổng khối lượng thực tế FTE phải gánh trong ngày.</p>
-      <p>• <b>Tổng Năng Lực Team (Total Cap):</b> = Σ(Target FTE × %Ramp-up mỗi FTE đang làm) + Σ(Target BPO × %Ramp-up mỗi BPO đang làm). Nhân sự Leader/SubLead luôn tính Capacity = 0% (không trực tiếp xử lý case). Với FTE/BPO thường, nếu có "Ghi đè Capacity %" (nhập tay tại tab Nhân sự), hệ thống dùng thẳng số đó thay cho %Ramp-up tự động khi cộng vào Total Cap.</p>
+      <p>• <b>Tổng Năng Lực Team (Total Cap):</b> = Σ(Target FTE × %Ramp-up mỗi FTE đang làm) + Σ(Target BPO × %Ramp-up mỗi BPO đang làm).</p>
       <p>• <b>Dư/Thiếu WL (Net Case Gap):</b> = Total Cap − Daily WL. Dương = dư năng lực, Âm = thiếu năng lực.</p>
       <p>• <b>Thừa/Thiếu HC Quy Đổi:</b> = Net Case Gap ÷ Target FTE — quy đổi phần dư/thiếu case ra số đầu người FTE tương đương.</p>
       <p>• <b>⭐ SLA Coverage Tổng thể (%):</b> = Total Cap ÷ Daily WL × 100%. So với 2 Ngưỡng Cảnh báo để tô màu Đỏ/Vàng/Xanh.</p>
@@ -1298,6 +1371,8 @@ function getFilteredVisibleEmployees(){
   const search = (calFilter.search || "").trim().toLowerCase();
   return all.filter(e => {
     if(search && !((e.name||"").toLowerCase().includes(search) || (e.team||"").toLowerCase().includes(search))) return false;
+    // 👑 Tab ảo "Lead/SubLead": gộp Leader/SubLead của MỌI miền, bỏ qua điều kiện Miền
+    if(calFilter.region === "LEADSUB") return (e.role === "Leader" || e.role === "SubLead");
     if(calFilter.region !== "ALL" && (e.region||"HCM") !== calFilter.region) return false;
     return true;
   });
@@ -1329,26 +1404,6 @@ function getEmpPerformancePct(emp, currentDate){
   if(diffDays < 21) return 0.50;
   if(diffDays < 28) return 0.75;
   return 1.0;
-}
-
-// 🔹 Nhân sự thuộc nhóm quản lý (Leader/SubLead) — không trực tiếp xử lý case, nên Capacity mặc định = 0%
-function isManagementRole(emp){
-  return emp && (emp.role === "Leader" || emp.role === "SubLead");
-}
-
-// 🔹 % HIỆU SUẤT DÙNG RIÊNG CHO TÍNH NĂNG LỰC TEAM (fteCapacity/bpoCapacity) TRONG DỰ BÁO WORKLOAD
-// Nếu nhân sự có "Ghi đè Hiệu suất Capacity" (emp.perfOverride, 0-100) -> dùng thẳng số đó thay vì %Ramp-up tự động.
-// ⚠️ Field này CỐ ĐỊNH theo từng nhân sự (không theo tháng) và CHỈ ảnh hưởng tới Tổng Năng Lực Team (Total Cap)
-// trong tab Dự báo Workload — KHÔNG đổi cột "Hiệu suất" tự động ở tab Nhân sự, KHÔNG đổi badge 🔻/🔸 trên lịch,
-// KHÔNG đổi quyền đăng ký AL/SL/UPL, KHÔNG đổi dòng "🔷 HC Khả Dụng". Dùng khi cần chủ động hạ % năng lực quy đổi
-// của 1 nhân sự (VD: SubLead dành nhiều thời gian cho việc quản lý nên không thể đóng góp 100% năng suất xử lý case).
-// 🔸 Leader/SubLead: LUÔN CỐ ĐỊNH 0% (không do quản lý case trực tiếp) — bỏ qua hoàn toàn perfOverride, không cho sửa.
-function getEffectiveCapacityPct(emp, curDate){
-  if(isManagementRole(emp)) return 0;
-  if(emp.perfOverride !== null && emp.perfOverride !== undefined && emp.perfOverride !== "" && !isNaN(emp.perfOverride)){
-    return Math.max(0, Math.min(100, Number(emp.perfOverride))) / 100;
-  }
-  return getEmpPerformancePct(emp, curDate);
 }
 
 function getCellData(empId, day, m = state.month, y = state.year){
@@ -1469,7 +1524,17 @@ function renderNav(){
     const b = document.createElement("button");
     b.className = "navbtn" + (tab===i.id ? " active":"");
     b.innerHTML = `<span class="ic">${i.ic}</span><span>${i.label}</span>`;
-    b.onclick = ()=>{ tab=i.id; renderAll(); };
+    b.onclick = ()=>{
+      tab=i.id;
+      // 🔹 Tab ảo "👑 Lead/SubLead" (calFilter.region="LEADSUB") chỉ có ý nghĩa ở trang Nhân sự.
+      // Rời khỏi trang Nhân sự mà vẫn đang ở tab này thì tự động trả về "ALL" để không làm sai lệch
+      // các tính toán Workload/Lịch ở những trang khác.
+      if(tab !== "nhansu" && calFilter.region === "LEADSUB"){
+        calFilter.region = (currentRole === "employee") ? (state.employees.find(e=>e.id===currentEmpId)?.region || "HCM")
+          : (isAdmin() && currentAdminRegions !== "ALL" && Array.isArray(currentAdminRegions) ? currentAdminRegions[0] : "ALL");
+      }
+      renderAll();
+    };
     el.appendChild(b);
   });
 }
@@ -1563,18 +1628,13 @@ function calculateMonthlyForecast(scopeRegion){
 
       if(isWorking){
         totalWorkingHC++;
-        // rampPct: %Ramp-up THẬT (dùng cho HC Khả Dụng — không bị ảnh hưởng bởi Ghi đè Hiệu suất Capacity)
-        // capacityPct: %dùng để cộng vào Tổng Năng Lực Team — ưu tiên Ghi đè (perfOverride) nếu nhân sự có set
         const rampPct = getEmpPerformancePct(e, curDate);
-        const capacityPct = getEffectiveCapacityPct(e, curDate);
         if(e.type === "FTE") {
-          fteCapacity += rc.fteTarget * capacityPct;
-          // 🔸 HC Khả Dụng chỉ tính năng lực xử lý case thực tế — Leader/SubLead không góp mặt ở đây (khớp Capacity 0%),
-          // nhưng vẫn được tính đủ trong "Overall HC Đi Làm"/"fteWorkingHC" bên dưới để theo dõi công đi làm bình thường.
-          availableHC += isManagementRole(e) ? 0 : 1;
+          fteCapacity += rc.fteTarget * rampPct;
+          availableHC += 1;
           fteWorkingHC++;
         } else {
-          bpoCapacity += rc.bpoTarget * capacityPct;
+          bpoCapacity += rc.bpoTarget * rampPct;
           availableHC += isEmpPassedProbation(e, curDate) ? 1 : rampPct;
           bpoWorkingHC++;
         }
@@ -1951,11 +2011,13 @@ function renderLich(){
              style="background:var(--surface-2); border:1px solid var(--border); color:var(--text); border-radius:7px; padding:6px 10px; font-size:12.5px; min-width:180px;"
              onchange="calFilter.search=this.value; renderAll();"
              onkeydown="if(event.key==='Enter'){ this.blur(); }">
-      <select id="calFilterRegion" style="background:var(--surface-2); border:1px solid var(--border); color:var(--text); border-radius:7px; padding:6px 10px; font-size:12.5px;"
+      ${currentRole === "employee"
+        ? `<span class="tool-btn active" title="🔒 Bạn chỉ xem được dữ liệu của miền mình" style="cursor:default;">🔒 ${calFilter.region}</span>`
+        : `<select id="calFilterRegion" style="background:var(--surface-2); border:1px solid var(--border); color:var(--text); border-radius:7px; padding:6px 10px; font-size:12.5px;"
               onchange="calFilter.region=this.value; renderAll();">
         <option value="ALL" ${calFilter.region==='ALL'?'selected':''}>Tất cả Miền</option>
         ${regionOptionsFilter}
-      </select>
+      </select>`}
       <select id="calFilterStatus" style="background:var(--surface-2); border:1px solid var(--border); color:var(--text); border-radius:7px; padding:6px 10px; font-size:12.5px;"
               onchange="calFilter.status=this.value; renderAll();">
         <option value="ALL" ${calFilter.status==='ALL'?'selected':''}>Tất cả Ca làm</option>
@@ -1967,7 +2029,7 @@ function renderLich(){
         <option value="PENDING" ${calFilter.approval==='PENDING'?'selected':''}>⏳ Có ngày chờ duyệt</option>
         <option value="NONE" ${calFilter.approval==='NONE'?'selected':''}>✅ Không có gì chờ duyệt</option>
       </select>
-      ${(calFilter.search || calFilter.region!=='ALL' || calFilter.status!=='ALL' || calFilter.approval!=='ALL') ? `<button class="btn-refresh" onclick="calFilter={search:'',region:'ALL',status:'ALL',approval:'ALL'}; renderAll();">✕ Xóa lọc</button>` : ''}
+      ${(calFilter.search || (currentRole!=="employee" && calFilter.region!=='ALL') || calFilter.status!=='ALL' || calFilter.approval!=='ALL') ? `<button class="btn-refresh" onclick="calFilter={search:'',region:'${currentRole==="employee"?calFilter.region:'ALL'}',status:'ALL',approval:'ALL'}; renderAll();">✕ Xóa lọc</button>` : ''}
       <span style="font-size:11px; color:var(--text-faint); margin-left:auto;">Đang hiện ${filteredRowsData.length}/${rows.length} nhân viên — hàng OVERALL HC bên dưới tính theo đúng ${filteredRowsData.length} nhân sự đang lọc</span>
     </div>
   </div>
@@ -2226,9 +2288,218 @@ function renderRegionWorkloadConfigPanel(){
   </div>`;
 }
 
+// ============================================================
+// 📤 REPORT WORKLOAD NGÀY LỄ — xuất báo cáo 1 ngày cụ thể để gửi sếp duyệt OT
+// Toàn bộ số liệu lấy thẳng từ calculateMonthlyForecast() — KHÔNG thay đổi cơ chế tính Forecast gốc,
+// chỉ trình bày lại cho trực quan + tính thêm 2 chỉ số hiển thị: % tăng trưởng WL & Gợi ý số OT cần đăng ký.
+// ============================================================
+
+function renderForecastSubTabBar(){
+  if(!isAdmin()) return ''; // Report Ngày Lễ chỉ dành cho Admin (Manager/SubLead)
+  return `<div class="panel" style="padding:8px 16px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+    <span style="font-size:12px; font-weight:700; color:var(--text-dim);">📑 Chế độ xem:</span>
+    <button class="tool-btn ${forecastSubTab==='table'?'active':''}" onclick="forecastSubTab='table'; renderAll();">📊 Bảng chi tiết cả tháng</button>
+    <button class="tool-btn ${forecastSubTab==='report'?'active':''}" onclick="forecastSubTab='report'; renderAll();">📤 Xuất Report 1 Ngày (gửi duyệt)</button>
+  </div>`;
+}
+
+// % tăng trưởng WL của 1 ngày so với mặt bằng "ngày thường" (trung bình các ngày KHÔNG phải Chủ Nhật trong tháng đang xem).
+// Không loại bỏ các ngày đã gắn cờ thủ công (DOUBLE/SALE/PAYDAY) khỏi baseline — giữ nguyên đúng số case Forecast đã tính ra.
+function computeHolidayReportMetrics(dailyForecast, avgFteTarget, avgBpoTarget, day){
+  const f = dailyForecast.find(x => x.day === day) || dailyForecast[0];
+  const normalDays = dailyForecast.filter(x => x.weekday !== "CN");
+  const avgNormalWL = normalDays.length > 0 ? (normalDays.reduce((s,x) => s + x.dayTotalWL, 0) / normalDays.length) : 0;
+  const growthPct = avgNormalWL > 0 ? ((f.dayTotalWL / avgNormalWL) - 1) * 100 : 0;
+
+  const neededFteHC = avgFteTarget > 0 ? (f.fteTargetWL / avgFteTarget) : 0;
+  const neededBpoHC = avgBpoTarget > 0 ? (f.bpoTargetWL / avgBpoTarget) : 0;
+  const neededTotalHC = neededFteHC + neededBpoHC;
+
+  // Gợi ý số HC cần đăng ký OT thêm để bù đủ phần đang thiếu (netGapWL < 0), quy đổi theo năng lực FTE bình quân,
+  // vì OT ngày lễ/ngày cao điểm chủ yếu do FTE tình nguyện đăng ký.
+  const isShort = f.netGapWL < 0;
+  const otSuggestHC = (isShort && avgFteTarget > 0) ? Math.ceil(Math.abs(f.netGapWL) / avgFteTarget) : 0;
+
+  return { f, avgNormalWL, growthPct, neededFteHC, neededBpoHC, neededTotalHC, isShort, otSuggestHC };
+}
+
+function renderHolidayReportPanel(dailyForecast, regionsInScope, avgFteTarget, avgBpoTarget){
+  const n = daysInMonth(state.month, state.year);
+  if(!forecastReportDay || forecastReportDay < 1 || forecastReportDay > n){
+    const firstHoliday = getHolidayDaysInMonth()[0];
+    forecastReportDay = firstHoliday ? firstHoliday.day : 1;
+  }
+  const day = forecastReportDay;
+  const holidayList = getHolidayDaysInMonth();
+  const m = computeHolidayReportMetrics(dailyForecast, avgFteTarget, avgBpoTarget, day);
+  const { f, growthPct, neededFteHC, neededBpoHC, neededTotalHC, isShort, otSuggestHC } = m;
+
+  const curDate = dateOf(day);
+  const dowFullMap = { "CN":"Chủ Nhật", "T2":"Thứ Hai", "T3":"Thứ Ba", "T4":"Thứ Tư", "T5":"Thứ Năm", "T6":"Thứ Sáu", "T7":"Thứ Bảy" };
+  const dowFull = dowFullMap[f.weekday] || f.weekday;
+  const holInfo = getHolidayInfo(day);
+  const dateLabel = `${String(day).padStart(2,'0')}/${String(state.month).padStart(2,'0')}/${state.year}`;
+  const regionLabel = regionsInScope.length === 1 ? `Miền ${regionsInScope[0]}` : `Tổng hợp toàn hệ thống (${regionsInScope.join(', ')})`;
+
+  const growthColor = growthPct > 15 ? '#c1332f' : (growthPct > 0 ? '#b9791e' : '#1a7a5e');
+  const growthBg = growthPct > 15 ? '#fbe4e3' : (growthPct > 0 ? '#faefd9' : '#e1f3ec');
+
+  let alertClass = "alert-ok";
+  if(f.overallCoverage < state.cfg.underThreshold) alertClass = "alert-under";
+  else if(f.overallCoverage > state.cfg.overThreshold) alertClass = "alert-over";
+  const covColor = alertClass === 'alert-under' ? '#c1332f' : (alertClass === 'alert-over' ? '#b9791e' : '#1a7a5e');
+
+  let conclusionHtml;
+  if(isShort){
+    conclusionHtml = `<div class="hr-doc-conclusion" style="background:#fbe4e3; color:#8a2622; border:1px solid #e3a8a4;">
+      ⚠️ THIẾU HỤT NHÂN LỰC — Coverage chỉ đạt ${Math.round(f.overallCoverage)}% (dưới ngưỡng ${state.cfg.underThreshold}%).<br>
+      📌 Đề xuất đăng ký bổ sung tối thiểu <b style="font-size:16px;">${otSuggestHC} người OT</b> (quy đổi theo năng lực FTE bình quân) trong ngày ${dateLabel} để đảm bảo đủ năng lực xử lý workload dự kiến.
+    </div>`;
+  } else if(f.overallCoverage > state.cfg.overThreshold){
+    conclusionHtml = `<div class="hr-doc-conclusion" style="background:#faefd9; color:#7a531a; border:1px solid #e8c98a;">
+      ⚠️ DƯ NHÂN LỰC — Coverage đạt ${Math.round(f.overallCoverage)}% (vượt ngưỡng ${state.cfg.overThreshold}%). Có thể cân nhắc giảm số người đăng ký OT trong ngày ${dateLabel} để tối ưu chi phí.
+    </div>`;
+  } else {
+    conclusionHtml = `<div class="hr-doc-conclusion" style="background:#e1f3ec; color:#155941; border:1px solid #a0d9c3;">
+      ✅ ĐỦ NHÂN LỰC — Coverage đạt ${Math.round(f.overallCoverage)}%, nằm trong ngưỡng an toàn (${state.cfg.underThreshold}%–${state.cfg.overThreshold}%). Không cần bổ sung thêm OT cho ngày ${dateLabel}.
+    </div>`;
+  }
+
+  const quickPicks = holidayList.map(h => `<button class="tool-btn ${day===h.day?'active':''}" onclick="setHolidayReportDay(${h.day})" title="${h.name}">🎉 ${String(h.day).padStart(2,'0')}/${state.month} — ${h.name}</button>`).join(" ");
+
+  const dayOptions = Array.from({length:n}, (_,i) => i+1)
+    .map(d => `<option value="${d}" ${d===day?'selected':''}>${String(d).padStart(2,'0')}/${String(state.month).padStart(2,'0')} (${VN_SHORT_WEEKDAY[dateOf(d).getDay()]})</option>`).join("");
+
+  return `
+  <div class="panel">
+    <h2>📤 Xuất Report Workload Ngày Lễ / Ngày Cao Điểm</h2>
+    <div class="sub" style="color:var(--text-dim); margin-bottom:10px;">Chọn 1 ngày cụ thể để xem chi tiết & xuất report gửi cấp trên duyệt đăng ký OT. Số liệu lấy trực tiếp từ bảng ⚖ Cân đối Workload, không tính lại.</div>
+    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:8px;">
+      <label class="f" style="min-width:0;">Chọn ngày<select onchange="setHolidayReportDay(this.value)" style="min-width:170px;">${dayOptions}</select></label>
+      ${quickPicks ? `<span style="font-size:11px; color:var(--text-faint);">Gợi ý nhanh (ngày lễ trong tháng):</span> ${quickPicks}` : `<span style="font-size:11px; color:var(--text-faint);">Không có ngày lễ nào được khai báo trong tháng ${state.month}/${state.year} (xem tab ⚙ Cấu hình).</span>`}
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
+      <button class="btn-excel" onclick="copyHolidayReportToClipboard()">📋 Copy nội dung (dán vào Mail)</button>
+      <button class="btn-refresh" onclick="printHolidayReport()">🖨️ In / Lưu PDF</button>
+    </div>
+
+    <div id="holidayReportPrintArea" class="holiday-report-doc">
+      <div class="hr-doc-header">
+        <div>
+          <p class="hr-doc-title">📅 ${dowFull}, ngày ${dateLabel}${holInfo ? ` — ${holInfo.name}` : ''}</p>
+          <p class="hr-doc-sub">🌏 ${regionLabel} &nbsp;|&nbsp; Report dự kiến Workload &amp; Nhân lực, phục vụ đăng ký OT</p>
+        </div>
+        <div class="hr-doc-growth" style="color:${growthColor}; background:${growthBg};">
+          ${growthPct >= 0 ? '📈' : '📉'} ${growthPct >= 0 ? '+' : ''}${growthPct.toFixed(1)}% so với ngày thường
+        </div>
+      </div>
+
+      <div class="hr-doc-kpi-grid">
+        <div class="hr-doc-kpi">
+          <div class="k-lbl">Workload dự kiến</div>
+          <div class="k-val">${f.dayTotalWL.toLocaleString()} case</div>
+          <div class="k-sub">TB ngày thường: ${Math.round(m.avgNormalWL).toLocaleString()} case</div>
+        </div>
+        <div class="hr-doc-kpi">
+          <div class="k-lbl">HC cần thiết (quy đổi từ WL)</div>
+          <div class="k-val">${neededTotalHC.toFixed(1)} HC</div>
+          <div class="k-sub">FTE: ${neededFteHC.toFixed(1)} · BPO: ${neededBpoHC.toFixed(1)}</div>
+        </div>
+        <div class="hr-doc-kpi">
+          <div class="k-lbl">HC thực tế đi làm</div>
+          <div class="k-val">${f.totalWorkingHC} HC</div>
+          <div class="k-sub">FTE: ${f.fteWorkingHC} · BPO: ${f.bpoWorkingHC} (Khả dụng quy đổi: ${f.availableHC.toFixed(1)})</div>
+        </div>
+        <div class="hr-doc-kpi">
+          <div class="k-lbl">Gap Workload</div>
+          <div class="k-val" style="color:${f.netGapWL<0?'#c1332f':'#1a7a5e'}">${f.netGapWL>0?'+':''}${Math.round(f.netGapWL)} case</div>
+          <div class="k-sub">${f.netGapWL<0?'Thiếu':'Dư'} so với năng lực hiện có</div>
+        </div>
+        <div class="hr-doc-kpi">
+          <div class="k-lbl">Gap HC quy đổi</div>
+          <div class="k-val" style="color:${f.hcGap<0?'#c1332f':'#1a7a5e'}">${f.hcGap>0?'+':''}${f.hcGap} HC</div>
+          <div class="k-sub">Tổng năng lực team: ${Math.round(f.totalCapacity).toLocaleString()} case</div>
+        </div>
+        <div class="hr-doc-kpi">
+          <div class="k-lbl">⭐ SLA Coverage tổng thể</div>
+          <div class="k-val" style="color:${covColor}">${Math.round(f.overallCoverage)}%</div>
+          <div class="k-sub">Ngưỡng an toàn: ${state.cfg.underThreshold}% – ${state.cfg.overThreshold}%</div>
+        </div>
+      </div>
+
+      <table class="hr-doc-table">
+        <thead><tr><th>Chỉ số</th><th style="text-align:right;">Tổng</th><th style="text-align:right;">FTE</th><th style="text-align:right;">BPO</th></tr></thead>
+        <tbody>
+          <tr><td>HC cần thiết (quy đổi từ WL)</td><td class="num">${neededTotalHC.toFixed(1)}</td><td class="num">${neededFteHC.toFixed(1)}</td><td class="num">${neededBpoHC.toFixed(1)}</td></tr>
+          <tr><td>HC thực tế đi làm</td><td class="num">${f.totalWorkingHC}</td><td class="num">${f.fteWorkingHC}</td><td class="num">${f.bpoWorkingHC}</td></tr>
+          <tr><td>Workload Target (case)</td><td class="num">${f.dayTotalWL.toLocaleString()}</td><td class="num">${f.fteTargetWL.toLocaleString()}</td><td class="num">${f.bpoTargetWL.toLocaleString()}</td></tr>
+          <tr><td>Năng lực xử lý thực tế (case)</td><td class="num">${Math.round(f.totalCapacity).toLocaleString()}</td><td class="num">${Math.round(f.fteCapacity).toLocaleString()}</td><td class="num">${Math.round(f.bpoCapacity).toLocaleString()}</td></tr>
+        </tbody>
+      </table>
+
+      ${conclusionHtml}
+
+      <div class="hr-doc-footer">Report tạo tự động từ hệ thống WFM lúc ${new Date().toLocaleString('vi-VN')} — dữ liệu tổng hợp theo cấu hình Workload hiện hành, chỉ mang tính tham khảo hỗ trợ ra quyết định.</div>
+    </div>
+  </div>`;
+}
+
+function setHolidayReportDay(d){
+  forecastReportDay = Number(d);
+  renderAll();
+}
+
+async function copyHolidayReportToClipboard(){
+  const el = document.getElementById("holidayReportPrintArea");
+  if(!el) return;
+  const html = `<div>${el.outerHTML}</div>`;
+  const text = el.innerText;
+  try {
+    if(window.ClipboardItem){
+      const item = new ClipboardItem({
+        "text/html": new Blob([html], { type: "text/html" }),
+        "text/plain": new Blob([text], { type: "text/plain" })
+      });
+      await navigator.clipboard.write([item]);
+    } else {
+      await navigator.clipboard.writeText(text);
+    }
+    alert("📋 Đã copy report — mở email và dán (Ctrl+V) trực tiếp để gửi sếp duyệt.");
+  } catch(err){
+    try {
+      const range = document.createRange();
+      range.selectNode(el);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      document.execCommand('copy');
+      sel.removeAllRanges();
+      alert("📋 Đã copy report — mở email và dán (Ctrl+V) trực tiếp để gửi sếp duyệt.");
+    } catch(err2){
+      alert("❌ Trình duyệt không cho phép tự động copy. Bạn có thể bôi đen phần report (khung trắng) rồi bấm Ctrl+C thủ công.");
+    }
+  }
+}
+
+function printHolidayReport(){
+  window.print();
+}
+
 function renderForecast(){
   const { totalWL, dailyForecast, regionsInScope, avgFteTarget, avgBpoTarget } = calculateMonthlyForecast(calFilter.region);
   const n = daysInMonth(state.month, state.year);
+
+  // 📤 Report Ngày Lễ chỉ dành cho Admin (Manager/SubLead) — Member/Viewer không có quyền xuất report này
+  if(!isAdmin() && forecastSubTab === "report") forecastSubTab = "table";
+
+  // 📤 Chế độ Xuất Report 1 Ngày — tách sớm, không cần build bảng ma trận cả tháng bên dưới cho nhẹ
+  if(forecastSubTab === "report"){
+    return `
+    ${renderRegionScopeTabs()}
+    ${renderForecastSubTabBar()}
+    ${renderHolidayReportPanel(dailyForecast, regionsInScope, avgFteTarget, avgBpoTarget)}
+    `;
+  }
 
   // 🔹 Tổng HC toàn Team (không phân biệt ngày đi làm) & Workload tối đa quy đổi được nếu toàn bộ Team đi làm hết công suất
   // Lưu ý: KPI toàn hệ thống ở trên vẫn tính trên TOÀN BỘ nhân sự; riêng khối "Tổng HC Toàn Team" bên dưới scope theo Phạm vi xem đang chọn
@@ -2248,7 +2519,7 @@ function renderForecast(){
   let rFteHC = `<tr><td class="rowlabel" style="color:var(--teal); padding-left:20px">↳ FTE Đi Làm</td>`;
   let rBpoHC = `<tr><td class="rowlabel" style="color:var(--amber); padding-left:20px">↳ BPO Đi Làm</td>`;
   let rAvailHC = `<tr><td class="rowlabel" style="color:var(--violet)">🔷 HC Khả Dụng (quy đổi thử việc)</td>`;
-  let rHcProbationGap = `<tr><td class="rowlabel" style="color:var(--text-dim)">↳ Hao Hụt HC (Thử Việc + Leader/SubLead)</td>`;
+  let rHcProbationGap = `<tr><td class="rowlabel" style="color:var(--text-dim)">↳ Hao Hụt HC do Thử Việc</td>`;
   let rTotal = `<tr><td class="rowlabel">Workload Dự kiến (Daily WL)</td>`;
   let rOverride = `<tr><td class="rowlabel" style="color:var(--amber)">✏️ Override Workload (Thủ công)</td>`;
   let rFteTargetWL = `<tr><td class="rowlabel">Workload Target FTE (theo % từng miền)</td>`;
@@ -2309,6 +2580,7 @@ function renderForecast(){
 
   return `
   ${renderRegionScopeTabs()}
+  ${renderForecastSubTabBar()}
   ${renderRegionWorkloadConfigPanel()}
   <div class="panel">
     <h2>🚦 Ngưỡng Cảnh báo SLA (áp dụng chung toàn hệ thống) <button class="info-icon-btn" onclick="openTopicLogic('forecast_cfg')" title="Xem công thức">i</button></h2>
@@ -2411,12 +2683,7 @@ function renderNhanSu(){
       <td><input type="text" inputmode="numeric" maxlength="10" class="date-mask" placeholder="dd/mm/yyyy" data-f="onboarding" value="${isoToDMY(e.onboarding||'2024-01-01')}" ${rowLocked?'disabled':''}></td>
       <td><input type="text" inputmode="numeric" maxlength="10" class="date-mask" placeholder="dd/mm/yyyy" data-f="offboardDate" value="${isoToDMY(e.offboardDate||'')}" style="color:var(--coral)" ${rowLocked?'disabled':''}></td>
       <td style="text-align:center"><input type="checkbox" data-f="earlyPass" ${e.earlyPass?'checked':''} title="Đánh dấu để bỏ qua thời gian thử việc" ${rowLocked?'disabled':''}></td>
-      <td style="text-align:center; font-weight:700" class="mono">${isManagementRole(e)?'—':(isPassed?'100% (Passed)':autoRampPct+'%')}</td>
-      <td style="text-align:center">
-        ${isManagementRole(e)
-          ? `<input type="number" value="0" disabled style="width:64px; text-align:center; color:var(--text-faint);" title="Leader/SubLead luôn cố định Capacity = 0% (không trực tiếp xử lý case) — không thể chỉnh.">`
-          : `<input type="number" min="0" max="100" step="1" data-f="perfOverride" placeholder="Auto" value="${e.perfOverride===null||e.perfOverride===undefined?'':e.perfOverride}" style="width:64px; text-align:center; ${e.perfOverride!==null&&e.perfOverride!==undefined?'color:var(--violet); font-weight:700;':''}" title="Ghi đè % Hiệu suất dùng để tính Tổng Năng Lực Team (Total Cap) trong Dự báo Workload. Để trống = dùng %Ramp-up tự động như cũ. KHÔNG đổi cột Hiệu suất bên trái, badge trên lịch, hay quyền AL/SL/UPL." ${rowLocked?'disabled':''}>`}
-      </td>
+      <td style="text-align:center; font-weight:700" class="mono">${isPassed?'100% (Passed)':autoRampPct+'%'}</td>
       <td style="text-align:center; font-weight:700; color:${alColor}" class="mono" title="${alTitle}">${q.remainingAL}${q.carryExpiringSoon?' ⏰':''}</td>
       <td style="text-align:center; font-weight:700; color:${q.remainingSL<0?'var(--coral)':'var(--teal)'}" class="mono" title="${slTitle}">${q.baseSL>0?q.remainingSL:'—'}</td>
       <td><button class="icon-btn" data-del="${e.id}" title="Xóa nhân viên" ${rowLocked?'disabled':''}>✕</button></td>
@@ -2425,9 +2692,9 @@ function renderNhanSu(){
 
   const anyEditable = visibleEmps.some(e => canEditEmpRow(e.id));
   return `
-  ${renderRegionScopeTabs()}
+  ${renderRegionScopeTabs({ showLeadSubTab: true })}
   <div class="panel locked-section">
-    <h2>Danh sách Nhân sự, Khu vực & Early Pass Thử Việc <button class="info-icon-btn" onclick="openTopicLogic('nhansu')" title="Xem hướng dẫn Offboard">i</button></h2>
+    <h2>Danh sách Nhân sự, Khu vực & Early Pass Thử Việc ${calFilter.region==='LEADSUB' ? '<span style="color:var(--violet); font-weight:700;">— 👑 Đang xem gộp Leader/SubLead mọi miền</span>' : ''} <button class="info-icon-btn" onclick="openTopicLogic('nhansu')" title="Xem hướng dẫn Offboard">i</button></h2>
     ${!anyEditable ? `<div class="lock-banner">🔒 Bạn không có quyền sửa nhân sự trong phạm vi đang xem. Đang ở chế độ chỉ đọc.</div>` : `<div class="sub" style="margin:-6px 0 12px; color:var(--text-dim)">💡 Kéo biểu tượng ⠿ để đổi vị trí nhân viên trong cùng 1 Team. Cột AL/SL còn lại tính theo năm dương lịch ${state.year} — nhân sự cũ (Onboard trước năm ${state.year}) nhận Full quota (AL dư năm trước dùng được tới hết tháng 6); nhân sự mới Onboard trong năm ${state.year} được tính Prorate theo tháng Pass thử việc. Rê chuột vào ô để xem chi tiết.</div>`}
     
     <datalist id="region-list">${regionOptions}</datalist>
@@ -2435,7 +2702,7 @@ function renderNhanSu(){
 
     <div>
       <div class="grid-wrap"><table class="emp-table">
-        <thead><tr><th></th><th>Họ tên</th><th>Mail</th><th>Khu vực</th><th>Team</th><th>Chức vụ</th><th>Loại</th><th>Ngày sinh</th><th>Onboarding</th><th>Offboard</th><th>Early Pass</th><th>Hiệu suất</th><th title="Ghi đè % dùng cho Tổng Năng Lực Team (Total Cap) trong Dự báo Workload — để trống = tự động. Không đổi cột Hiệu suất bên trái.">Ghi đè Capacity %</th><th title="Quỹ AL còn lại năm ${state.year}">AL còn lại</th><th title="Quỹ SL còn lại năm ${state.year}">SL còn lại</th><th></th></tr></thead>
+        <thead><tr><th></th><th>Họ tên</th><th>Mail</th><th>Khu vực</th><th>Team</th><th>Chức vụ</th><th>Loại</th><th>Ngày sinh</th><th>Onboarding</th><th>Offboard</th><th>Early Pass</th><th>Hiệu suất</th><th title="Quỹ AL còn lại năm ${state.year}">AL còn lại</th><th title="Quỹ SL còn lại năm ${state.year}">SL còn lại</th><th></th></tr></thead>
         <tbody>${rows}</tbody>
       </table></div>
       <br><button class="btn-primary" onclick="addEmp()" ${isAdmin()?'':'disabled title="Chỉ Admin/Sub-lead"'}>＋ Thêm Nhân viên</button>
@@ -2449,7 +2716,7 @@ function addEmp(){
   const defaultRegion = (currentAdminRegions !== "ALL" && Array.isArray(currentAdminRegions) && currentAdminRegions[0]) ? currentAdminRegions[0] : "HCM";
   if(!canAddEmpToRegion(defaultRegion)){ alert("🔒 Bạn không có quyền thêm nhân sự cho miền này."); return; }
   const maxOrder = Math.max(0, ...state.employees.map(e => e.sortOrder || 0));
-  state.employees.push({ id:uid(), name:"Nhân viên mới", mail:"", region:defaultRegion, team:"Team Mới", role:"FTE", type:"FTE", onboarding:"2026-08-01", offboardDate:"", dob:"", earlyPass: false, perfOverride: null, sortOrder: maxOrder + 10 }); 
+  state.employees.push({ id:uid(), name:"Nhân viên mới", mail:"", region:defaultRegion, team:"Team Mới", role:"FTE", type:"FTE", onboarding:"2026-08-01", offboardDate:"", dob:"", earlyPass: false, sortOrder: maxOrder + 10 }); 
   saveLocalState();
   renderAll(); 
 }
@@ -3111,15 +3378,6 @@ function renderAllUIOnly(){
         }
         e.target.value = result.display; // ngày không tồn tại (VD 31/02) -> đã tự clamp về ngày hợp lệ gần nhất
         emp[field] = result.iso;
-        saveLocalState();
-        renderAll();
-        return;
-      }
-
-      // 🔹 Ghi đè % Hiệu suất Capacity — để trống = null (dùng công thức tự động), có nhập = clamp 0-100
-      if(field === 'perfOverride'){
-        const raw = e.target.value.trim();
-        emp.perfOverride = (raw === "" || isNaN(raw)) ? null : Math.max(0, Math.min(100, Number(raw)));
         saveLocalState();
         renderAll();
         return;
