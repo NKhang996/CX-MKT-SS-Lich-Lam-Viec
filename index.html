@@ -329,25 +329,8 @@
   .pending-list-row:hover{background:var(--surface-2);}
   .pending-list-row .plr-name{flex:1; min-width:0; font-weight:600;}
   .pending-list-row .plr-diff{font-family:'IBM Plex Mono',monospace; color:var(--text-dim); font-size:11px;}
-
-  /* 📤 REPORT WORKLOAD NGÀY LỄ — thẻ giấy trắng độc lập theme, dùng chung cho xem trong app / copy mail / in PDF */
-  .holiday-report-doc{background:#ffffff; color:#1a2126; border-radius:12px; padding:24px 26px; font-family:'Inter',Arial,sans-serif; box-shadow:0 2px 14px rgba(0,0,0,0.28);}
-  .holiday-report-doc *{box-sizing:border-box;}
-  .hr-doc-header{display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #1a2126; padding-bottom:12px; margin-bottom:16px; flex-wrap:wrap; gap:8px;}
-  .hr-doc-title{font-size:19px; font-weight:800; margin:0;}
-  .hr-doc-sub{font-size:12.5px; color:#555; margin-top:3px;}
-  .hr-doc-growth{font-size:13px; font-weight:800; padding:6px 12px; border-radius:20px; white-space:nowrap;}
-  .hr-doc-kpi-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:16px 0;}
-  .hr-doc-kpi{border:1px solid #d8dce0; border-radius:9px; padding:10px 12px; background:#f7f8fa;}
-  .hr-doc-kpi .k-lbl{font-size:10.5px; font-weight:700; color:#666; text-transform:uppercase; letter-spacing:.03em;}
-  .hr-doc-kpi .k-val{font-size:19px; font-weight:800; margin-top:3px; font-family:'IBM Plex Mono',monospace;}
-  .hr-doc-kpi .k-sub{font-size:11px; color:#777; margin-top:2px;}
-  .hr-doc-table{width:100%; border-collapse:collapse; margin:14px 0; font-size:12.5px;}
-  .hr-doc-table th, .hr-doc-table td{border:1px solid #d8dce0; padding:7px 10px; text-align:left;}
-  .hr-doc-table th{background:#eef1f4; font-weight:700; font-size:11px; text-transform:uppercase; color:#555;}
-  .hr-doc-table td.num{font-family:'IBM Plex Mono',monospace; text-align:right; font-weight:700;}
-  .hr-doc-conclusion{border-radius:9px; padding:14px 16px; font-size:13.5px; font-weight:700; line-height:1.6; margin-top:14px;}
-  .hr-doc-footer{margin-top:16px; font-size:10.5px; color:#999; border-top:1px solid #e2e5e8; padding-top:8px;}
+  .pending-list-row.plr-own-team{background:var(--teal-dim); border-left:3px solid var(--teal); border-bottom-color:#235952;}
+  .pending-list-row.plr-own-team:hover{background:#1c5750;}
 
   @media print{
     body *{visibility:hidden !important;}
@@ -1443,6 +1426,19 @@ function getEmpPerformancePct(emp, currentDate){
   return 1.0;
 }
 
+// 🔹 %Hiệu suất THỰC TẾ dùng cho công thức (Tổng Năng Lực Team / HC Khả Dụng / SLA Coverage / badge ramp-up trên Lịch).
+// Nếu Admin đã nhập tay ở cột "Hiệu suất" (emp.perfOverride, áp dụng cho MỌI nhân sự kể cả đã Pass thử việc) thì
+// dùng đúng số đó thay cho % auto-tính theo ramp-up/Pass thử việc — override này ảnh hưởng TRỰC TIẾP vào công thức,
+// không chỉ là ghi chú hiển thị. Nhân sự không active ngày đó (chưa Onboard/đã Offboard) luôn = 0% dù có override.
+function getEffectiveCapacityPct(emp, currentDate){
+  if(!isEmpActiveOnDate(emp, currentDate)) return 0;
+  if(emp.perfOverride !== undefined && emp.perfOverride !== null && emp.perfOverride !== ''){
+    const v = Number(emp.perfOverride);
+    if(!isNaN(v)) return Math.max(0, Math.min(100, v)) / 100;
+  }
+  return getEmpPerformancePct(emp, currentDate);
+}
+
 function getCellData(empId, day, m = state.month, y = state.year){
   const mkKey = monthKey(m, y);
   const mData = state.marks[mkKey]?.[empId]?.[day];
@@ -1665,7 +1661,7 @@ function calculateMonthlyForecast(scopeRegion){
 
       if(isWorking){
         totalWorkingHC++;
-        const rampPct = getEmpPerformancePct(e, curDate);
+        const rampPct = getEffectiveCapacityPct(e, curDate);
         if(e.type === "FTE") {
           fteCapacity += rc.fteTarget * rampPct;
           availableHC += 1;
@@ -1903,7 +1899,7 @@ function renderLich(){
       // 🔻 = hiệu suất ramp-up hiện tại < 100%.  🔸 = đã ramp tới 100% nhưng vẫn chưa chính thức Pass mốc 60 ngày.
       let perfBadge = "";
       if(isWorking && !isEmpPassedProbation(e, curDate)){
-        const pct = getEmpPerformancePct(e, curDate);
+        const pct = getEffectiveCapacityPct(e, curDate);
         const pctLabel = Math.round(pct * 100);
         const perfIcon = pct < 1 ? "🔻" : "🔸";
         const perfNote = pct < 1
@@ -2278,7 +2274,7 @@ function getPendingListInScope(){
       const pending = monthPending[empId][day];
       if(!pending) return;
       const current = getCellData(empId, day);
-      list.push({ empId, empName: emp?emp.name:empId, day, oldStatus: current.status||null, newStatus: pending.status||null, requestedBy: pending.requestedBy, requestedAt: pending.requestedAt });
+      list.push({ empId, empName: emp?emp.name:empId, empTeam: emp?(emp.team||''):'', day, oldStatus: current.status||null, newStatus: pending.status||null, requestedBy: pending.requestedBy, requestedAt: pending.requestedAt });
     });
   });
   return list.sort((a,b) => (a.requestedAt||0) - (b.requestedAt||0));
@@ -2287,17 +2283,24 @@ function getPendingListInScope(){
 function renderPendingListPanel(){
   if(!isAdmin()) return '';
   const list = getPendingListInScope();
+  // 🏠 Team của chính Admin đang đăng nhập (nếu Admin đó cũng có 1 dòng nhân sự, VD Sub-lead) — dùng để
+  // highlight nổi bật các yêu cầu thuộc đúng team mình, giúp dễ nhận ra khi 2 Sub-lead cùng miền duyệt chéo cho nhau.
+  const myEmp = state.employees.find(e => e.id === currentEmpId);
+  const myTeam = myEmp ? (myEmp.team || '') : '';
   return `
   <div class="panel">
     <h2>⏳ Đang chờ duyệt ${list.length > 0 ? `<span style="color:var(--amber); font-size:13px;">(${list.length})</span>` : ''}</h2>
+    ${(myTeam && list.some(p => p.empTeam !== myTeam)) ? `<div class="sub" style="margin:-6px 0 12px; color:var(--text-dim);">🏠 = yêu cầu thuộc team <b>${myTeam}</b> của bạn — các dòng còn lại là team khác (duyệt chéo).</div>` : ''}
     ${list.length === 0 ? `<div style="padding:14px; text-align:center; color:var(--text-faint);">Không có yêu cầu nào đang chờ duyệt trong tháng ${state.month}/${state.year}.</div>` : `
-    <div>${list.map(p => `
-      <div class="pending-list-row" style="cursor:pointer;" onclick="openApprovalModal('${p.empId}',${p.day})">
-        <span class="plr-name">${p.empName}</span>
+    <div>${list.map(p => {
+      const isMyTeam = myTeam && p.empTeam === myTeam;
+      return `
+      <div class="pending-list-row ${isMyTeam ? 'plr-own-team' : ''}" style="cursor:pointer;" onclick="openApprovalModal('${p.empId}',${p.day})">
+        <span class="plr-name">${isMyTeam ? '<span title="Thuộc team của bạn" style="margin-right:4px;">🏠</span>' : ''}${p.empName}${p.empTeam ? `<span style="font-weight:400; color:var(--text-faint); font-size:10.5px;"> · ${p.empTeam}</span>` : ''}</span>
         <span class="plr-diff">Ngày ${p.day}: ${p.oldStatus||'(trống)'} → ${p.newStatus||'(trống)'}</span>
         <button class="btn-reject" style="padding:4px 10px; font-size:11px;" onclick="event.stopPropagation(); openApprovalModal('${p.empId}',${p.day})">Xem & Duyệt</button>
       </div>
-    `).join("")}</div>`}
+    `; }).join("")}</div>`}
   </div>`;
 }
 
@@ -2395,34 +2398,69 @@ function renderHolidayReportPanel(dailyForecast, regionsInScope, avgFteTarget, a
   const dateLabel = `${String(day).padStart(2,'0')}/${String(state.month).padStart(2,'0')}/${state.year}`;
   const regionLabel = regionsInScope.length === 1 ? `Miền ${regionsInScope[0]}` : `Tổng hợp toàn hệ thống (${regionsInScope.join(', ')})`;
 
-  const growthColor = growthPct > 15 ? '#c1332f' : (growthPct > 0 ? '#b9791e' : '#1a7a5e');
-  const growthBg = growthPct > 15 ? '#fbe4e3' : (growthPct > 0 ? '#faefd9' : '#e1f3ec');
+  // 🎨 BẢNG MÀU THEO ĐÚNG THEME APP ĐANG DÙNG (dark/light) — TOÀN BỘ report dùng style inline (không 1 class CSS nào)
+  // để khi copy sang Gmail/Outlook vẫn giữ nguyên layout & màu sắc (email client bỏ hết <style>/class ngoài trang).
+  const isLight = document.body.classList.contains('light-theme');
+  const P = isLight ? {
+    bg:'#ffffff', text:'#1a2126', headerBorder:'#1a2126', subText:'#555555',
+    kpiBorder:'#d8dce0', kpiBg:'#f7f8fa', kpiLbl:'#666666', kpiSub:'#777777',
+    tableBorder:'#d8dce0', tableHeadBg:'#eef1f4', tableHeadText:'#555555',
+    footerText:'#999999', footerBorder:'#e2e5e8', shadow:'0 2px 14px rgba(0,0,0,0.15)',
+    danger:{text:'#c1332f', bg:'#fbe4e3', border:'#e3a8a4'},
+    dangerStrong:{text:'#8a2622', bg:'#fbe4e3', border:'#e3a8a4'},
+    warn:{text:'#b9791e', bg:'#faefd9', border:'#e8c98a'},
+    warnStrong:{text:'#7a531a', bg:'#faefd9', border:'#e8c98a'},
+    ok:{text:'#1a7a5e', bg:'#e1f3ec', border:'#a0d9c3'},
+  } : {
+    bg:'#1c2128', text:'#e8eaed', headerBorder:'#3a4048', subText:'#9aa4af',
+    kpiBorder:'#333a42', kpiBg:'#242a32', kpiLbl:'#8a94a0', kpiSub:'#7a8490',
+    tableBorder:'#333a42', tableHeadBg:'#242a32', tableHeadText:'#9aa4af',
+    footerText:'#6b7480', footerBorder:'#333a42', shadow:'0 2px 14px rgba(0,0,0,0.55)',
+    danger:{text:'#ff8a80', bg:'#4a2422', border:'#7a3733'},
+    dangerStrong:{text:'#ff8a80', bg:'#4a2422', border:'#7a3733'},
+    warn:{text:'#ffcf7a', bg:'#4a3a1a', border:'#7a5f2e'},
+    warnStrong:{text:'#ffcf7a', bg:'#4a3a1a', border:'#7a5f2e'},
+    ok:{text:'#7ee0b8', bg:'#173a2c', border:'#2e6b4e'},
+  };
+
+  const growthPal = growthPct > 15 ? P.danger : (growthPct > 0 ? P.warn : P.ok);
 
   let alertClass = "alert-ok";
   if(f.overallCoverage < state.cfg.underThreshold) alertClass = "alert-under";
   else if(f.overallCoverage > state.cfg.overThreshold) alertClass = "alert-over";
-  const covColor = alertClass === 'alert-under' ? '#c1332f' : (alertClass === 'alert-over' ? '#b9791e' : '#1a7a5e');
+  const covPal = alertClass === 'alert-under' ? P.danger : (alertClass === 'alert-over' ? P.warn : P.ok);
+  const gapWlPal = f.netGapWL < 0 ? P.danger : P.ok;
+  const gapHcPal = f.hcGap < 0 ? P.danger : P.ok;
 
-  let conclusionHtml;
+  // Kiểu inline dùng chung
+  const kpiCellStyle = `border:1px solid ${P.kpiBorder}; border-radius:9px; background:${P.kpiBg}; padding:10px 12px; vertical-align:top;`;
+  const kpiLblStyle = `font-size:10.5px; font-weight:700; color:${P.kpiLbl}; text-transform:uppercase; letter-spacing:.03em; font-family:Arial,sans-serif;`;
+  const kpiValStyle = `font-size:19px; font-weight:800; margin-top:3px; font-family:'IBM Plex Mono',Consolas,monospace;`;
+  const kpiSubStyle = `font-size:11px; color:${P.kpiSub}; margin-top:2px; font-family:Arial,sans-serif;`;
+  const thStyle = `border:1px solid ${P.tableBorder}; padding:7px 10px; text-align:left; background:${P.tableHeadBg}; font-weight:700; font-size:11px; text-transform:uppercase; color:${P.tableHeadText}; font-family:Arial,sans-serif;`;
+  const tdStyle = `border:1px solid ${P.tableBorder}; padding:7px 10px; text-align:left; font-size:12.5px; color:${P.text}; font-family:Arial,sans-serif;`;
+  const tdNumStyle = tdStyle + `font-family:'IBM Plex Mono',Consolas,monospace; text-align:right; font-weight:700;`;
+
+  let conclusionPal, conclusionText;
   if(isShort){
-    conclusionHtml = `<div class="hr-doc-conclusion" style="background:#fbe4e3; color:#8a2622; border:1px solid #e3a8a4;">
-      ⚠️ THIẾU HỤT NHÂN LỰC — Coverage chỉ đạt ${Math.round(f.overallCoverage)}% (dưới ngưỡng ${state.cfg.underThreshold}%).<br>
-      📌 Đề xuất đăng ký bổ sung tối thiểu <b style="font-size:16px;">${otSuggestHC} người OT</b> (quy đổi theo năng lực FTE bình quân) trong ngày ${dateLabel} để đảm bảo đủ năng lực xử lý workload dự kiến.
-    </div>`;
+    conclusionPal = P.dangerStrong;
+    conclusionText = `⚠️ THIẾU HỤT NHÂN LỰC — Coverage chỉ đạt ${Math.round(f.overallCoverage)}% (dưới ngưỡng ${state.cfg.underThreshold}%).<br>📌 Đề xuất đăng ký bổ sung tối thiểu <b style="font-size:16px;">${otSuggestHC} người OT</b> (quy đổi theo năng lực FTE bình quân) trong ngày ${dateLabel} để đảm bảo đủ năng lực xử lý workload dự kiến.`;
   } else if(f.overallCoverage > state.cfg.overThreshold){
-    conclusionHtml = `<div class="hr-doc-conclusion" style="background:#faefd9; color:#7a531a; border:1px solid #e8c98a;">
-      ⚠️ DƯ NHÂN LỰC — Coverage đạt ${Math.round(f.overallCoverage)}% (vượt ngưỡng ${state.cfg.overThreshold}%). Có thể cân nhắc giảm số người đăng ký OT trong ngày ${dateLabel} để tối ưu chi phí.
-    </div>`;
+    conclusionPal = P.warnStrong;
+    conclusionText = `⚠️ DƯ NHÂN LỰC — Coverage đạt ${Math.round(f.overallCoverage)}% (vượt ngưỡng ${state.cfg.overThreshold}%). Có thể cân nhắc giảm số người đăng ký OT trong ngày ${dateLabel} để tối ưu chi phí.`;
   } else {
-    conclusionHtml = `<div class="hr-doc-conclusion" style="background:#e1f3ec; color:#155941; border:1px solid #a0d9c3;">
-      ✅ ĐỦ NHÂN LỰC — Coverage đạt ${Math.round(f.overallCoverage)}%, nằm trong ngưỡng an toàn (${state.cfg.underThreshold}%–${state.cfg.overThreshold}%). Không cần bổ sung thêm OT cho ngày ${dateLabel}.
-    </div>`;
+    conclusionPal = P.ok;
+    conclusionText = `✅ ĐỦ NHÂN LỰC — Coverage đạt ${Math.round(f.overallCoverage)}%, nằm trong ngưỡng an toàn (${state.cfg.underThreshold}%–${state.cfg.overThreshold}%). Không cần bổ sung thêm OT cho ngày ${dateLabel}.`;
   }
 
   const quickPicks = holidayList.map(h => `<button class="tool-btn ${day===h.day?'active':''}" onclick="setHolidayReportDay(${h.day})" title="${h.name}">🎉 ${String(h.day).padStart(2,'0')}/${state.month} — ${h.name}</button>`).join(" ");
 
   const dayOptions = Array.from({length:n}, (_,i) => i+1)
     .map(d => `<option value="${d}" ${d===day?'selected':''}>${String(d).padStart(2,'0')}/${String(state.month).padStart(2,'0')} (${VN_SHORT_WEEKDAY[dateOf(d).getDay()]})</option>`).join("");
+
+  // KPI card generator (dùng bảng thay vì grid/flex để copy vào email không bị vỡ layout — Outlook/Gmail không hỗ trợ CSS grid)
+  const kpiCell = (lbl, val, sub, valColor) => `<td style="${kpiCellStyle}"><div style="${kpiLblStyle}">${lbl}</div><div style="${kpiValStyle}${valColor?` color:${valColor};`:` color:${P.text};`}">${val}</div><div style="${kpiSubStyle}">${sub}</div></td>`;
+  const kpiSpacer = `<td style="width:10px; border:none; background:transparent;"></td>`;
 
   return `
   <div class="panel">
@@ -2435,65 +2473,57 @@ function renderHolidayReportPanel(dailyForecast, regionsInScope, avgFteTarget, a
     <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
       <button class="btn-excel" onclick="copyHolidayReportToClipboard()">📋 Copy nội dung (dán vào Mail)</button>
       <button class="btn-refresh" onclick="printHolidayReport()">🖨️ In / Lưu PDF</button>
+      <span style="font-size:10.5px; color:var(--text-faint); align-self:center;">Report đang hiển thị theo theme ${isLight ? 'Sáng ☀️' : 'Tối 🌙'} hiện tại — copy lúc nào sẽ giữ đúng màu lúc đó.</span>
     </div>
 
-    <div id="holidayReportPrintArea" class="holiday-report-doc">
-      <div class="hr-doc-header">
-        <div>
-          <p class="hr-doc-title">📅 ${dowFull}, ngày ${dateLabel}${holInfo ? ` — ${holInfo.name}` : ''}</p>
-          <p class="hr-doc-sub">🌏 ${regionLabel} &nbsp;|&nbsp; Report dự kiến Workload &amp; Nhân lực, phục vụ đăng ký OT</p>
-        </div>
-        <div class="hr-doc-growth" style="color:${growthColor}; background:${growthBg};">
-          ${growthPct >= 0 ? '📈' : '📉'} ${growthPct >= 0 ? '+' : ''}${growthPct.toFixed(1)}% so với ngày thường
-        </div>
-      </div>
+    <div id="holidayReportPrintArea" style="background:${P.bg}; color:${P.text}; border-radius:12px; padding:24px 26px; font-family:Arial,Helvetica,sans-serif; box-shadow:${P.shadow};">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse; border-bottom:2px solid ${P.headerBorder}; padding-bottom:12px; margin-bottom:16px;">
+        <tr>
+          <td style="vertical-align:top; padding-bottom:12px;">
+            <div style="font-size:19px; font-weight:800; margin:0; color:${P.text}; font-family:Arial,sans-serif;">📅 ${dowFull}, ngày ${dateLabel}${holInfo ? ` — ${holInfo.name}` : ''}</div>
+            <div style="font-size:12.5px; color:${P.subText}; margin-top:3px; font-family:Arial,sans-serif;">🌏 ${regionLabel} &nbsp;|&nbsp; Report dự kiến Workload &amp; Nhân lực, phục vụ đăng ký OT</div>
+          </td>
+          <td style="vertical-align:top; padding-bottom:12px; text-align:right; white-space:nowrap;">
+            <span style="display:inline-block; font-size:13px; font-weight:800; padding:6px 12px; border-radius:20px; color:${growthPal.text}; background:${growthPal.bg}; border:1px solid ${growthPal.border}; font-family:Arial,sans-serif;">
+              ${growthPct >= 0 ? '📈' : '📉'} ${growthPct >= 0 ? '+' : ''}${growthPct.toFixed(1)}% so với ngày thường
+            </span>
+          </td>
+        </tr>
+      </table>
 
-      <div class="hr-doc-kpi-grid">
-        <div class="hr-doc-kpi">
-          <div class="k-lbl">Workload dự kiến</div>
-          <div class="k-val">${f.dayTotalWL.toLocaleString()} case</div>
-          <div class="k-sub">TB ngày thường: ${Math.round(m.avgNormalWL).toLocaleString()} case</div>
-        </div>
-        <div class="hr-doc-kpi">
-          <div class="k-lbl">HC cần thiết (quy đổi từ WL)</div>
-          <div class="k-val">${neededTotalHC.toFixed(1)} HC</div>
-          <div class="k-sub">FTE: ${neededFteHC.toFixed(1)} · BPO: ${neededBpoHC.toFixed(1)}</div>
-        </div>
-        <div class="hr-doc-kpi">
-          <div class="k-lbl">HC thực tế đi làm</div>
-          <div class="k-val">${f.totalWorkingHC} HC</div>
-          <div class="k-sub">FTE: ${f.fteWorkingHC} · BPO: ${f.bpoWorkingHC} (Khả dụng quy đổi: ${f.availableHC.toFixed(1)})</div>
-        </div>
-        <div class="hr-doc-kpi">
-          <div class="k-lbl">Gap Workload</div>
-          <div class="k-val" style="color:${f.netGapWL<0?'#c1332f':'#1a7a5e'}">${f.netGapWL>0?'+':''}${Math.round(f.netGapWL)} case</div>
-          <div class="k-sub">${f.netGapWL<0?'Thiếu':'Dư'} so với năng lực hiện có</div>
-        </div>
-        <div class="hr-doc-kpi">
-          <div class="k-lbl">Gap HC quy đổi</div>
-          <div class="k-val" style="color:${f.hcGap<0?'#c1332f':'#1a7a5e'}">${f.hcGap>0?'+':''}${f.hcGap} HC</div>
-          <div class="k-sub">Tổng năng lực team: ${Math.round(f.totalCapacity).toLocaleString()} case</div>
-        </div>
-        <div class="hr-doc-kpi">
-          <div class="k-lbl">⭐ SLA Coverage tổng thể</div>
-          <div class="k-val" style="color:${covColor}">${Math.round(f.overallCoverage)}%</div>
-          <div class="k-sub">Ngưỡng an toàn: ${state.cfg.underThreshold}% – ${state.cfg.overThreshold}%</div>
-        </div>
-      </div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate; border-spacing:8px 8px; margin:8px 0 8px -8px; width:calc(100% + 8px);">
+        <tr>
+          ${kpiCell('Workload dự kiến', `${f.dayTotalWL.toLocaleString()} case`, `TB ngày thường: ${Math.round(m.avgNormalWL).toLocaleString()} case`)}
+          ${kpiCell('HC cần thiết (quy đổi từ WL)', `${neededTotalHC.toFixed(1)} HC`, `FTE: ${neededFteHC.toFixed(1)} · BPO: ${neededBpoHC.toFixed(1)}`)}
+          ${kpiCell('HC thực tế đi làm', `${f.totalWorkingHC} HC`, `FTE: ${f.fteWorkingHC} · BPO: ${f.bpoWorkingHC} (Khả dụng quy đổi: ${f.availableHC.toFixed(1)})`)}
+        </tr>
+        <tr>
+          ${kpiCell('Gap Workload', `${f.netGapWL>0?'+':''}${Math.round(f.netGapWL)} case`, `${f.netGapWL<0?'Thiếu':'Dư'} so với năng lực hiện có`, gapWlPal.text)}
+          ${kpiCell('Gap HC quy đổi', `${f.hcGap>0?'+':''}${f.hcGap} HC`, `Tổng năng lực team: ${Math.round(f.totalCapacity).toLocaleString()} case`, gapHcPal.text)}
+          ${kpiCell('⭐ SLA Coverage tổng thể', `${Math.round(f.overallCoverage)}%`, `Ngưỡng an toàn: ${state.cfg.underThreshold}% – ${state.cfg.overThreshold}%`, covPal.text)}
+        </tr>
+      </table>
 
-      <table class="hr-doc-table">
-        <thead><tr><th>Chỉ số</th><th style="text-align:right;">Tổng</th><th style="text-align:right;">FTE</th><th style="text-align:right;">BPO</th></tr></thead>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse; margin:14px 0;">
+        <thead>
+          <tr>
+            <th style="${thStyle}">Chỉ số</th>
+            <th style="${thStyle} text-align:right;">Tổng</th>
+            <th style="${thStyle} text-align:right;">FTE</th>
+            <th style="${thStyle} text-align:right;">BPO</th>
+          </tr>
+        </thead>
         <tbody>
-          <tr><td>HC cần thiết (quy đổi từ WL)</td><td class="num">${neededTotalHC.toFixed(1)}</td><td class="num">${neededFteHC.toFixed(1)}</td><td class="num">${neededBpoHC.toFixed(1)}</td></tr>
-          <tr><td>HC thực tế đi làm</td><td class="num">${f.totalWorkingHC}</td><td class="num">${f.fteWorkingHC}</td><td class="num">${f.bpoWorkingHC}</td></tr>
-          <tr><td>Workload Target (case)</td><td class="num">${f.dayTotalWL.toLocaleString()}</td><td class="num">${f.fteTargetWL.toLocaleString()}</td><td class="num">${f.bpoTargetWL.toLocaleString()}</td></tr>
-          <tr><td>Năng lực xử lý thực tế (case)</td><td class="num">${Math.round(f.totalCapacity).toLocaleString()}</td><td class="num">${Math.round(f.fteCapacity).toLocaleString()}</td><td class="num">${Math.round(f.bpoCapacity).toLocaleString()}</td></tr>
+          <tr><td style="${tdStyle}">HC cần thiết (quy đổi từ WL)</td><td style="${tdNumStyle}">${neededTotalHC.toFixed(1)}</td><td style="${tdNumStyle}">${neededFteHC.toFixed(1)}</td><td style="${tdNumStyle}">${neededBpoHC.toFixed(1)}</td></tr>
+          <tr><td style="${tdStyle}">HC thực tế đi làm</td><td style="${tdNumStyle}">${f.totalWorkingHC}</td><td style="${tdNumStyle}">${f.fteWorkingHC}</td><td style="${tdNumStyle}">${f.bpoWorkingHC}</td></tr>
+          <tr><td style="${tdStyle}">Workload Target (case)</td><td style="${tdNumStyle}">${f.dayTotalWL.toLocaleString()}</td><td style="${tdNumStyle}">${f.fteTargetWL.toLocaleString()}</td><td style="${tdNumStyle}">${f.bpoTargetWL.toLocaleString()}</td></tr>
+          <tr><td style="${tdStyle}">Năng lực xử lý thực tế (case)</td><td style="${tdNumStyle}">${Math.round(f.totalCapacity).toLocaleString()}</td><td style="${tdNumStyle}">${Math.round(f.fteCapacity).toLocaleString()}</td><td style="${tdNumStyle}">${Math.round(f.bpoCapacity).toLocaleString()}</td></tr>
         </tbody>
       </table>
 
-      ${conclusionHtml}
+      <div style="border-radius:9px; padding:14px 16px; font-size:13.5px; font-weight:700; line-height:1.6; margin-top:14px; color:${conclusionPal.text}; background:${conclusionPal.bg}; border:1px solid ${conclusionPal.border}; font-family:Arial,sans-serif;">${conclusionText}</div>
 
-      <div class="hr-doc-footer">Report tạo tự động từ hệ thống WFM lúc ${new Date().toLocaleString('vi-VN')} — dữ liệu tổng hợp theo cấu hình Workload hiện hành, chỉ mang tính tham khảo hỗ trợ ra quyết định.</div>
+      <div style="margin-top:16px; font-size:10.5px; color:${P.footerText}; border-top:1px solid ${P.footerBorder}; padding-top:8px; font-family:Arial,sans-serif;">Report tạo tự động từ hệ thống WFM lúc ${new Date().toLocaleString('vi-VN')} — dữ liệu tổng hợp theo cấu hình Workload hiện hành, chỉ mang tính tham khảo hỗ trợ ra quyết định.</div>
     </div>
   </div>`;
 }
@@ -2705,6 +2735,8 @@ function renderNhanSu(){
   const rows = visibleEmps.map(e=>{
     const autoRampPct = Math.round(getEmpPerformancePct(e, dateOf(1)) * 100);
     const isPassed = isEmpPassedProbation(e, dateOf(1));
+    const hasPerfOverride = (e.perfOverride !== undefined && e.perfOverride !== null && e.perfOverride !== '');
+    const autoPctLabel = isPassed ? 100 : autoRampPct;
     const rowLocked = !canEditEmpRow(e.id);
     const q = computeLeaveQuota(e, state.year);
     const alColor = q.remainingAL < 0 ? 'var(--coral)' : (q.carryExpiringSoon ? 'var(--amber)' : 'var(--teal)');
@@ -2737,7 +2769,13 @@ function renderNhanSu(){
       <td><input type="text" inputmode="numeric" maxlength="10" class="date-mask" placeholder="dd/mm/yyyy" data-f="onboarding" value="${isoToDMY(e.onboarding||'2024-01-01')}" ${rowLocked?'disabled':''}></td>
       <td><input type="text" inputmode="numeric" maxlength="10" class="date-mask" placeholder="dd/mm/yyyy" data-f="offboardDate" value="${isoToDMY(e.offboardDate||'')}" style="color:var(--coral)" ${rowLocked?'disabled':''}></td>
       <td style="text-align:center"><input type="checkbox" data-f="earlyPass" ${e.earlyPass?'checked':''} title="Đánh dấu để bỏ qua thời gian thử việc" ${rowLocked?'disabled':''}></td>
-      <td style="text-align:center; font-weight:700" class="mono">${isPassed?'100% (Passed)':autoRampPct+'%'}</td>
+      <td style="text-align:center;">
+        <input type="number" min="0" max="100" step="1" data-f="perfOverride" data-auto="${autoPctLabel}"
+               value="${hasPerfOverride ? e.perfOverride : ''}" placeholder="${autoPctLabel}"
+               class="mono" style="width:56px; text-align:center; font-weight:700; ${hasPerfOverride ? 'color:var(--amber); border-color:var(--amber);' : 'color:var(--text-dim);'}"
+               title="${hasPerfOverride ? `Đang ghi đè thủ công: ${e.perfOverride}% (auto sẽ là ${autoPctLabel}%). Xóa trống để quay lại tự động.` : `Để trống = tự động tính theo ramp-up/Pass thử việc (hiện đang: ${autoPctLabel}%). Nhập số 0-100 để ghi đè thủ công — ảnh hưởng trực tiếp vào Tổng Năng Lực Team / SLA Coverage.`}"
+               ${rowLocked?'disabled':''}>%
+      </td>
       <td style="text-align:center; font-weight:700; color:${alColor}" class="mono" title="${alTitle}">${q.remainingAL}${q.carryExpiringSoon?' ⏰':''}</td>
       <td style="text-align:center; font-weight:700; color:${q.remainingSL<0?'var(--coral)':'var(--teal)'}" class="mono" title="${slTitle}">${q.baseSL>0?q.remainingSL:'—'}</td>
       <td><button class="icon-btn" data-del="${e.id}" title="Xóa nhân viên" ${rowLocked?'disabled':''}>✕</button></td>
@@ -2756,7 +2794,7 @@ function renderNhanSu(){
 
     <div>
       <div class="grid-wrap" id="empTableContainer"><table class="emp-table">
-        <thead><tr><th></th><th>Họ tên</th><th>Mail</th><th>Khu vực</th><th>Team</th><th>Chức vụ</th><th>Loại</th><th>Ngày sinh</th><th>Onboarding</th><th>Offboard</th><th>Early Pass</th><th>Hiệu suất</th><th title="Quỹ AL còn lại năm ${state.year}">AL còn lại</th><th title="Quỹ SL còn lại năm ${state.year}">SL còn lại</th><th></th></tr></thead>
+        <thead><tr><th></th><th>Họ tên</th><th>Mail</th><th>Khu vực</th><th>Team</th><th>Chức vụ</th><th>Loại</th><th>Ngày sinh</th><th>Onboarding</th><th>Offboard</th><th>Early Pass</th><th title="Để trống = tự động tính theo ramp-up thử việc. Nhập số để ghi đè thủ công (ảnh hưởng vào Tổng Năng Lực Team).">Hiệu suất ✏️</th><th title="Quỹ AL còn lại năm ${state.year}">AL còn lại</th><th title="Quỹ SL còn lại năm ${state.year}">SL còn lại</th><th></th></tr></thead>
         <tbody>${rows}</tbody>
       </table></div>
       <br><button class="btn-primary" onclick="addEmp()" ${isAdmin()?'':'disabled title="Chỉ Admin/Sub-lead"'}>＋ Thêm Nhân viên</button>
@@ -3432,6 +3470,22 @@ function renderAllUIOnly(){
         }
         e.target.value = result.display; // ngày không tồn tại (VD 31/02) -> đã tự clamp về ngày hợp lệ gần nhất
         emp[field] = result.iso;
+        saveLocalState();
+        renderAll();
+        return;
+      }
+
+      // ✏️ Cột "Hiệu suất" ghi đè thủ công: để trống = xóa override (quay lại tự động); nhập số thì kẹp về 0-100.
+      if(field === 'perfOverride'){
+        const raw = e.target.value.trim();
+        if(raw === ''){
+          delete emp.perfOverride;
+        } else {
+          let v = Number(raw);
+          if(isNaN(v)){ e.target.value = (emp.perfOverride !== undefined && emp.perfOverride !== null) ? emp.perfOverride : ''; return; }
+          v = Math.max(0, Math.min(100, Math.round(v)));
+          emp.perfOverride = v;
+        }
         saveLocalState();
         renderAll();
         return;
