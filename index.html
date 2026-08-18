@@ -593,47 +593,55 @@ function saveMyScheduleToCloud(){
   if(!db){ alert("⚠️ Không kết nối được Firebase."); return; }
   const empId = currentEmpId;
   const k = monthKey();
-  syncStateAndConfig();
-  const myMonthMarks = (state.marks[k] && state.marks[k][empId]) ? state.marks[k][empId] : {};
-  // 🔹 Yêu cầu đổi ca đang chờ duyệt của chính mình (nếu có) — PHẢI đẩy lên Cloud cùng lúc,
-  // nếu không Admin ở phiên khác/F5 lại sẽ không bao giờ thấy được yêu cầu này.
-  const myMonthPending = (state.pendingChanges?.[k] && state.pendingChanges[k][empId]) ? state.pendingChanges[k][empId] : {};
-
-  db.ref("spx_workload_app_combined").once("value").then(snapshot => {
-    const cloudState = snapshot.val() || {};
-    if(!cloudState.marks) cloudState.marks = {};
-    if(!cloudState.marks[k]) cloudState.marks[k] = {};
-    cloudState.marks[k][empId] = myMonthMarks;
-
-    if(!cloudState.pendingChanges) cloudState.pendingChanges = {};
-    if(!cloudState.pendingChanges[k]) cloudState.pendingChanges[k] = {};
-    if(Object.keys(myMonthPending).length > 0){
-      cloudState.pendingChanges[k][empId] = myMonthPending;
-    } else if(cloudState.pendingChanges[k][empId]){
-      // Đã hủy hết yêu cầu chờ duyệt cục bộ -> cũng xóa trên Cloud để đồng bộ
-      delete cloudState.pendingChanges[k][empId];
-    }
-
-    return db.ref("spx_workload_app_combined").set(cloudState).then(() => cloudState);
-  }).then(mergedState => {
-    state = mergedState;
+  try {
     syncStateAndConfig();
-    resolveRoleForUser(currentAuthUser);
-    renderAuthUI();
-    renderAll();
-    hasUnsavedChanges = false;
-    const btnMine = document.getElementById("btnSaveMySchedule");
-    if(btnMine) btnMine.classList.remove("has-changes");
-    const now = new Date();
-    const hh = String(now.getHours()).padStart(2,'0');
-    const mm = String(now.getMinutes()).padStart(2,'0');
-    const dot = document.getElementById("cloudStatusDot");
-    const txt = document.getElementById("cloudStatusTxt");
-    if(dot) dot.classList.add("online");
-    if(txt) txt.textContent = `✅ Đã lưu lịch của bạn lúc ${hh}:${mm}`;
-  }).catch(err => {
-    alert("❌ Lỗi khi lưu lịch lên Cloud: " + err);
-  });
+    const myMonthMarks = (state.marks[k] && state.marks[k][empId]) ? state.marks[k][empId] : {};
+    // 🔹 Yêu cầu đổi ca đang chờ duyệt của chính mình (nếu có) — PHẢI đẩy lên Cloud cùng lúc,
+    // nếu không Admin ở phiên khác/F5 lại sẽ không bao giờ thấy được yêu cầu này.
+    const myMonthPending = (state.pendingChanges?.[k] && state.pendingChanges[k][empId]) ? state.pendingChanges[k][empId] : {};
+
+    db.ref("spx_workload_app_combined").once("value").then(snapshot => {
+      const cloudState = snapshot.val() || {};
+      if(!cloudState.marks) cloudState.marks = {};
+      if(!cloudState.marks[k]) cloudState.marks[k] = {};
+      cloudState.marks[k][empId] = myMonthMarks;
+
+      if(!cloudState.pendingChanges) cloudState.pendingChanges = {};
+      if(!cloudState.pendingChanges[k]) cloudState.pendingChanges[k] = {};
+      if(Object.keys(myMonthPending).length > 0){
+        cloudState.pendingChanges[k][empId] = myMonthPending;
+      } else if(cloudState.pendingChanges[k][empId]){
+        // Đã hủy hết yêu cầu chờ duyệt cục bộ -> cũng xóa trên Cloud để đồng bộ
+        delete cloudState.pendingChanges[k][empId];
+      }
+
+      const safeCloudState = sanitizeForFirebase(cloudState);
+      return db.ref("spx_workload_app_combined").set(safeCloudState).then(() => safeCloudState);
+    }).then(mergedState => {
+      state = mergedState;
+      syncStateAndConfig();
+      resolveRoleForUser(currentAuthUser);
+      renderAuthUI();
+      renderAll();
+      hasUnsavedChanges = false;
+      const btnMine = document.getElementById("btnSaveMySchedule");
+      if(btnMine) btnMine.classList.remove("has-changes");
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2,'0');
+      const mm = String(now.getMinutes()).padStart(2,'0');
+      const dot = document.getElementById("cloudStatusDot");
+      const txt = document.getElementById("cloudStatusTxt");
+      if(dot) dot.classList.add("online");
+      if(txt) txt.textContent = `✅ Đã lưu lịch của bạn lúc ${hh}:${mm}`;
+    }).catch(err => {
+      alert("❌ Lỗi khi lưu lịch lên Cloud: " + (err && err.message ? err.message : err));
+    });
+  } catch(err) {
+    // 🔹 Bắt lỗi NÉM ĐỒNG BỘ (VD Firebase từ chối do dữ liệu chứa "undefined") — trước đây mất tích hoàn toàn,
+    // khiến nút bấm trông như "không có phản ứng gì".
+    alert("❌ Lỗi khi lưu lịch lên Cloud (lỗi dữ liệu): " + (err && err.message ? err.message : err));
+    console.error("saveMyScheduleToCloud sync error:", err);
+  }
 }
 
 if(auth){
@@ -1221,6 +1229,23 @@ function markUnsavedChanges(){
   if(txt) txt.textContent = "Có thay đổi chưa Lưu Cloud";
 }
 
+// 🔹 Firebase Realtime Database sẽ NÉM LỖI ĐỒNG BỘ (không qua .catch()) nếu dữ liệu gửi lên chứa
+// bất kỳ giá trị "undefined" nào ở bất kỳ đâu trong object (dù lồng sâu) — lỗi này xảy ra NGAY LÚC gọi
+// .set(), TRƯỚC khi vào .then()/.catch(), nên trước đây bị "nuốt mất" hoàn toàn, không hiện thông báo gì,
+// và người dùng thấy y hệt như bấm nút không có phản ứng. Hàm này dọn sạch mọi "undefined" -> null trước khi
+// gửi lên Cloud để (1) tránh lỗi xảy ra ngay từ đầu, và (2) nếu vẫn còn lỗi khác thì luôn bắt được để báo rõ.
+function sanitizeForFirebase(obj){
+  if(obj === undefined) return null;
+  if(obj === null || typeof obj !== "object") return obj;
+  if(Array.isArray(obj)) return obj.map(sanitizeForFirebase);
+  const out = {};
+  Object.keys(obj).forEach(key => {
+    const v = obj[key];
+    out[key] = (v === undefined) ? null : sanitizeForFirebase(v);
+  });
+  return out;
+}
+
 function handleSaveCloudClick(){
   if(!db){ alert("⚠️ Không kết nối được Firebase."); return; }
   if(!isAdmin()){ alert("🔒 Chỉ Admin (đăng nhập Google với vai trò Leader) mới được lưu lên Cloud."); return; }
@@ -1229,21 +1254,28 @@ function handleSaveCloudClick(){
 
 function pushStateToCloud() {
   if (!db) return;
-  syncStateAndConfig();
-  db.ref("spx_workload_app_combined").set(state).then(() => {
-    hasUnsavedChanges = false;
-    const btn = document.getElementById("btnSaveCloud");
-    if(btn) btn.classList.remove("has-changes");
-    const dot = document.getElementById("cloudStatusDot");
-    const txt = document.getElementById("cloudStatusTxt");
-    if(dot) dot.classList.add("online");
-    const now = new Date();
-    const hh = String(now.getHours()).padStart(2,'0');
-    const mm = String(now.getMinutes()).padStart(2,'0');
-    if(txt) txt.textContent = `✅ Đã Lưu Cloud lúc ${hh}:${mm}`;
-  }).catch(err => {
-    alert("❌ Lỗi khi lưu lên Cloud: " + err);
-  });
+  try {
+    syncStateAndConfig();
+    const safeState = sanitizeForFirebase(state);
+    db.ref("spx_workload_app_combined").set(safeState).then(() => {
+      hasUnsavedChanges = false;
+      const btn = document.getElementById("btnSaveCloud");
+      if(btn) btn.classList.remove("has-changes");
+      const dot = document.getElementById("cloudStatusDot");
+      const txt = document.getElementById("cloudStatusTxt");
+      if(dot) dot.classList.add("online");
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2,'0');
+      const mm = String(now.getMinutes()).padStart(2,'0');
+      if(txt) txt.textContent = `✅ Đã Lưu Cloud lúc ${hh}:${mm}`;
+    }).catch(err => {
+      alert("❌ Lỗi khi lưu lên Cloud: " + (err && err.message ? err.message : err));
+    });
+  } catch(err) {
+    // 🔹 Bắt cả lỗi NÉM ĐỒNG BỘ (throw ngay khi gọi .set(), trước khi có Promise) — trước đây bị mất tích hoàn toàn.
+    alert("❌ Lỗi khi lưu lên Cloud (lỗi dữ liệu): " + (err && err.message ? err.message : err));
+    console.error("pushStateToCloud sync error:", err);
+  }
 }
 
 // Chỉ tải dữ liệu từ Cloud MỘT LẦN lúc mở trang/F5 — không tự đồng bộ real-time nữa,
@@ -3517,6 +3549,25 @@ window.addEventListener("beforeunload", (e) => {
     e.returnValue = "";
     return "";
   }
+});
+
+// 🔹 LƯỚI AN TOÀN TOÀN CỤC: bắt mọi lỗi JS/Promise bị "văng" ra ngoài mà không có nút bấm nào xử lý riêng
+// (VD: lỗi ném đồng bộ từ Firebase, lỗi bất ngờ trong lúc render...). Trước đây các lỗi dạng này hoàn toàn
+// im lặng — người dùng chỉ thấy nút bấm "không có phản ứng gì". Giờ luôn hiện rõ thông báo để biết mà báo lại.
+let __lastGlobalErrorAt = 0;
+function __showGlobalErrorOnce(msg){
+  const now = Date.now();
+  if(now - __lastGlobalErrorAt < 2000) return; // chống spam nếu lỗi lặp lại liên tục
+  __lastGlobalErrorAt = now;
+  alert("⚠️ Có lỗi xảy ra, thao tác có thể chưa được lưu:\n\n" + msg + "\n\nVui lòng chụp màn hình thông báo này gửi lại để được hỗ trợ sửa.");
+}
+window.addEventListener("error", (e) => {
+  console.error("Uncaught error:", e.error || e.message);
+  __showGlobalErrorOnce((e.error && e.error.message) || e.message || String(e));
+});
+window.addEventListener("unhandledrejection", (e) => {
+  console.error("Unhandled promise rejection:", e.reason);
+  __showGlobalErrorOnce((e.reason && e.reason.message) || String(e.reason));
 });
 
 loadLocalState();
