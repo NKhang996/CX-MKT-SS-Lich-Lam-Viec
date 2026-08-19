@@ -114,6 +114,17 @@
   .emp-table input, .emp-table select, .hol-table input{background:var(--surface-2); border:1px solid var(--border); color:var(--text); border-radius:5px; padding:4px 6px; font-size:11.5px; width:100%;}
   .date-mask{font-family:'IBM Plex Mono', monospace; letter-spacing:0.5px;}
   .icon-btn{background:none;border:none;color:var(--text-faint); font-size:13px; padding:3px 5px; border-radius:5px;}
+
+  /* ↩️ Toast xác nhận Undo/Redo (Ctrl+Z / Ctrl+Y) */
+  .action-toast{position:fixed; left:50%; bottom:24px; transform:translateX(-50%) translateY(20px); background:var(--surface-3); color:var(--text); border:1px solid var(--border); padding:10px 18px; border-radius:999px; font-size:13px; font-weight:500; box-shadow:0 6px 24px rgba(0,0,0,.3); z-index:9999; opacity:0; pointer-events:none; transition:opacity .18s ease, transform .18s ease;}
+  .action-toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  /* 🔄 Banner thông báo có cập nhật Cloud mới (không chặn thao tác) */
+  .sync-banner{position:fixed; top:0; left:220px; right:0; display:flex; align-items:center; justify-content:center; gap:10px; background:var(--amber-dim); color:var(--amber); border-bottom:1px solid var(--amber); padding:8px 14px; font-size:12.5px; font-weight:500; z-index:9998; transform:translateY(-110%); transition:transform .2s ease;}
+  .sync-banner.show{transform:translateY(0);}
+  .sync-banner-btn{background:var(--amber); color:#12181f; border:none; border-radius:6px; padding:4px 12px; font-size:12px; font-weight:700; cursor:pointer;}
+  .sync-banner-close{background:none; border:none; color:var(--amber); font-size:13px; cursor:pointer; padding:2px 6px; opacity:.75;}
+  @media (max-width: 900px){ .sync-banner{left:0;} }
   .icon-btn:hover{color:var(--coral); background:var(--coral-dim);}
   
   .btn-primary{background:var(--teal-dim); color:var(--teal); border:1px solid #235952; padding:7px 12px; border-radius:7px; font-size:12px; font-weight:600; display:inline-flex; gap:6px; align-items:center;}
@@ -607,6 +618,7 @@ function saveMyScheduleToCloud(){
       renderAuthUI();
       renderAll();
       hasUnsavedChanges = false;
+      pendingCloudUpdate = null; hideSyncBanner(); // vừa lưu xong -> banner chờ (nếu có) đã lỗi thời
       const btnMine = document.getElementById("btnSaveMySchedule");
       if(btnMine) btnMine.classList.remove("has-changes");
       const now = new Date();
@@ -1242,6 +1254,7 @@ function pushStateToCloud() {
     const safeState = sanitizeForFirebase(state);
     db.ref("spx_workload_app_combined").set(safeState).then(() => {
       hasUnsavedChanges = false;
+      pendingCloudUpdate = null; hideSyncBanner(); // vừa lưu xong -> banner chờ (nếu có) đã lỗi thời
       const btn = document.getElementById("btnSaveCloud");
       if(btn) btn.classList.remove("has-changes");
       const dot = document.getElementById("cloudStatusDot");
@@ -1261,25 +1274,129 @@ function pushStateToCloud() {
   }
 }
 
-// Chỉ tải dữ liệu từ Cloud MỘT LẦN lúc mở trang/F5 — không tự đồng bộ real-time nữa,
-// để tránh dữ liệu nháp đang thao tác bị người khác Save đè lên giữa chừng.
+// 🔄 ĐỒNG BỘ REAL-TIME: lắng nghe liên tục thay đổi trên Cloud (không chỉ 1 lần lúc mở trang).
+// - Nếu KHÔNG có gì đang sửa dở cục bộ -> áp thẳng ngay, im lặng.
+// - Nếu ĐANG sửa dở -> chỉ hiện banner nhỏ (không chặn thao tác) khi thay đổi đó rơi vào PHẠM VI QUYỀN của người đang xem,
+//   để tránh làm phiền khi người khác sửa team/miền không liên quan tới mình.
+let pendingCloudUpdate = null;
+
 function listenCloudChanges() {
   if (!db) return;
-  db.ref("spx_workload_app_combined").once("value").then((snapshot) => {
+  db.ref("spx_workload_app_combined").on("value", (snapshot) => {
     const val = snapshot.val();
-    if (val) {
-      state = val;
-      syncStateAndConfig();
-      resolveRoleForUser(currentAuthUser);
-      renderAuthUI();
-      renderAll();
-    }
-    document.getElementById("cloudStatusDot").classList.add("online");
-    document.getElementById("cloudStatusTxt").textContent = "Đã tải dữ liệu Cloud";
-  }).catch(err => {
-    console.error("Load cloud error:", err);
-    document.getElementById("cloudStatusTxt").textContent = "⚠️ Không tải được Cloud";
+    if (!val) return;
+    handleCloudUpdate(val);
+  }, (err) => {
+    console.error("Realtime cloud error:", err);
+    const t = document.getElementById("cloudStatusTxt");
+    if (t) t.textContent = "⚠️ Mất kết nối Realtime Cloud";
   });
+}
+
+function handleCloudUpdate(newVal){
+  // Lần đầu mở trang (chưa có state cục bộ) -> áp thẳng, không qua banner
+  if (!state || !state.employees) {
+    applyCloudUpdate(newVal);
+    return;
+  }
+  if (!hasUnsavedChanges) {
+    // Không có gì đang dở trên máy -> an toàn, tự động cập nhật ngay, không cần hỏi
+    applyCloudUpdate(newVal);
+    return;
+  }
+  // Đang có thay đổi CHƯA LƯU cục bộ -> chỉ làm phiền nếu thay đổi mới nằm trong phạm vi quyền đang xem
+  if (isCloudUpdateRelevantToMe(newVal)) {
+    pendingCloudUpdate = newVal;
+    showSyncBanner();
+  }
+}
+
+// So khớp state.marks cũ (cục bộ) và mới (Cloud) để tìm những empId có lịch bị đổi
+function findChangedEmpIds(oldMarksAllMonths, newMarksAllMonths){
+  const changed = new Set();
+  const monthKeys = new Set([...Object.keys(oldMarksAllMonths || {}), ...Object.keys(newMarksAllMonths || {})]);
+  monthKeys.forEach(mk => {
+    const oldM = (oldMarksAllMonths || {})[mk] || {};
+    const newM = (newMarksAllMonths || {})[mk] || {};
+    const empIds = new Set([...Object.keys(oldM), ...Object.keys(newM)]);
+    empIds.forEach(id => {
+      if (JSON.stringify(oldM[id] || {}) !== JSON.stringify(newM[id] || {})) changed.add(id);
+    });
+  });
+  return Array.from(changed);
+}
+
+// Lấy region của 1 nhân sự, tra cả state cục bộ lẫn bản Cloud mới (phòng trường hợp NV mới chưa kịp có ở máy mình)
+function empRegionFromEither(empId, newVal){
+  const localEmp = (state.employees || []).find(e => e.id === empId);
+  if (localEmp) return localEmp.region || "HCM";
+  const cloudEmp = ((newVal && newVal.employees) || []).find(e => e.id === empId);
+  return cloudEmp ? (cloudEmp.region || "HCM") : null;
+}
+
+function isEmpIdRelevantToMe(empId, newVal){
+  if (isEmployeeSelf(empId)) return true;
+  if (!isAdmin()) return false;
+  if (currentAdminRegions === "ALL") return true;
+  const region = empRegionFromEither(empId, newVal);
+  return Array.isArray(currentAdminRegions) && !!region && currentAdminRegions.includes(region);
+}
+
+function isCloudUpdateRelevantToMe(newVal){
+  try {
+    if (isManagerAdmin()) return true; // Manager toàn quyền -> luôn thấy mọi cập nhật
+    const changedEmpIds = findChangedEmpIds(state.marks, newVal.marks);
+    if (changedEmpIds.length === 0) return false; // đổi ở phần khác (VD cấu hình khác) -> không phải lịch trực, không cần báo
+    return changedEmpIds.some(id => isEmpIdRelevantToMe(id, newVal));
+  } catch (e) {
+    return true; // lỗi khi so khớp -> an toàn là chính, vẫn báo cho chắc
+  }
+}
+
+function applyCloudUpdate(newVal){
+  state = newVal;
+  syncStateAndConfig();
+  resolveRoleForUser(currentAuthUser);
+  renderAuthUI();
+  renderAll();
+  // State vừa bị thay TOÀN BỘ từ Cloud -> các snapshot Undo/Redo cũ không còn khớp dữ liệu hiện tại -> xóa để tránh hoàn tác sai
+  undoStack = [];
+  redoStack = [];
+  pendingCloudUpdate = null;
+  hideSyncBanner();
+  const dot = document.getElementById("cloudStatusDot");
+  const txt = document.getElementById("cloudStatusTxt");
+  if (dot) dot.classList.add("online");
+  if (txt) {
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2,'0');
+    const mm = String(now.getMinutes()).padStart(2,'0');
+    txt.textContent = `🔄 Đồng bộ lúc ${hh}:${mm}`;
+  }
+}
+
+function showSyncBanner(){
+  let el = document.getElementById('syncBanner');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'syncBanner';
+    el.className = 'sync-banner';
+    document.body.appendChild(el);
+  }
+  el.innerHTML = `<span>🔄 Có thao tác mới vừa cập nhật — </span><button type="button" class="sync-banner-btn" onclick="reloadFromPendingCloudUpdate()">Tải lại</button><button type="button" class="sync-banner-close" onclick="hideSyncBanner()" title="Ẩn">✕</button>`;
+  el.classList.add('show');
+}
+function hideSyncBanner(){
+  const el = document.getElementById('syncBanner');
+  if (el) el.classList.remove('show');
+}
+function reloadFromPendingCloudUpdate(){
+  if (!pendingCloudUpdate) { hideSyncBanner(); return; }
+  if (hasUnsavedChanges) {
+    if (!confirm("⚠️ Bạn đang có thay đổi CHƯA LƯU trên máy. Tải lại sẽ MẤT các thay đổi đó. Vẫn tiếp tục?")) return;
+  }
+  const v = pendingCloudUpdate;
+  applyCloudUpdate(v);
 }
 
 // 🔹 QUỸ PHÉP NĂM (AL/SL) — FTE: 14 AL/6 SL/năm; BPO: 12 AL/0 SL/năm.
@@ -1453,6 +1570,10 @@ function currentActorLabel(){
 }
 
 function pushChangeLog(entry){
+  pushChangeLogOnly(entry);
+}
+// Ghi Nhật ký Thay đổi thuần túy, KHÔNG đụng tới Undo Stack (dùng bởi chính doUndo/doRedo để tránh vòng lặp tự đẩy lại).
+function pushChangeLogOnly(entry){
   state.changeLog.push({ id: uid(), timestamp: Date.now(), changedBy: currentActorLabel(), ...entry });
   // Giới hạn log để tránh phình dữ liệu Firebase (giữ 500 bản ghi gần nhất)
   if(state.changeLog.length > 500) state.changeLog = state.changeLog.slice(-500);
@@ -1486,10 +1607,118 @@ function setCellData(empId, day, status, colorBg, skipSave=false, logAction=null
       action: logAction, empId, empName: emp ? emp.name : empId, day, monthKey: k,
       oldStatus: current.status || null, newStatus: newStatus || null
     });
+    // 🔹 Ctrl+Z: chỉ những thay đổi CÓ logAction (sửa trực tiếp / duyệt yêu cầu) mới đẩy vào Undo Stack.
+    // Auto-Fill/Xóa lịch (setCellData gọi hàng loạt, không truyền logAction) được gom chung 1 bước Undo riêng ở nơi gọi.
+    pushUndoStack({
+      type: 'cell', empId, empName: emp ? emp.name : empId, day, monthKey: k,
+      before: (current.status || current.colorBg) ? { status: current.status||null, colorBg: current.colorBg||null, swapApproved: current.swapApproved||false, manual: current.manual||false } : null,
+      after: (!newStatus && !newBg) ? null : { status: newStatus, colorBg: newBg, swapApproved, manual }
+    });
   }
 
   if(!skipSave) saveLocalState();
 }
+
+// ============================================================
+// ↩️↪️ UNDO / REDO (Ctrl+Z / Ctrl+Y hoặc Ctrl+Shift+Z)
+// Stack sống trong bộ nhớ trình duyệt của phiên hiện tại — KHÔNG đẩy lên Firebase, KHÔNG lưu localStorage.
+// Nhờ vậy stack tự nhiên chỉ chứa thao tác của CHÍNH người đang dùng máy đó, không lẫn thao tác người khác.
+// ============================================================
+let undoStack = [];
+let redoStack = [];
+const UNDO_STACK_LIMIT = 50;
+
+function pushUndoStack(item){
+  undoStack.push(item);
+  if(undoStack.length > UNDO_STACK_LIMIT) undoStack.shift();
+  redoStack = []; // có thao tác mới -> nhánh redo cũ không còn hợp lệ (giống Word/Docs)
+}
+
+function applyCellSnapshot(mKey, empId, day, cellObj){
+  if(!state.marks[mKey]) state.marks[mKey] = {};
+  if(!state.marks[mKey][empId]) state.marks[mKey][empId] = {};
+  if(!cellObj) delete state.marks[mKey][empId][day];
+  else state.marks[mKey][empId][day] = cellObj;
+}
+
+// Bọc quanh 1 thao tác BULK (Auto-Fill / Xóa lịch): gọi beginBulkUndo() trước khi sửa, commitBulkUndo() ngay sau khi sửa xong.
+function beginBulkUndo(mKey, label){
+  return { monthKey: mKey, label, before: JSON.parse(JSON.stringify(state.marks[mKey] || {})) };
+}
+function commitBulkUndo(ctx){
+  if(!ctx) return;
+  const after = JSON.parse(JSON.stringify(state.marks[ctx.monthKey] || {}));
+  pushUndoStack({ type: 'bulk', monthKey: ctx.monthKey, label: ctx.label, before: ctx.before, after });
+}
+
+function doUndo(){
+  if(undoStack.length === 0){ showActionToast("⚠️ Không còn gì để hoàn tác."); return; }
+  const item = undoStack.pop();
+  if(item.type === 'cell'){
+    applyCellSnapshot(item.monthKey, item.empId, item.day, item.before);
+    pushChangeLogOnly({ action:'rollback', empId:item.empId, empName:item.empName, day:item.day, monthKey:item.monthKey,
+      oldStatus:(item.after&&item.after.status)||null, newStatus:(item.before&&item.before.status)||null });
+    showActionToast(`↩️ Đã hoàn tác: ${item.empName||item.empId} — Ngày ${item.day}`);
+  } else {
+    state.marks[item.monthKey] = JSON.parse(JSON.stringify(item.before || {}));
+    pushChangeLogOnly({ action:'rollback', empId:'BULK', empName:`Hoàn tác: ${item.label}`, day:null, monthKey:item.monthKey, oldStatus:null, newStatus:null });
+    showActionToast(`↩️ Đã hoàn tác: ${item.label}`);
+  }
+  redoStack.push(item);
+  saveLocalState();
+  renderAll();
+}
+
+function doRedo(){
+  if(redoStack.length === 0){ showActionToast("⚠️ Không còn gì để làm lại."); return; }
+  const item = redoStack.pop();
+  if(item.type === 'cell'){
+    applyCellSnapshot(item.monthKey, item.empId, item.day, item.after);
+    pushChangeLogOnly({ action:'direct', empId:item.empId, empName:item.empName, day:item.day, monthKey:item.monthKey,
+      oldStatus:(item.before&&item.before.status)||null, newStatus:(item.after&&item.after.status)||null });
+    showActionToast(`↪️ Đã làm lại: ${item.empName||item.empId} — Ngày ${item.day}`);
+  } else {
+    state.marks[item.monthKey] = JSON.parse(JSON.stringify(item.after || {}));
+    pushChangeLogOnly({ action:'direct', empId:'BULK', empName:`Làm lại: ${item.label}`, day:null, monthKey:item.monthKey, oldStatus:null, newStatus:null });
+    showActionToast(`↪️ Đã làm lại: ${item.label}`);
+  }
+  undoStack.push(item);
+  saveLocalState();
+  renderAll();
+}
+
+// Toast nhỏ, tự ẩn — dùng chung cho thông báo Undo/Redo
+function showActionToast(msg){
+  let el = document.getElementById('actionToast');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'actionToast';
+    el.className = 'action-toast';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.classList.remove('show');
+  void el.offsetWidth; // ép reflow để lặp lại animation nếu toast trước chưa kịp ẩn
+  el.classList.add('show');
+  clearTimeout(el._hideTimer);
+  el._hideTimer = setTimeout(() => { el.classList.remove('show'); }, 2200);
+}
+
+document.addEventListener('keydown', function(e){
+  const activeTag = (document.activeElement && document.activeElement.tagName) || '';
+  const isEditableFocus = activeTag === 'INPUT' || activeTag === 'TEXTAREA' || (document.activeElement && document.activeElement.isContentEditable);
+  if(isEditableFocus) return; // đang gõ trong ô nhập liệu -> để trình duyệt tự xử lý Ctrl+Z gõ chữ mặc định
+  const ctrlKey = e.ctrlKey || e.metaKey; // metaKey = Cmd trên Mac
+  if(!ctrlKey) return;
+  const key = e.key.toLowerCase();
+  if(key === 'z'){
+    e.preventDefault();
+    if(e.shiftKey) doRedo(); else doUndo();
+  } else if(key === 'y'){
+    e.preventDefault();
+    doRedo();
+  }
+});
 
 function toggleSpikeDay(day){
   if(!canEditGlobal()){ alert("🔒 Chỉ Manager (phạm vi Tổng quan) mới được đặt Ngày Đặc Biệt."); return; }
@@ -3138,7 +3367,9 @@ function clearMonthSchedule(){
   if(!canRunAutoFillForRegions(regionsInScope)){ alert("🔒 Bạn chỉ được xóa lịch của (các) miền mình quản lý."); return; }
   const k = monthKey();
   if(!confirm(`⚠️ Bạn có chắc muốn XÓA TRỐNG lịch xếp của ${scopedEmps.length} nhân sự đang lọc (Tháng ${state.month}/${state.year}) không?`)) return;
+  const undoCtxClear = beginBulkUndo(k, `Xóa lịch (${scopedEmps.length} nhân sự)`);
   scopedEmps.forEach(e => { if(state.marks[k]) delete state.marks[k][e.id]; });
+  commitBulkUndo(undoCtxClear);
   pushChangeLog({ action:'direct', empId:'BULK', empName:`Xóa lịch (${scopedEmps.length} nhân sự đang lọc)`, day:null, monthKey:k, oldStatus:null, newStatus:null });
   saveLocalState();
   renderAll();
@@ -3377,6 +3608,8 @@ function autoFillSmart(){
     }
   });
 
+  // 🔹 Ctrl+Z: tận dụng luôn bản backup Auto-Fill đã chụp ở trên (state.lastAutoFillBackup) làm "before" cho Undo Stack
+  pushUndoStack({ type:'bulk', monthKey:k0, label:`Auto-Fill (${visibleEmps.length} nhân sự)`, before: state.lastAutoFillBackup.data, after: JSON.parse(JSON.stringify(state.marks[k0] || {})) });
   pushChangeLog({ action:'autofill', empId:'BULK', empName:`Auto-Fill (${visibleEmps.length} nhân sự đang lọc)`, day:null, monthKey:k0, oldStatus:null, newStatus:null });
   saveLocalState();
   renderAll();
