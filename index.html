@@ -4600,6 +4600,45 @@ function renderTongQuanStatsCards(){
   </div>`;
 }
 
+function renderTodayStaffPanel(){
+  const today = new Date();
+  const day = today.getDate(), m = today.getMonth()+1, y = today.getFullYear();
+  const scopeEmps = (state.employees || []).filter(e => {
+    if(calFilter.region === "LEADSUB"){ if(!(e.role === "Leader" || e.role === "SubLead")) return false; }
+    else if(calFilter.region !== "ALL" && (e.region||"HCM") !== calFilter.region) return false;
+    return isEmpActiveOnDate(e, today);
+  });
+  const working = [], al = [], off = [], wfh = [];
+  scopeEmps.forEach(e => {
+    const st = getCellData(e.id, day, m, y).status;
+    if(st === 'S2' || st === 'OT' || st === 'WFH') working.push(e);
+    if(st === 'WFH') wfh.push(e);
+    if(st === 'AL') al.push(e);
+    if(st === 'OFF') off.push(e);
+  });
+  const chips = working.map(e => `<span class="status-badge">${e.name}</span>`).join("");
+
+  return `
+  <div class="panel">
+    <h2>🧑‍💻 Nhân sự hôm nay <span style="font-size:11px; color:var(--text-faint); font-weight:400;">— ${String(day).padStart(2,'0')}/${String(m).padStart(2,'0')}/${y}</span></h2>
+    <div class="kpi-row">
+      <div class="kpi">
+        <div class="lbl">Nghỉ (AL/OFF)</div>
+        <div class="val">
+          <span class="dot" style="background:var(--amber)"></span>${al.length + off.length}
+          <span style="font-size:11px; color:var(--text-faint); font-weight:400;">(<span style="color:var(--amber)">AL ${al.length}</span> · <span style="color:var(--violet)">OFF ${off.length}</span>)</span>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="lbl">WFH</div>
+        <div class="val"><span class="dot" style="background:var(--teal)"></span>${wfh.length}</div>
+      </div>
+    </div>
+    <div class="sub" style="margin:4px 0 8px; color:var(--text-dim);">Đang đi làm hôm nay (${working.length} người)</div>
+    <div style="display:flex; flex-wrap:wrap; gap:8px;">${chips || '<span style="font-size:12px; color:var(--text-faint);">Không có ai đi làm hôm nay trong phạm vi đang xem.</span>'}</div>
+  </div>`;
+}
+
 function renderTongQuan(){
   return `
   ${renderTopBanner()}
@@ -4607,6 +4646,7 @@ function renderTongQuan(){
     <h2>📊 Tổng quan nhân sự</h2>
     ${renderTongQuanStatsCards()}
   </div>
+  ${renderTodayStaffPanel()}
   <div class="panel">
     <h2>⚙ Cấu hình Workload theo Miền <span style="font-size:11px; color:var(--text-faint); font-weight:400;">— xem/sửa chi tiết ở tab "Dự báo Workload"</span></h2>
     ${renderForecastSummaryCards()}
