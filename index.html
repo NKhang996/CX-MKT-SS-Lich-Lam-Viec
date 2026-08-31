@@ -181,6 +181,7 @@
   .brand-text{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:14px; line-height:1.2;}
   .brand-text span{display:block; font-size:10px; font-weight:400; color:var(--text-dim); font-family:'Inter';}
   .side-group + .side-group{margin-top:20px;}
+  #navgroupTop{padding-bottom:14px; margin-bottom:16px !important; border-bottom:1px solid var(--glass-border);}
   .side-label{font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--text-faint); margin:0 0 6px 10px;}
   .navgroup{display:flex; flex-direction:column; gap:3px; margin-top:6px;}
   .navbtn{display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:8px; border:none; background:transparent; color:var(--text-dim); font-size:13px; font-weight:500; text-align:left; transition:background .15s, color .15s;}
@@ -566,6 +567,7 @@
     #holidayReportPrintArea{position:absolute; left:0; top:0; width:100%; box-shadow:none !important;}
   }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 </head>
 <body>
 <div id="appBgVideo">
@@ -604,6 +606,7 @@
   </div>
   <div id="bodyWrap">
     <nav id="sidebar">
+      <div class="navgroup" id="navgroupTop" style="margin-bottom:16px;"></div>
       <div class="side-group">
         <div class="side-label">Điều hành</div>
         <div class="navgroup" id="navgroup1"></div>
@@ -1107,7 +1110,7 @@ let state = {
   ]
 };
 
-let tab = "lich";
+let tab = "tongquan";
 let activeTool = "S2";       
 let activeColor = null;      
 let calFilter = { search: "", region: "ALL", status: "ALL", approval: "ALL" };
@@ -2247,6 +2250,7 @@ function countSundayDutyInMonth(empId, m, y){
 }
 
 const NAV = [
+  { id:"tongquan",ic:"🏠", label:"Tổng quan" },
   { id:"lich",    ic:"▦", label:"Chia Lịch Trực" },
   { id:"forecast",ic:"📊", label:"Dự báo Workload" },
   { id:"nhansu",  ic:"👤", label:"Quản lý Nhân sự" },
@@ -2255,9 +2259,11 @@ const NAV = [
 ];
 
 // Nhóm sidebar: "Điều hành" (thao tác hàng ngày) và "Quản lý" (thiết lập/theo dõi)
+// "tongquan" đứng riêng đầu sidebar (không thuộc nhóm nào) — xem hàm renderNav()
 const NAV_GROUP1_IDS = ["lich", "forecast"];
 
 function renderNav(){
+  const elTop = document.getElementById("navgroupTop"); if(elTop) elTop.innerHTML = "";
   const el1 = document.getElementById("navgroup1"); if(el1) el1.innerHTML = "";
   const el2 = document.getElementById("navgroup2"); if(el2) el2.innerHTML = "";
   NAV.forEach(i=>{
@@ -2283,12 +2289,14 @@ function renderNav(){
         renderAll();
       }
     };
-    (NAV_GROUP1_IDS.includes(i.id) ? el1 : el2)?.appendChild(b);
+    const target = (i.id === "tongquan") ? elTop : (NAV_GROUP1_IDS.includes(i.id) ? el1 : el2);
+    target?.appendChild(b);
   });
 }
 
+
 function renderTopbar(){
-  const titles = { forecast:"Dự báo & Cân đối Workload", lich:"Chia Lịch Trực & Thống Kê", nhansu:"Quản lý Nhân sự", log:"Nhật ký Thay đổi Lịch", cauhinh:"Cấu hình Quy tắc & Ngày Lễ" };
+  const titles = { tongquan:"Tổng quan", forecast:"Dự báo & Cân đối Workload", lich:"Chia Lịch Trực & Thống Kê", nhansu:"Quản lý Nhân sự", log:"Nhật ký Thay đổi Lịch", cauhinh:"Cấu hình Quy tắc & Ngày Lễ" };
   document.getElementById("pageTitle").textContent = titles[tab];
   document.getElementById("monthLabel").textContent = `Th ${state.month}/${state.year}`;
 }
@@ -3088,15 +3096,15 @@ function renderForecastSummaryCards(){
   if(allRegions.length === 0) return '';
   const fmtWL = (n) => n >= 1000 ? `${(n/1000).toFixed(1)}k` : String(n);
   const rows = [
-    { key:'fteTarget',  label:'fteTarget',  cls:'teal',   fmt: v=>v },
-    { key:'bpoTarget',  label:'bpoTarget',  cls:'amber',  fmt: v=>v },
-    { key:'growthRate', label:'growthRate', cls:'violet', fmt: v=>`${v}%` },
-    { key:'lastMonthWL',label:'lastMonthWL',cls:'coral',  fmt: fmtWL },
+    { key:'fteTarget',  label:'Định mức FTE',  hint:'Số case/ngày mỗi FTE xử lý được', cls:'teal',   fmt: v=>v },
+    { key:'bpoTarget',  label:'Định mức BPO',  hint:'Số case/ngày mỗi BPO xử lý được', cls:'amber',  fmt: v=>v },
+    { key:'growthRate', label:'Tăng trưởng dự kiến', hint:'% Workload dự kiến tăng so với tháng trước', cls:'violet', fmt: v=>`${v}%` },
+    { key:'lastMonthWL',label:'Workload tháng trước', hint:'Tổng số case đã xử lý tháng trước, dùng làm gốc tính dự kiến', cls:'coral',  fmt: fmtWL },
   ];
   const cards = rows.map(r => {
     const vals = allRegions.map(reg => r.fmt(getRegionCfg(reg)[r.key]));
     return `
-    <div class="kpi">
+    <div class="kpi" title="${r.hint}">
       <div class="lbl">${r.label} (${allRegions.join('/')})</div>
       <div class="val"><span class="dot" style="background:var(--${r.cls})"></span>${vals.join(' / ')}</div>
     </div>`;
@@ -3104,33 +3112,62 @@ function renderForecastSummaryCards(){
   return `<div class="kpi-row">${cards}</div>`;
 }
 
+let __forecastComboData = null;
+let __forecastComboChartInstance = null;
+
 function renderWorkingCountChart(){
-  const today = new Date();
-  const cols = [];
-  for(let offset = 0; offset < 7; offset++){
-    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + offset);
-    const day = d.getDate(), m = d.getMonth()+1, y = d.getFullYear();
-    let working = 0;
-    state.employees.forEach(e => {
-      const c = getCellData(e.id, day, m, y);
-      if(c.status === 'S2' || c.status === 'OT' || c.status === 'WFH') working++;
-    });
-    const wd = ['CN','T2','T3','T4','T5','T6','T7'][d.getDay()];
-    cols.push({ label: `${wd} ${day}/${m}`, working });
-  }
-  const total = state.employees.length || 1;
-  const maxV = Math.max(...cols.map(c=>c.working), 1);
-  const bars = cols.map(c => `
-    <div class="fc-bar-col">
-      <div class="fc-bar" style="height:${Math.max(4, Math.round(c.working/maxV*100))}%" title="${c.working}/${total} người đi làm"></div>
-      <div class="fc-bar-label">${c.label}<br>${c.working}</div>
-    </div>`).join("");
+  const { dailyForecast } = calculateMonthlyForecast(calFilter.region);
+  const n = Math.min(7, dailyForecast.length);
+  const days = dailyForecast.slice(0, n);
+  __forecastComboData = {
+    labels: days.map(f => `${f.weekday} ${f.day}/${state.month}`),
+    hc: days.map(f => f.totalWorkingHC),
+    wl: days.map(f => Math.round(f.dayTotalWL))
+  };
   return `
   <div class="panel">
-    <h2>📈 Số người đi làm 7 ngày tới (từ hôm nay) <span style="font-size:11px; color:var(--text-faint); font-weight:400;">— tính thật từ lịch (S2+OT+WFH)</span></h2>
-    <div class="fc-bars">${bars}</div>
-    <div class="fc-legend"><i></i>Số người đi làm / ${total} tổng nhân sự</div>
+    <h2>📈 Số người đi làm &amp; Workload dự kiến <span style="font-size:11px; color:var(--text-faint); font-weight:400;">— ${n} ngày đầu tháng ${state.month}/${state.year}, tính thật từ Forecast engine</span></h2>
+    <div style="display:flex; gap:16px; font-size:12px; color:var(--text-dim); margin-bottom:10px;">
+      <span style="display:flex; align-items:center; gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:#4FB3A9;"></span>Số người đi làm (trục trái)</span>
+      <span style="display:flex; align-items:center; gap:5px;"><span style="width:10px;height:2px;background:#8B7FD6;"></span>Workload dự kiến (trục phải)</span>
+    </div>
+    <div style="position:relative; width:100%; height:260px;">
+      <canvas id="chartForecastCombo"></canvas>
+    </div>
   </div>`;
+}
+
+// Vẽ chart Chart.js thật SAU KHI innerHTML đã chèn canvas vào DOM (gọi từ renderAllUIOnly)
+function drawForecastComboChart(){
+  const canvas = document.getElementById("chartForecastCombo");
+  if(!canvas || !__forecastComboData || typeof Chart === 'undefined') return;
+  if(__forecastComboChartInstance){ __forecastComboChartInstance.destroy(); __forecastComboChartInstance = null; }
+  const { labels, hc, wl } = __forecastComboData;
+  __forecastComboChartInstance = new Chart(canvas, {
+    data: {
+      labels,
+      datasets: [
+        { type:'bar', label:'Số người đi làm', data:hc, backgroundColor:'#4FB3A9', borderRadius:4, maxBarThickness:32, yAxisID:'y1', order:2 },
+        { type:'line', label:'Workload dự kiến', data:wl, borderColor:'#8B7FD6', backgroundColor:'rgba(139,127,214,0.12)', fill:true, tension:0.35, pointRadius:4, pointBackgroundColor:'#8B7FD6', pointBorderColor:'#fff', pointBorderWidth:1.5, borderWidth:2.5, yAxisID:'y2', order:1 }
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      interaction:{ mode:'index', intersect:false },
+      plugins:{
+        legend:{ display:false },
+        tooltip:{
+          backgroundColor:'#1a2530', padding:10, cornerRadius:8,
+          callbacks:{ label:(c)=> c.dataset.yAxisID==='y1' ? (c.parsed.y+' người đi làm') : (c.parsed.y.toLocaleString()+' case dự kiến') }
+        }
+      },
+      scales:{
+        x:{ grid:{ display:false }, ticks:{ color:'#8A97A0', font:{ size:11 } } },
+        y1:{ position:'left', beginAtZero:true, grid:{ color:'rgba(138,151,160,0.15)' }, ticks:{ color:'#4FB3A9', font:{ size:11 } } },
+        y2:{ position:'right', beginAtZero:true, grid:{ display:false }, ticks:{ color:'#8B7FD6', font:{ size:11 }, callback:(v)=> (v/1000)+'k' } }
+      }
+    }
+  });
 }
 
 function renderForecastSubTabBar(){
@@ -4528,10 +4565,62 @@ function undoLastAutoFill(){
   alert("✅ Đã khôi phục lịch về trước lần Auto-Fill gần nhất.");
 }
 
+// ==========================================
+// 🏠 TAB TỔNG QUAN — gộp các card/chart trực quan từ nhiều tab vào 1 chỗ duy nhất, xem là thấy ngay
+// (Chỉ tổng hợp lại dữ liệu THẬT đã có sẵn từ các hàm khác, không tính toán riêng/trùng logic)
+// ==========================================
+function renderTongQuanStatsCards(){
+  const emps = state.employees || [];
+  const total = emps.length;
+  const fteCount = emps.filter(e => e.type === 'FTE').length;
+  const bpoCount = emps.filter(e => e.type === 'BPO').length;
+  const leadCount = emps.filter(e => e.role === 'Leader' || e.role === 'SubLead').length;
+  const regionCounts = {};
+  emps.forEach(e => { const r = e.region || 'HCM'; regionCounts[r] = (regionCounts[r]||0)+1; });
+  const regionLbl = Object.keys(regionCounts).sort().map(r => `${r} ${regionCounts[r]}`).join(' · ');
+  const pendingCount = isAdmin() ? getPendingListInScope().length : 0;
+
+  return `<div class="kpi-row">
+    <div class="kpi">
+      <div class="lbl">Tổng nhân sự</div>
+      <div class="val"><span class="dot" style="background:var(--teal)"></span>${total} <span style="font-size:11px; color:var(--text-faint); font-weight:400;">(${regionLbl})</span></div>
+    </div>
+    <div class="kpi">
+      <div class="lbl">FTE / BPO</div>
+      <div class="val"><span class="dot" style="background:var(--amber)"></span>${fteCount} / ${bpoCount}</div>
+    </div>
+    <div class="kpi">
+      <div class="lbl">Leader / SubLead</div>
+      <div class="val"><span class="dot" style="background:var(--violet)"></span>${leadCount}</div>
+    </div>
+    <div class="kpi">
+      <div class="lbl">Chờ duyệt thay đổi</div>
+      <div class="val"><span class="dot" style="background:var(--coral)"></span>${pendingCount}</div>
+    </div>
+  </div>`;
+}
+
+function renderTongQuan(){
+  return `
+  ${renderTopBanner()}
+  <div class="panel">
+    <h2>📊 Tổng quan nhân sự</h2>
+    ${renderTongQuanStatsCards()}
+  </div>
+  <div class="panel">
+    <h2>⚙ Cấu hình Workload theo Miền <span style="font-size:11px; color:var(--text-faint); font-weight:400;">— xem/sửa chi tiết ở tab "Dự báo Workload"</span></h2>
+    ${renderForecastSummaryCards()}
+  </div>
+  ${renderWorkingCountChart()}
+  ${(isAdmin() && getPendingListInScope().length > 0) ? renderPendingListPanel() : ''}
+  `;
+}
+
 function renderAllUIOnly(){
   ensureMonthData(); renderNav(); renderTopbar(); updateNotificationBellUI();
   const el = document.getElementById("content");
-  if(tab==="forecast") el.innerHTML = renderForecast();
+  if(tab==="tongquan"){ el.innerHTML = renderTongQuan(); drawForecastComboChart(); }
+  else if(tab==="forecast"){ el.innerHTML = renderForecast(); drawForecastComboChart(); }
   else if(tab==="lich") {
     el.innerHTML = renderLich();
     bindCrosshairEvents();
