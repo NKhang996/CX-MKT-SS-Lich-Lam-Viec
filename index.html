@@ -21,16 +21,43 @@
     --pink:#E85d9e; --pink-dim:#4a1e35; --green:#10b981; --green-dim:#164e3d;
     --ot-color:#f97316; --ot-dim:#431407; --upl-color:#94a3b8; --upl-dim:#334155;
     --radius:10px;
+    /* 🔹 Token cho các trạng thái/nhãn đặc biệt trên bảng lịch — TÁCH RIÊNG theo theme để không bị "kẹt cứng" màu tối */
+    --disabled-bg:#171E23; --disabled-text:#4A5568;
+    --hol-bg:#4a1e35; --hol-text:#f472b6; --hol-border:#f472b6;
+    --sun-bg:#581c2d; --sun-text:#f87171; --sun-border:#ef4444;
+    --spike-sale-bg:#3b1f35; --spike-double-bg:#4a1e35; --spike-double-text:#f472b6;
+    --spike-payday-bg:#2a3b1e; --spike-payday-text:#4ade80;
+    --alert-under-bg:rgba(232,97,93,0.25); --alert-under-text:#fca5a5;
+    --alert-over-bg:rgba(232,163,61,0.25); --alert-over-text:#fde047;
+    --alert-ok-bg:rgba(79,179,169,0.15); --alert-ok-text:#6ee7b7;
+    --tag-lead-bg:#3b82f620; --tag-lead-text:#60a5fa;
+    --tag-fte-bg:#10b98120; --tag-fte-text:#34d399;
+    --tag-bpo-bg:#f59e0b20; --tag-bpo-text:#fbbf24;
+    --row-hover-tint:rgba(255,255,255,0.05);
+    --color-dot-active-ring:#fff; --color-dot-active-glow:rgba(255,255,255,0.4);
   }
   body.light-theme{
-    --bg:#F4F6F8; --surface:#FFFFFF; --surface-2:#F0F2F5; --surface-3:#E4E8EC; --border:#D8DEE4;
-    --text:#1A2126; --text-dim:#5B6670; --text-faint:#8A97A0;
+    --bg:#F4F6F8; --surface:#FFFFFF; --surface-2:#F0F2F5; --surface-3:#E4E8EC; --border:#C6CDD4;
+    --text:#1A2126; --text-dim:#5B6670; --text-faint:#727E88;
     --amber:#B9791E; --amber-dim:#FCEBD1; --teal:#0F8378; --teal-dim:#D6EFEC;
     --coral:#C13F3B; --coral-dim:#FBDEDD; --violet:#6355B5; --violet-dim:#E6E3F7;
     --pink:#C23E76; --pink-dim:#FBE1EC; --green:#0D8F5F; --green-dim:#DAF3E8;
     --ot-color:#B75C13; --ot-dim:#FBE4CF; --upl-color:#5B6670; --upl-dim:#E4E8EC;
+    /* 🔹 Bản Light Mode của các token đặc biệt ở trên — dùng tông NHẠT + chữ ĐẬM đủ tương phản, thay vì giữ nguyên màu tối */
+    --disabled-bg:#EBEEF1; --disabled-text:#98A2AB;
+    --hol-bg:#FBE1EC; --hol-text:#A23368; --hol-border:#C23E76;
+    --sun-bg:#FBDEDD; --sun-text:#A3332F; --sun-border:#C13F3B;
+    --spike-sale-bg:#F3E2ED; --spike-double-bg:#FBE1EC; --spike-double-text:#A23368;
+    --spike-payday-bg:#DAF3E8; --spike-payday-text:#0D8F5F;
+    --alert-under-bg:rgba(193,63,59,0.14); --alert-under-text:#8C2E2A;
+    --alert-over-bg:rgba(185,121,30,0.16); --alert-over-text:#87590F;
+    --alert-ok-bg:rgba(15,131,120,0.12); --alert-ok-text:#0B6C5F;
+    --tag-lead-bg:#DCE8FD; --tag-lead-text:#1D4ED8;
+    --tag-fte-bg:#DCF7EA; --tag-fte-text:#047857;
+    --tag-bpo-bg:#FDECC8; --tag-bpo-text:#92400E;
+    --row-hover-tint:rgba(15,25,35,0.045);
+    --color-dot-active-ring:#1A2126; --color-dot-active-glow:rgba(26,33,38,0.25);
   }
-  body.light-theme .cal-table td.daycell.disabled{background:repeating-linear-gradient(45deg,var(--surface-2),var(--surface-2) 4px,var(--surface-3) 4px,var(--surface-3) 8px);}
   body.light-theme .brand-mark{color:#fff;}
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
@@ -157,14 +184,14 @@
     font-weight: 600; 
     cursor: pointer; 
   }
-  .cal-table th.hol-col { background: #4a1e35 !important; color: #f472b6 !important; border-bottom: 2px solid #f472b6; }
+  .cal-table th.hol-col { background: var(--hol-bg) !important; color: var(--hol-text) !important; border-bottom: 2px solid var(--hol-border); }
 
   .cal-table td.daycell{ min-width: 48px; height: 34px; text-align: center; padding: 0; cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-weight: 700; font-size: 11px; transition: all .1s; }
   .cal-table td.daycell:hover{opacity:0.8; filter:brightness(1.2);}
-  .cal-table td.daycell.disabled{background:#171E23 !important; color:#4A5568 !important; cursor:not-allowed; font-weight:400;}
+  .cal-table td.daycell.disabled{background:var(--disabled-bg) !important; color:var(--disabled-text) !important; cursor:not-allowed; font-weight:400;}
 
-  /* CROSSHAIR HIGHLIGHT FOR DARK MODE */
-  .cal-table tr:hover td { background-color: rgba(255, 255, 255, 0.05) !important; }
+  /* CROSSHAIR HIGHLIGHT (tự đổi tông theo theme qua --row-hover-tint) */
+  .cal-table tr:hover td { background-color: var(--row-hover-tint) !important; }
   .cal-table td.col-hover { background-color: rgba(79, 179, 169, 0.12) !important; }
   /* TH (tiêu đề) đang sticky top — KHÔNG được dùng nền trong suốt (rgba), nếu không chữ của các dòng
      cuộn bên dưới sẽ lộ/đè lên qua lớp nền trong suốt đó. Dùng nền ĐẶC (surface-3) + viền teal thay thế. */
@@ -214,14 +241,14 @@
   .palette-wrap{display:flex; gap:5px; align-items:center; border-left:1px solid var(--border); padding-left:10px; margin-left:5px;}
   .color-dot{width:18px; height:18px; border-radius:50%; cursor:pointer; border:2px solid transparent; transition:transform 0.1s;}
   .color-dot:hover{transform:scale(1.2);}
-  .color-dot.active{border-color:#fff; transform:scale(1.25); box-shadow:0 0 8px rgba(255,255,255,0.4);}
+  .color-dot.active{border-color:var(--color-dot-active-ring); transform:scale(1.25); box-shadow:0 0 8px var(--color-dot-active-glow);}
 
   /* HIGHLIGHT STYLES - CHỦ NHẬT NỔI BẬT HƠN */
-  .cal-table th.sun-col{background:#581c2d !important; color:#f87171 !important; border-bottom:3px solid #ef4444; font-weight:800;}
+  .cal-table th.sun-col{background:var(--sun-bg) !important; color:var(--sun-text) !important; border-bottom:3px solid var(--sun-border); font-weight:800;}
   .cal-table td.sun-cell{background:rgba(239, 68, 68, 0.12) !important;}
-  .cal-table th.spike-sale{background:#3b1f35 !important; color:var(--pink) !important; border-bottom:2px solid var(--pink);}
-  .cal-table th.spike-double{background:#4a1e35 !important; color:#f472b6 !important; border-bottom:2px solid #f472b6;}
-  .cal-table th.spike-payday{background:#2a3b1e !important; color:#4ade80 !important; border-bottom:2px solid #4ade80;}
+  .cal-table th.spike-sale{background:var(--spike-sale-bg) !important; color:var(--pink) !important; border-bottom:2px solid var(--pink);}
+  .cal-table th.spike-double{background:var(--spike-double-bg) !important; color:var(--spike-double-text) !important; border-bottom:2px solid var(--spike-double-text);}
+  .cal-table th.spike-payday{background:var(--spike-payday-bg) !important; color:var(--spike-payday-text) !important; border-bottom:2px solid var(--spike-payday-text);}
 
   /* WORKLOAD & KPIS */
   .wl-table td, .wl-table th{text-align:center; padding:5px 4px; min-width:54px;}
@@ -229,9 +256,9 @@
   .wl-table input.override-inp{background:var(--surface-3); border:1px solid var(--border); color:var(--amber); font-weight:700; text-align:center; width:48px; font-size:11px; border-radius:4px; padding:2px;}
   
   /* CẢNH BÁO MÀU */
-  .alert-under{background:rgba(232, 97, 93, 0.25) !important; color:#fca5a5 !important; font-weight:700;}
-  .alert-over{background:rgba(232, 163, 61, 0.25) !important; color:#fde047 !important; font-weight:700;}
-  .alert-ok{background:rgba(79, 179, 169, 0.15) !important; color:#6ee7b7 !important;}
+  .alert-under{background:var(--alert-under-bg) !important; color:var(--alert-under-text) !important; font-weight:700;}
+  .alert-over{background:var(--alert-over-bg) !important; color:var(--alert-over-text) !important; font-weight:700;}
+  .alert-ok{background:var(--alert-ok-bg) !important; color:var(--alert-ok-text) !important;}
 
   .kpi-row{display:flex; gap:12px; margin-bottom:14px; flex-wrap:wrap;}
   .kpi{background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:10px 14px; min-width:140px; flex:1;}
@@ -239,9 +266,9 @@
   .kpi .val{font-family:'Space Grotesk'; font-size:18px; font-weight:700;}
 
   .tag{padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700; display:inline-block;}
-  .tag-lead{background:#3b82f620; color:#60a5fa;}
-  .tag-fte{background:#10b98120; color:#34d399;}
-  .tag-bpo{background:#f59e0b20; color:#fbbf24;}
+  .tag-lead{background:var(--tag-lead-bg); color:var(--tag-lead-text);}
+  .tag-fte{background:var(--tag-fte-bg); color:var(--tag-fte-text);}
+  .tag-bpo{background:var(--tag-bpo-bg); color:var(--tag-bpo-text);}
   
   .alert-sun{background:var(--coral-dim) !important; color:var(--coral) !important;}
   .ok-sun{color:var(--teal) !important;}
@@ -298,10 +325,7 @@
     position:absolute; top:0; right:1px;
     font-size:14px; line-height:1;
     z-index:3;
-    /* 🔧 FIX: trước đây pointer-events:none chặn chuột chạm icon nên title/tooltip (🎂🎉✅) không bao giờ hiện khi hover.
-       Bỏ để hover hiện tooltip bình thường; click vẫn nổi bọt (bubble) lên <td> cha (không có onclick riêng trên icon)
-       nên hành vi paint ca khi click không đổi. */
-    cursor:help;
+    pointer-events:none;
     filter: drop-shadow(0 1px 1.5px rgba(0,0,0,0.6));
   }
   body.light-theme .event-icon{ filter: drop-shadow(0 1px 1.5px rgba(0,0,0,0.35)); }
@@ -354,19 +378,7 @@
 </style>
 </head>
 <body>
-<div id="loginGate" style="position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center; background:var(--bg);">
-  <div style="max-width:360px; width:100%; text-align:center; padding:36px 30px; background:var(--surface); border:1px solid var(--border); border-radius:16px;">
-    <div style="width:52px; height:52px; margin:0 auto 16px; border-radius:12px; background:linear-gradient(135deg, var(--teal, #1AA6A6), var(--violet, #7B6EF6)); display:flex; align-items:center; justify-content:center; color:#fff; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:16px;">SPX</div>
-    <h1 style="font-family:'Space Grotesk',sans-serif; font-size:18px; margin:0 0 6px; color:var(--text);">Workload Planner</h1>
-    <p style="font-size:13px; color:var(--text-dim); margin:0 0 22px;">Vui lòng đăng nhập bằng tài khoản Google công ty để tiếp tục.</p>
-    <button class="btn-google" onclick="googleSignIn()" style="width:100%; justify-content:center;">
-      <img src="https://www.gstatic.com/images/branding/googleg/1x/googleg_standard_color_18dp.png" alt="">
-      Đăng nhập Google
-    </button>
-    <p id="loginGateError" style="font-size:12px; color:#E05252; margin:14px 0 0; display:none;"></p>
-  </div>
-</div>
-<div id="app" style="visibility:hidden;">
+<div id="app">
   <nav id="sidebar">
     <div class="brand">
       <div class="brand-mark">SPX</div>
@@ -420,6 +432,19 @@
       ⏳ Duyệt Thay Đổi Lịch
     </h2>
     <div id="approvalModalBody"></div>
+  </div>
+</div>
+
+<!-- MODAL THÔNG BÁO CÁ NHÂN (in-app, bấm OK để xác nhận đã đọc) -->
+<div class="modal-overlay" id="myNotificationModal">
+  <div class="modal-card" style="max-width:420px;">
+    <h2 style="font-family:'Space Grotesk'; font-size:17px; margin-top:0; color:var(--text); border-bottom:1px solid var(--border); padding-bottom:10px;">
+      🔔 Thông báo
+    </h2>
+    <div id="myNotifBody" style="padding:4px 0 18px; color:var(--text); font-size:14px; line-height:1.5;"></div>
+    <div style="text-align:right;">
+      <button class="btn-approve" onclick="ackMyNotification()">OK, đã hiểu</button>
+    </div>
   </div>
 </div>
 
@@ -491,13 +516,9 @@ function canRunAutoFillForRegions(regionsInScope){
 function googleSignIn(){
   if(!auth){ alert("⚠️ Không kết nối được Firebase Auth."); return; }
   const provider = new firebase.auth.GoogleAuthProvider();
-  const errEl = document.getElementById("loginGateError");
-  if(errEl){ errEl.style.display = "none"; }
   auth.signInWithPopup(provider).catch(err => {
     console.error("Sign-in error:", err);
-    const msg = "❌ Đăng nhập thất bại: " + (err.message || err);
-    if(errEl){ errEl.textContent = msg; errEl.style.display = "block"; }
-    else alert(msg);
+    alert("❌ Đăng nhập thất bại: " + (err.message || err));
   });
 }
 
@@ -658,54 +679,14 @@ function saveMyScheduleToCloud(){
   }
 }
 
-// 🔒 CỔNG ĐĂNG NHẬP: app chỉ hiển thị / kết nối Cloud SAU KHI xác nhận đã đăng nhập Google.
-// Trước đó, listenCloudChanges() KHÔNG được gọi (tránh gọi Firebase khi chưa có auth -> PERMISSION_DENIED
-// theo Database Rules "auth != null"), và toàn bộ #app bị che bởi #loginGate.
-let cloudListenerStarted = false;
-
-function showLoginGate(){
-  const gate = document.getElementById("loginGate");
-  const app = document.getElementById("app");
-  if(gate) gate.style.display = "flex";
-  if(app) app.style.visibility = "hidden";
-}
-function hideLoginGate(){
-  const gate = document.getElementById("loginGate");
-  const app = document.getElementById("app");
-  if(gate) gate.style.display = "none";
-  if(app) app.style.visibility = "visible";
-}
-
 if(auth){
   auth.onAuthStateChanged(user => {
     currentAuthUser = user;
-
-    if(!user){
-      // Chưa đăng nhập (hoặc vừa đăng xuất) -> chỉ hiện cổng login, ngắt lắng nghe Cloud
-      // để không tiếp tục gọi Firebase mà không có auth (Rules sẽ từ chối).
-      if(cloudListenerStarted && db){
-        db.ref("spx_workload_app_combined").off();
-        cloudListenerStarted = false;
-      }
-      showLoginGate();
-      return;
-    }
-
-    // Đã đăng nhập -> mở khóa giao diện và bắt đầu đồng bộ Cloud (chỉ 1 lần duy nhất).
-    hideLoginGate();
     resolveRoleForUser(user);
     renderAuthUI();
     if(document.getElementById("content")) renderAll();
-    if(!cloudListenerStarted){
-      cloudListenerStarted = true;
-      listenCloudChanges();
-    }
+    checkAndShowMyNotifications();
   });
-} else {
-  // Không kết nối được Firebase Auth (VD lỗi config) -> vẫn phải hiện cổng login thay vì để trống,
-  // kèm thông báo lỗi để không ai tưởng nhầm là app hỏng.
-  const errEl = document.getElementById("loginGateError");
-  if(errEl){ errEl.textContent = "⚠️ Không kết nối được Firebase Auth."; errEl.style.display = "block"; }
 }
 
 const VN_SHORT_WEEKDAY = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
@@ -721,10 +702,8 @@ const STATUS_DICT = {
   "AL":    { val: 0,   color:"var(--amber)",      bg:"var(--amber-dim)" },
   "AL1/2": { val: 0.5, color:"var(--amber)",      bg:"var(--amber-dim)" },
   "SL":    { val: 0,   color:"var(--coral)",      bg:"var(--coral-dim)" },
-  "SL/2":  { val: 0.5, color:"var(--coral)",      bg:"var(--coral-dim)" },
   "HOL":   { val: 0,   color:"var(--pink)",       bg:"var(--pink-dim)" },
-  "UPL":   { val: 0,   color:"var(--upl-color)",  bg:"var(--upl-dim)" },
-  "UPL/2": { val: 0.5, color:"var(--upl-color)",  bg:"var(--upl-dim)" }
+  "UPL":   { val: 0,   color:"var(--upl-color)",  bg:"var(--upl-dim)" }
 };
 
 const CUSTOM_COLORS = [
@@ -1038,7 +1017,18 @@ function syncStateAndConfig(){
   if(!state.holidaysFixed) state.holidaysFixed = [];
   if(!state.holidaysDynamic) state.holidaysDynamic = [];
   if(!state.pendingChanges) state.pendingChanges = {};
-  if(!state.changeLog) state.changeLog = [];
+  // 🔹 changeLog: chuyển từ mảng phẳng (cũ) sang OBJECT THEO THÁNG {monthKey: [...]} để mỗi tháng tách bạch,
+  // không lộn xộn chung 1 danh sách khổng lồ. Tự động migrate dữ liệu cũ nếu còn ở dạng mảng.
+  if(!state.changeLog) state.changeLog = {};
+  else if(Array.isArray(state.changeLog)){
+    const migrated = {};
+    state.changeLog.forEach(l => {
+      const mk = l.monthKey || 'khong-xac-dinh';
+      if(!migrated[mk]) migrated[mk] = [];
+      migrated[mk].push(l);
+    });
+    state.changeLog = migrated;
+  }
 }
 
 // Trả về cấu hình workload của 1 miền (tự tạo mặc định nếu miền đó chưa có cấu hình)
@@ -1088,8 +1078,7 @@ function openTopicLogic(topicKey){
       <p>• <b>Chọn Ca (S2, OT, OFF, WFH, AL, HOL...):</b> Nhấp chọn nút tên ca, sau đó nhấp vào ô ngày của nhân viên tương ứng.</p>
       <p>• <b>Cọ tô màu:</b> Chọn 1 màu rồi nhấp vào ô để tô nổi bật (không đổi ca trực), chọn "Xóa màu" để gỡ.</p>
       <p>• <b>Lịch Chủ Nhật:</b> Hệ thống tự đổi mã ca đi làm CN thành <b>WFH</b>.</p>
-      <p>• <b>Quy tắc AL/SL/UPL:</b> Nhân viên đang thử việc (chưa Pass probation) <b>KHÔNG</b> được đăng ký AL/AL1/2/SL/SL2 — dùng ca <b>UPL</b> hoặc <b>UPL/2</b> (nghỉ không lương) thay thế. UPL/UPL2 không giới hạn đối tượng, có thể dùng cho bất kỳ nhân sự nào (kể cả đã Pass). Riêng <b>SL</b> và <b>SL/2</b>: nhân sự loại BPO <b>không bao giờ</b> được đăng ký (dù đã Pass hay chưa).</p>
-      <p>• <b>Ca nửa ngày (AL1/2, SL/2, UPL/2):</b> Đánh dấu nghỉ nửa ngày, nửa ngày còn lại vẫn được tính vào năng lực làm việc. Cộng 0.5 vào cột đếm tương ứng (AL/SL/UPL) trên bảng tổng hợp và báo cáo export.</p>
+      <p>• <b>Quy tắc AL/SL/UPL:</b> Nhân viên đang thử việc (chưa Pass probation) <b>KHÔNG</b> được đăng ký AL/SL — dùng ca <b>UPL</b> (nghỉ không lương) thay thế. UPL không giới hạn đối tượng, có thể dùng cho bất kỳ nhân sự nào (kể cả đã Pass). Riêng <b>SL</b>: nhân sự loại BPO <b>không bao giờ</b> được đăng ký (dù đã Pass hay chưa).</p>
       <p>• <b>Đánh dấu Ngày Đặc Biệt (Spike):</b> Nhấp vào ô tiêu đề (thứ/ngày) trên đầu bảng lịch để xoay vòng: Bình thường → Ngày Sale → Ngày Đôi → Ngày Lương → Bình thường. Ngày đặc biệt sẽ nhân thêm hệ số vào Workload dự báo (xem tab Cấu hình).</p>
       <p>• <b>Auto-Fill Dàn Trải:</b> Tự động xếp Ngày Lễ, Ca trực Chủ Nhật (3 bước BPO/FTE), nghỉ bù cố định & OFF dàn trải cho cả tháng. Xem chi tiết công thức ở phần Cấu hình.</p>
       <p>• <b>Icon góc ô lịch:</b> Góc trên-trái ⏳ = đang chờ Admin duyệt; Góc trên-phải 🎂🎉✅ = sinh nhật / kỷ niệm Onboard / kỷ niệm Pass thử việc; Góc dưới-trái 🔁 = đổi ca đã được duyệt; Góc dưới-phải 🔻/🔸 = hiệu suất ramp-up của nhân sự <b>đang thử việc</b> tại đúng ngày đó (🔻 = dưới 100%, 🔸 = đã đạt 100% nhưng chưa chính thức Pass mốc 60 ngày) — chỉ hiện trên ngày đi làm (S2/OT/WFH), rê chuột để xem % chi tiết.</p>
@@ -1422,6 +1411,7 @@ function applyCloudUpdate(newVal){
   resolveRoleForUser(currentAuthUser);
   renderAuthUI();
   renderAll();
+  checkAndShowMyNotifications();
   // State vừa bị thay TOÀN BỘ từ Cloud -> các snapshot Undo/Redo cũ không còn khớp dữ liệu hiện tại -> xóa để tránh hoàn tác sai
   undoStack = [];
   redoStack = [];
@@ -1478,7 +1468,6 @@ function sumLeaveInYear(empId, year, kind){
         else if(cell.status === 'AL1/2') total += 0.5;
       } else if(kind === 'SL'){
         if(cell.status === 'SL') total += 1;
-        else if(cell.status === 'SL/2') total += 0.5;
       }
     });
   }
@@ -1638,12 +1627,38 @@ function pushChangeLog(entry){
 }
 // Ghi Nhật ký Thay đổi thuần túy, KHÔNG đụng tới Undo Stack (dùng bởi chính doUndo/doRedo để tránh vòng lặp tự đẩy lại).
 function pushChangeLogOnly(entry){
-  state.changeLog.push({ id: uid(), timestamp: Date.now(), changedBy: currentActorLabel(), ...entry });
-  // Giới hạn log để tránh phình dữ liệu Firebase (giữ 500 bản ghi gần nhất)
-  if(state.changeLog.length > 500) state.changeLog = state.changeLog.slice(-500);
+  const mk = entry.monthKey || 'khong-xac-dinh';
+  if(!state.changeLog) state.changeLog = {};
+  if(!state.changeLog[mk]) state.changeLog[mk] = [];
+  state.changeLog[mk].push({ id: uid(), timestamp: Date.now(), changedBy: currentActorLabel(), ...entry });
+  // 🔹 Không giới hạn số lượng — mỗi tháng lưu vô thời hạn trong danh sách riêng của tháng đó.
 }
 
-function setCellData(empId, day, status, colorBg, skipSave=false, logAction=null, manualFlag=undefined){
+// Escape để nhét an toàn vào thuộc tính title="..." (tránh vỡ HTML nếu tên/ghi chú lỡ có dấu ngoặc kép)
+function escAttr(str){
+  return String(str == null ? '' : str).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+}
+function fmtLogTime(ts){
+  if(!ts) return '—';
+  const dt = new Date(ts);
+  return `${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')} ${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}`;
+}
+// Rê chuột vào icon 🔁 (đổi ca/nghỉ đã duyệt) -> tra Nhật Ký tìm đúng lượt duyệt gần nhất cho ô này, hiện chi tiết.
+function getApprovalDetailTitle(empId, day, mKey){
+  const entries = (state.changeLog?.[mKey] || []).filter(l =>
+    l.action === 'approve' && l.empId === empId && Number(l.day) === Number(day)
+  );
+  const entry = entries.length ? entries[entries.length - 1] : null; // lấy lượt duyệt GẦN NHẤT nếu có nhiều lần duyệt/hoàn tác/duyệt lại
+  if(!entry) return escAttr('Đổi ngày nghỉ đã được Admin duyệt');
+  const lines = [
+    `${entry.oldStatus || '(trống)'} → ${entry.newStatus || '(trống)'}`,
+    `Người duyệt: ${entry.changedBy || '—'} lúc ${fmtLogTime(entry.timestamp)}`
+  ];
+  if(entry.requestedBy) lines.push(`Yêu cầu bởi: ${entry.requestedBy}${entry.requestedAt ? ' lúc ' + fmtLogTime(entry.requestedAt) : ''}`);
+  return escAttr(lines.join('\n'));
+}
+
+function setCellData(empId, day, status, colorBg, skipSave=false, logAction=null, manualFlag=undefined, extraLogFields=null){
   const k = monthKey();
   if(!state.marks[k]) state.marks[k] = {};
   if(!state.marks[k][empId]) state.marks[k][empId] = {};
@@ -1669,7 +1684,8 @@ function setCellData(empId, day, status, colorBg, skipSave=false, logAction=null
     const emp = state.employees.find(x => x.id === empId);
     pushChangeLog({
       action: logAction, empId, empName: emp ? emp.name : empId, day, monthKey: k,
-      oldStatus: current.status || null, newStatus: newStatus || null
+      oldStatus: current.status || null, newStatus: newStatus || null,
+      ...(extraLogFields || {})
     });
     // 🔹 Ctrl+Z: chỉ những thay đổi CÓ logAction (sửa trực tiếp / duyệt yêu cầu) mới đẩy vào Undo Stack.
     // Auto-Fill/Xóa lịch (setCellData gọi hàng loạt, không truyền logAction) được gom chung 1 bước Undo riêng ở nơi gọi.
@@ -1769,10 +1785,18 @@ function showActionToast(msg){
 }
 
 document.addEventListener('keydown', function(e){
+  const ctrlKey = e.ctrlKey || e.metaKey; // metaKey = Cmd trên Mac
+  const keyEarly = e.key.toLowerCase();
+  // Ctrl+S / Cmd+S -> Lưu Cloud. Chặn TRƯỚC cả khi đang focus input/textarea, để không bao giờ bật hộp thoại
+  // "Save Page As..." mặc định của trình duyệt, dù đang gõ dở ở đâu.
+  if(ctrlKey && keyEarly === 's'){
+    e.preventDefault();
+    handleSaveCloudClick();
+    return;
+  }
   const activeTag = (document.activeElement && document.activeElement.tagName) || '';
   const isEditableFocus = activeTag === 'INPUT' || activeTag === 'TEXTAREA' || (document.activeElement && document.activeElement.isContentEditable);
   if(isEditableFocus) return; // đang gõ trong ô nhập liệu -> để trình duyệt tự xử lý Ctrl+Z gõ chữ mặc định
-  const ctrlKey = e.ctrlKey || e.metaKey; // metaKey = Cmd trên Mac
   if(!ctrlKey) return;
   const key = e.key.toLowerCase();
   if(key === 'z'){
@@ -2042,11 +2066,8 @@ function renderLich(){
 
   const toolTitles = {
     SL: "Chỉ áp dụng cho FTE đã Pass thử việc — BPO không được đăng ký SL",
-    "SL/2": "Nghỉ bệnh nửa ngày — chỉ áp dụng cho FTE đã Pass thử việc, BPO không được đăng ký (giống SL)",
     UPL: "Nghỉ không lương — không giới hạn đối tượng",
-    "UPL/2": "Nghỉ không lương nửa ngày — không giới hạn đối tượng (giống UPL)",
-    AL: "Chỉ áp dụng cho nhân sự đã Pass thử việc",
-    "AL1/2": "Nghỉ phép năm nửa ngày — chỉ áp dụng cho nhân sự đã Pass thử việc"
+    AL: "Chỉ áp dụng cho nhân sự đã Pass thử việc"
   };
   const tools = Object.keys(STATUS_DICT).map(k => {
     const isActive = (activeTool === k && activeColor === null);
@@ -2084,7 +2105,7 @@ function renderLich(){
       if(mk) statusesUsedThisMonth.add(mk);
 
       const isWorking = (mk === "S2" || mk === "OT" || mk === "WFH");
-      const notWorkingType = ["OFF","OFF/2","AL","AL1/2","SL","SL/2","HOL","UPL","UPL/2"].includes(mk);
+      const notWorkingType = ["OFF","OFF/2","AL","AL1/2","SL","HOL","UPL"].includes(mk);
 
       if(isWorking) {
         workingFlags[d] = true;
@@ -2095,8 +2116,8 @@ function renderLich(){
       }
 
       if(mk === "AL" || mk === "AL1/2") counts.AL += (mk==="AL"?1:0.5);
-      if(mk === "SL" || mk === "SL/2") counts.SL += (mk==="SL"?1:0.5);
-      if(mk === "UPL" || mk === "UPL/2") counts.UPL += (mk==="UPL"?1:0.5);
+      if(mk === "SL") counts.SL += 1;
+      if(mk === "UPL") counts.UPL += 1;
       if(mk === "OFF" || mk === "OFF/2") {
         counts.OFF += (mk==="OFF"?1:0.5);
         if(wd===6) counts.OFF_T7++;
@@ -2204,8 +2225,8 @@ function renderLich(){
         perfBadge = `<span class="perf-badge" title="${perfNote}">${perfIcon}</span>`;
       }
 
-      // 🔁 Badge case đổi ngày nghỉ đã được duyệt
-      const swapBadge = cell.swapApproved ? `<span class="swap-badge" title="Đổi ngày nghỉ đã được Admin duyệt">🔁</span>` : '';
+      // 🔁 Badge case đổi ngày nghỉ đã được duyệt — rê chuột hiện chi tiết đã đổi gì, ai duyệt, lúc nào
+      const swapBadge = cell.swapApproved ? `<span class="swap-badge" title="${getApprovalDetailTitle(e.id, d, mkKeyNow)}">🔁</span>` : '';
 
       const lockedCls = canEditEmpRow(e.id) ? "" : "cell-locked";
       dayCells += `<td class="daycell ${cellClass} ${lockedCls} col-idx-${d}" style="${cellStyle}" onclick="handleCellClick('${e.id}',${d})">${eventTag}<span class="cell-status-text">${mk||""}</span>${pendingBadge}${swapBadge}${perfBadge}</td>`;
@@ -2435,14 +2456,14 @@ function handleCellClick(empId, day){
     }
   }
 
-  if((activeTool === "SL" || activeTool === "SL/2") && emp.type === "BPO") {
-    alert(`⚠️ Nhân sự ${emp.name} là BPO — KHÔNG ĐƯỢC đăng ký nghỉ SL/SL2 (nghỉ bệnh). BPO chỉ có thể dùng AL/AL1/2 (nếu đã Pass) hoặc UPL/UPL2 (nếu đang thử việc).`);
+  if(activeTool === "SL" && emp.type === "BPO") {
+    alert(`⚠️ Nhân sự ${emp.name} là BPO — KHÔNG ĐƯỢC đăng ký nghỉ SL (nghỉ bệnh). BPO chỉ có thể dùng AL/AL1/2 (nếu đã Pass) hoặc UPL (nếu đang thử việc).`);
     return;
   }
 
-  if(activeTool === "AL" || activeTool === "AL1/2" || activeTool === "SL" || activeTool === "SL/2") {
+  if(activeTool === "AL" || activeTool === "AL1/2" || activeTool === "SL") {
     if(!isEmpPassedProbation(emp, curD)) {
-      alert(`⚠️ Nhân sự ${emp.name} đang trong thời gian thử việc, KHÔNG ĐƯỢC ĐĂNG KÝ nghỉ AL/SL (kể cả SL/2)! Dùng ca UPL hoặc UPL/2 (nghỉ không lương) thay thế.`);
+      alert(`⚠️ Nhân sự ${emp.name} đang trong thời gian thử việc, KHÔNG ĐƯỢC ĐĂNG KÝ nghỉ AL/SL! Dùng ca UPL (nghỉ không lương) thay thế.`);
       return;
     }
   }
@@ -2536,7 +2557,8 @@ function doApprovePending(){
   const { empId, day, monthKey: k } = approvalModalCtx;
   const pending = state.pendingChanges?.[k]?.[empId]?.[day];
   if(!pending) { closeApprovalModal(); return; }
-  setCellData(empId, day, pending.status, pending.colorBg, true, 'approve', true);
+  setCellData(empId, day, pending.status, pending.colorBg, true, 'approve', true,
+    { requestedBy: pending.requestedBy || null, requestedAt: pending.requestedAt || null });
   delete state.pendingChanges[k][empId][day];
   saveLocalState();
   closeApprovalModal();
@@ -3191,31 +3213,153 @@ function onEmpDrop(ev){
   renderAll();
 }
 
+// ===== THÔNG BÁO IN-APP CÁ NHÂN (bấm OK để xác nhận đã đọc) =====
+// Lưu theo email (lowercase) làm khóa, đồng bộ qua state như mọi dữ liệu khác (cần Admin bấm "Lưu Cloud" để đẩy lên).
+function pushNotificationTo(email, message, meta = {}){
+  if(!email) return;
+  const key = String(email).trim().toLowerCase();
+  if(!state.notifications) state.notifications = {};
+  if(!state.notifications[key]) state.notifications[key] = [];
+  state.notifications[key].push({ id: uid(), message, createdAt: Date.now(), read: false, ...meta });
+}
+
+let notificationModalCtx = null;
+function checkAndShowMyNotifications(){
+  if(!currentAuthUser || !currentAuthUser.email) return;
+  const key = currentAuthUser.email.trim().toLowerCase();
+  const list = (state.notifications && state.notifications[key]) || [];
+  const unread = list.filter(n => !n.read);
+  if(unread.length === 0) return;
+  notificationModalCtx = { id: unread[0].id, key };
+  const body = document.getElementById("myNotifBody");
+  const modal = document.getElementById("myNotificationModal");
+  if(!body || !modal) return; // Chưa render UI (VD chưa đăng nhập xong) -> bỏ qua, lần render sau sẽ thử lại
+  body.textContent = unread[0].message;
+  modal.classList.add("active");
+}
+function ackMyNotification(){
+  if(!notificationModalCtx) return;
+  const { id, key } = notificationModalCtx;
+  const list = state.notifications?.[key] || [];
+  const n = list.find(x => x.id === id);
+  if(n) n.read = true;
+  document.getElementById("myNotificationModal").classList.remove("active");
+  notificationModalCtx = null;
+  saveLocalState();
+  setTimeout(checkAndShowMyNotifications, 300); // còn thông báo chưa đọc khác thì hiện tiếp
+}
+
 // ===== TAB NHẬT KÝ THAY ĐỔI (LOG) =====
-function rollbackLogEntry(logId){
-  const entry = (state.changeLog || []).find(l => l.id === logId);
-  if(!entry) return;
-  if(entry.empId === 'BULK'){ alert("⚠️ Thao tác hàng loạt (Auto-Fill/Xóa lịch) — dùng nút '↩️ Hoàn tác Auto-Fill gần nhất' trên tab Chia Lịch Trực nếu vẫn còn hiệu lực."); return; }
-  if(!canEditEmpRow(entry.empId)){ alert("🔒 Bạn không có quyền khôi phục lịch của nhân sự này."); return; }
+
+// Thực thi phần MUTATE dữ liệu cho 1 log entry (không confirm/alert/save/render — dùng chung cho rollback từng dòng lẫn cả nhóm)
+function performRollbackForEntry(entry){
   const emp = state.employees.find(e => e.id === entry.empId);
-  if(!confirm(`↩️ Khôi phục ô lịch của ${entry.empName||entry.empId} — Ngày ${entry.day} (${entry.monthKey}) về trạng thái "${entry.oldStatus||'(trống)'}"?`)) return;
   const k = entry.monthKey;
+
+  if(entry.action === 'approve'){
+    if(!state.marks[k]) state.marks[k] = {};
+    if(!state.marks[k][entry.empId]) state.marks[k][entry.empId] = {};
+    if(!entry.oldStatus) delete state.marks[k][entry.empId][entry.day];
+    else state.marks[k][entry.empId][entry.day] = { status: entry.oldStatus, colorBg: null, manual: true };
+
+    if(!state.pendingChanges) state.pendingChanges = {};
+    if(!state.pendingChanges[k]) state.pendingChanges[k] = {};
+    if(!state.pendingChanges[k][entry.empId]) state.pendingChanges[k][entry.empId] = {};
+    state.pendingChanges[k][entry.empId][entry.day] = {
+      status: entry.newStatus,
+      colorBg: null,
+      requestedBy: entry.requestedBy || '—',
+      requestedAt: entry.requestedAt || Date.now()
+    };
+
+    pushChangeLog({ action:'rollback', empId: entry.empId, empName: entry.empName, day: entry.day, monthKey: k, oldStatus: entry.newStatus||null, newStatus: entry.oldStatus||null });
+
+    if(emp && emp.mail){
+      pushNotificationTo(emp.mail, `Yêu cầu nghỉ ngày ${entry.day}/${state.month}/${state.year} (${entry.newStatus||''}) đang được xem xét lại.`, { day: entry.day, monthKey: k, type: 'reopened' });
+    }
+    return;
+  }
+
+  // Hành vi cũ cho các loại khác (sửa trực tiếp, từ chối, auto-fill...)
   if(!state.marks[k]) state.marks[k] = {};
   if(!state.marks[k][entry.empId]) state.marks[k][entry.empId] = {};
   if(!entry.oldStatus) delete state.marks[k][entry.empId][entry.day];
   else state.marks[k][entry.empId][entry.day] = { status: entry.oldStatus, colorBg: null, manual: true };
   pushChangeLog({ action:'rollback', empId: entry.empId, empName: entry.empName, day: entry.day, monthKey: k, oldStatus: entry.newStatus||null, newStatus: entry.oldStatus||null });
+}
+
+function rollbackLogEntry(logId){
+  const k0 = monthKey();
+  const entry = (state.changeLog?.[k0] || []).find(l => l.id === logId);
+  if(!entry) return;
+  if(entry.empId === 'BULK'){ alert("⚠️ Thao tác hàng loạt (Auto-Fill/Xóa lịch) — dùng nút '↩️ Hoàn tác Auto-Fill gần nhất' trên tab Chia Lịch Trực nếu vẫn còn hiệu lực."); return; }
+  if(!canEditEmpRow(entry.empId)){ alert("🔒 Bạn không có quyền khôi phục lịch của nhân sự này."); return; }
+
+  if(entry.action === 'approve'){
+    const currentNow = getCellData(entry.empId, entry.day);
+    const mismatchWarning = (currentNow.status || null) !== (entry.newStatus || null)
+      ? `\n⚠️ Lưu ý: ô này đã bị thay đổi thêm sau lần duyệt (hiện là "${currentNow.status||'(trống)'}") — đưa về Chờ Duyệt sẽ GHI ĐÈ thay đổi đó.` : '';
+    if(!confirm(`↩️ Đưa yêu cầu nghỉ của ${entry.empName||entry.empId} — Ngày ${entry.day} (${entry.monthKey}) về lại hàng CHỜ DUYỆT?\nÔ lịch sẽ tạm về "${entry.oldStatus||'(trống)'}" cho đến khi được duyệt lại hoặc từ chối.${mismatchWarning}`)) return;
+  } else {
+    if(!confirm(`↩️ Khôi phục ô lịch của ${entry.empName||entry.empId} — Ngày ${entry.day} (${entry.monthKey}) về trạng thái "${entry.oldStatus||'(trống)'}"?`)) return;
+  }
+
+  performRollbackForEntry(entry);
   saveLocalState();
+  renderAll();
+}
+
+// Hoàn tác CẢ NHÓM (VD: tối fill nhầm 20 ngày S2 cho 1 người, chỉ cần xác nhận 1 lần)
+function rollbackLogGroup(logIds){
+  const k0 = monthKey();
+  const pool = state.changeLog?.[k0] || [];
+  const entries = logIds.map(id => pool.find(l => l.id === id)).filter(Boolean);
+  if(entries.length === 0) return;
+  const first = entries[0];
+  if(!canEditEmpRow(first.empId)){ alert("🔒 Bạn không có quyền khôi phục lịch của nhân sự này."); return; }
+
+  const days = entries.map(e => e.day).sort((a,b) => a-b).join(', ');
+  const verb = first.action === 'approve' ? 'đưa về lại hàng CHỜ DUYỆT' : 'khôi phục về giá trị cũ';
+  if(!confirm(`↩️ Hoàn tác CẢ NHÓM ${entries.length} thay đổi của ${first.empName||first.empId} — ${verb}?\nCác ngày: ${days}`)) return;
+
+  entries.forEach(entry => performRollbackForEntry(entry));
+  saveLocalState();
+  renderAll();
+}
+
+// Gom các entry liên tiếp CÙNG nhân sự + CÙNG hành động + CÙNG người thực hiện + cách nhau không quá 3 phút
+// thành 1 nhóm — để tránh hiển thị 20 dòng riêng lẻ khi Auto-Fill/tự tay điền nhiều ngày liền cho 1 người.
+const LOG_GROUP_GAP_MS = 60 * 60 * 1000;
+function groupLogEntries(entriesDesc){
+  const groups = [];
+  entriesDesc.forEach(l => {
+    const g = groups[groups.length - 1];
+    const prev = g ? g.items[g.items.length - 1] : null;
+    const canMerge = g && prev
+      && g.action === l.action && g.empId === l.empId && g.changedBy === l.changedBy && g.monthKey === l.monthKey
+      && l.empId !== 'BULK'
+      && (prev.timestamp - l.timestamp) <= LOG_GROUP_GAP_MS;
+    if(canMerge) g.items.push(l);
+    else groups.push({ action: l.action, empId: l.empId, empName: l.empName, changedBy: l.changedBy, monthKey: l.monthKey, items: [l] });
+  });
+  return groups;
+}
+
+let expandedLogGroups = new Set();
+function toggleLogGroup(key){
+  if(expandedLogGroups.has(key)) expandedLogGroups.delete(key); else expandedLogGroups.add(key);
   renderAll();
 }
 
 function renderLog(){
   const k = monthKey();
-  const allEntries = (state.changeLog || []).filter(l => l.monthKey === k).slice().reverse();
+  const allEntries = (state.changeLog?.[k] || []).slice().reverse();
   const entries = allEntries.filter(l => l.empId === 'BULK' || canEditEmpRow(l.empId) || isEmployeeSelf(l.empId));
   const actionLabel = { direct:'Sửa trực tiếp', approve:'Đã duyệt', reject:'Từ chối', autofill:'Auto-Fill', rollback:'Hoàn tác' };
 
-  const rows = entries.map(l => {
+  const groups = groupLogEntries(entries);
+
+  const renderOneRow = (l) => {
     const dt = new Date(l.timestamp);
     const timeStr = `${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')} ${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}`;
     const canRollback = (l.action !== 'rollback' && l.empId !== 'BULK' && canEditEmpRow(l.empId));
@@ -3226,8 +3370,41 @@ function renderLog(){
       <td class="mono">${l.day ?? '—'}</td>
       <td class="mono">${l.oldStatus || '(trống)'} → ${l.newStatus || '(trống)'}</td>
       <td style="color:var(--text-dim); font-size:11px;">${l.changedBy||''}</td>
-      <td>${canRollback ? `<button class="icon-btn" onclick="rollbackLogEntry('${l.id}')" title="Khôi phục về giá trị cũ">↩️</button>` : ''}</td>
+      <td>${canRollback ? `<button class="icon-btn" onclick="rollbackLogEntry('${l.id}')" title="${l.action==='approve' ? 'Đưa về lại hàng Chờ Duyệt' : 'Khôi phục về giá trị cũ'}">↩️</button>` : ''}</td>
     </tr>`;
+  };
+
+  const rows = groups.map(g => {
+    if(g.items.length === 1) return renderOneRow(g.items[0]);
+
+    // Nhóm nhiều dòng cùng 1 đợt thao tác -> 1 dòng tóm tắt, mở rộng xem chi tiết
+    const groupKey = `${g.items[g.items.length-1].id}`; // dùng id của item CŨ NHẤT trong nhóm làm khóa ổn định
+    const isExpanded = expandedLogGroups.has(groupKey);
+    const oldestTs = g.items[g.items.length-1].timestamp;
+    const newestTs = g.items[0].timestamp;
+    const dtOld = new Date(oldestTs), dtNew = new Date(newestTs);
+    const fmt = (dt) => `${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+    const dateStr = `${String(dtNew.getDate()).padStart(2,'0')}/${String(dtNew.getMonth()+1).padStart(2,'0')}`;
+    const timeRangeStr = `${fmt(dtOld)}–${fmt(dtNew)} ${dateStr}`;
+
+    const daysSorted = g.items.map(x => x.day).sort((a,b) => a-b);
+    const daysPreview = daysSorted.length > 8 ? daysSorted.slice(0,8).join(', ') + `, … (+${daysSorted.length-8} nữa)` : daysSorted.join(', ');
+
+    const canRollbackGroup = (g.action !== 'rollback' && g.empId !== 'BULK' && canEditEmpRow(g.empId));
+    const groupIds = g.items.map(x => x.id);
+
+    const summaryRow = `<tr class="log-group-summary" style="cursor:pointer;" onclick="toggleLogGroup('${groupKey}')">
+      <td class="mono" style="color:var(--text-dim)">${timeRangeStr}</td>
+      <td><span class="log-badge ${g.action}">${actionLabel[g.action]||g.action}</span></td>
+      <td>${g.empName || g.empId}</td>
+      <td class="mono" title="Ngày: ${daysSorted.join(', ')}">${daysPreview}</td>
+      <td class="mono" style="color:var(--text-dim);">${g.items.length} thay đổi <span style="opacity:.7;">${isExpanded ? '▼' : '▶'} xem chi tiết</span></td>
+      <td style="color:var(--text-dim); font-size:11px;">${g.changedBy||''}</td>
+      <td>${canRollbackGroup ? `<button class="icon-btn" onclick="event.stopPropagation(); rollbackLogGroup(${JSON.stringify(groupIds)})" title="Hoàn tác cả ${g.items.length} thay đổi này">↩️ Cả nhóm</button>` : ''}</td>
+    </tr>`;
+
+    const detailRows = isExpanded ? g.items.map(renderOneRow).join("") : "";
+    return summaryRow + detailRows;
   }).join("");
 
   return `
@@ -3235,7 +3412,7 @@ function renderLog(){
   ${renderPendingListPanel()}
   <div class="panel">
     <h2>📜 Nhật ký Thay đổi Lịch — Tháng ${state.month}/${state.year}</h2>
-    <div class="sub" style="margin:-4px 0 12px; color:var(--text-faint); font-size:11px;">Ghi nhận sửa trực tiếp, duyệt/từ chối yêu cầu member, Auto-Fill và các lần hoàn tác. Giữ tối đa 500 bản ghi gần nhất trên toàn hệ thống. Có thể "↩️" khôi phục lại đúng ô đó về giá trị trước khi thay đổi.</div>
+    <div class="sub" style="margin:-4px 0 12px; color:var(--text-faint); font-size:11px;">Ghi nhận sửa trực tiếp, duyệt/từ chối yêu cầu member, Auto-Fill và các lần hoàn tác — lưu vô thời hạn, không giới hạn số lượng. Các thay đổi liên tiếp trong vòng 60 phút của cùng 1 nhân sự được gộp thành 1 dòng — bấm vào để xem/thu gọn chi tiết từng ngày. Có thể "↩️" khôi phục lại đúng ô đó (hoặc cả nhóm) về giá trị trước khi thay đổi.</div>
     ${entries.length === 0 ? `<div style="padding:20px; text-align:center; color:var(--text-faint);">Chưa có thay đổi nào được ghi nhận trong tháng này.</div>` : `
     <div class="grid-wrap"><table class="log-table" style="width:100%;">
       <thead><tr><th>Thời gian</th><th>Hành động</th><th>Nhân sự</th><th>Ngày</th><th>Ca cũ → Mới</th><th>Người thực hiện</th><th></th></tr></thead>
@@ -3390,8 +3567,8 @@ function copyToClipboardGSheet(){
 
       if(isWorking && wd === 0) counts.CN_Working++;
       if(mk === "AL" || mk === "AL1/2") counts.AL += (mk==="AL"?1:0.5);
-      if(mk === "SL" || mk === "SL/2") counts.SL += (mk==="SL"?1:0.5);
-      if(mk === "UPL" || mk === "UPL/2") counts.UPL += (mk==="UPL"?1:0.5);
+      if(mk === "SL") counts.SL += 1;
+      if(mk === "UPL") counts.UPL += 1;
       if(mk === "OFF" || mk === "OFF/2") {
         counts.OFF += (mk==="OFF"?1:0.5);
         if(wd===6) counts.OFF_T7++;
@@ -3927,8 +4104,7 @@ window.addEventListener("unhandledrejection", (e) => {
 loadLocalState();
 renderAuthUI();
 renderAll();
-// ⚠️ KHÔNG gọi listenCloudChanges() ở đây nữa — chỉ được gọi bên trong auth.onAuthStateChanged()
-// sau khi xác nhận user đã đăng nhập, để tránh PERMISSION_DENIED khi Database Rules yêu cầu auth != null.
+listenCloudChanges();
 </script>
 </body>
 </html>
