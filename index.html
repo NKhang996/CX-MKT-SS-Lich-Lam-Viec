@@ -99,8 +99,17 @@
   body.light-theme .glass-surface{ backdrop-filter:blur(20px) saturate(140%); -webkit-backdrop-filter:blur(20px) saturate(140%); }
 
   /* Chuyển tab mượt — chỉ áp cho #content khi đổi trang qua sidebar, không áp cho renderAll() thường xuyên (gõ liệu, lưu...) để tránh giật/lag */
-  #content{transition:opacity .18s ease, transform .18s ease;}
-  #content.tab-fade{opacity:0; transform:translateY(14px);}
+  /* Chuyển tab: từng panel con trượt lên NỐI ĐUÔI NHAU (staggered) — CHỈ bật khi có class content-stagger-in
+     (gắn từ JS lúc bấm đổi tab), để renderAll() gọi từ nơi khác (gõ liệu/lưu) KHÔNG bị ăn animation này. */
+  @keyframes panelSlideUp{ from{opacity:0; transform:translateY(14px);} to{opacity:1; transform:translateY(0);} }
+  #content.content-stagger-in > *{ animation:panelSlideUp .32s ease both; }
+  #content.content-stagger-in > *:nth-child(1){ animation-delay:0s; }
+  #content.content-stagger-in > *:nth-child(2){ animation-delay:.045s; }
+  #content.content-stagger-in > *:nth-child(3){ animation-delay:.09s; }
+  #content.content-stagger-in > *:nth-child(4){ animation-delay:.135s; }
+  #content.content-stagger-in > *:nth-child(5){ animation-delay:.18s; }
+  #content.content-stagger-in > *:nth-child(6){ animation-delay:.225s; }
+  #content.content-stagger-in > *:nth-child(n+7){ animation-delay:.27s; }
 
   /* ===== MÀN HÌNH ĐĂNG NHẬP BẮT BUỘC (LOGIN GATE) =====
      Nền video giờ dùng chung #appBgVideo (khai báo phía trên) — loginGate chỉ còn là overlay
@@ -2273,14 +2282,13 @@ function renderNav(){
         calFilter.region = (currentRole === "employee") ? (state.employees.find(e=>e.id===currentEmpId)?.region || "HCM")
           : (isAdmin() && currentAdminRegions !== "ALL" && Array.isArray(currentAdminRegions) ? currentAdminRegions[0] : "ALL");
       }
-      // 🔹 Hiệu ứng chuyển tab: fade-out ngắn rồi render rồi fade-in, CHỈ áp dụng khi bấm đổi tab
+      // 🔹 Hiệu ứng chuyển tab: từng panel con trượt lên nối đuôi nhau — CHỈ áp dụng khi bấm đổi tab
       // (không áp cho renderAll() gọi từ nơi khác như gõ liệu/lưu, để tránh giật/lag khi thao tác thường xuyên)
+      renderAll();
       const contentEl = document.getElementById("content");
       if(contentEl){
-        contentEl.classList.add("tab-fade");
-        setTimeout(()=>{ renderAll(); contentEl.classList.remove("tab-fade"); }, 160);
-      } else {
-        renderAll();
+        contentEl.classList.add("content-stagger-in");
+        setTimeout(()=>{ contentEl.classList.remove("content-stagger-in"); }, 650);
       }
     };
     const target = (i.id === "tongquan") ? elTop : (NAV_GROUP1_IDS.includes(i.id) ? el1 : el2);
