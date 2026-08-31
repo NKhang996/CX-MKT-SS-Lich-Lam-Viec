@@ -2284,12 +2284,7 @@ function renderNav(){
       }
       // 🔹 Hiệu ứng chuyển tab: từng panel con trượt lên nối đuôi nhau — CHỈ áp dụng khi bấm đổi tab
       // (không áp cho renderAll() gọi từ nơi khác như gõ liệu/lưu, để tránh giật/lag khi thao tác thường xuyên)
-      renderAll();
-      const contentEl = document.getElementById("content");
-      if(contentEl){
-        contentEl.classList.add("content-stagger-in");
-        setTimeout(()=>{ contentEl.classList.remove("content-stagger-in"); }, 650);
-      }
+      renderAllWithStagger();
     };
     const target = (i.id === "tongquan") ? elTop : (NAV_GROUP1_IDS.includes(i.id) ? el1 : el2);
     target?.appendChild(b);
@@ -4607,18 +4602,69 @@ function renderTongQuanStatsCards(){
   </div>`;
 }
 
-let tongQuanDayOffset = 0; // 0 = hôm nay thật; +1 = mai; -1 = hôm qua... reset về 0 khi rời tab
+// 🔁 Dùng chung cho MỌI nơi đổi tháng (header month-picker, panel Nhân sự hôm nay khi lùi/tới qua khỏi tháng)
+// để state.month/year LUÔN đồng bộ 1 nguồn duy nhất — tránh lệch giữa các khối hiển thị trên trang.
+function shiftMonth(delta){
+  state.month += delta;
+  while(state.month > 12){ state.month -= 12; state.year++; }
+  while(state.month < 1){ state.month += 12; state.year--; }
+}
+
+// renderAll() + hiệu ứng staggered — dùng cho MỌI thao tác đổi "khung nhìn" (đổi tab, đổi tháng...),
+// để không bị chớp cứng. KHÔNG dùng cho renderAll() gọi từ gõ liệu/lưu (giữ nguyên không hiệu ứng).
+function renderAllWithStagger(){
+  renderAll();
+  const contentEl = document.getElementById("content");
+  if(contentEl){
+    contentEl.classList.add("content-stagger-in");
+    setTimeout(()=>{ contentEl.classList.remove("content-stagger-in"); }, 650);
+  }
+}
+
+function changeMonth(delta){
+  shiftMonth(delta);
+  renderAllWithStagger();
+}
+
+let tongQuanDay = null; // ngày cụ thể trong state.month/state.year đang xem ở panel "Nhân sự"; null = chưa chỉnh tay
+
+// Mặc định: nếu tháng đang xem (state.month/year) đúng là tháng thật hiện tại -> mặc định ngày thật hôm nay.
+// Nếu đang xem tháng khác (đã bấm đổi tháng ở header) -> mặc định ngày 1 của tháng đó, KHÔNG nhảy về ngày thật
+// (đây chính là chỗ trước đây bị lệch: panel này từng luôn bám ngày thật, bất kể đang xem tháng nào ở header).
+function getTongQuanDefaultDay(){
+  const real = new Date();
+  if(state.month === real.getMonth()+1 && state.year === real.getFullYear()) return real.getDate();
+  return 1;
+}
 
 function shiftTongQuanDay(delta){
-  tongQuanDayOffset += delta;
-  renderAll();
+  const curDay = (tongQuanDay != null) ? tongQuanDay : getTongQuanDefaultDay();
+  const d = curDay + delta;
+  if(d < 1){
+    shiftMonth(-1);
+    tongQuanDay = daysInMonth(state.month, state.year);
+  } else {
+    const n = daysInMonth(state.month, state.year);
+    if(d > n){ shiftMonth(1); tongQuanDay = 1; }
+    else tongQuanDay = d;
+  }
+  renderAllWithStagger();
+}
+
+function tongQuanGoToday(){
+  const real = new Date();
+  state.month = real.getMonth() + 1;
+  state.year = real.getFullYear();
+  tongQuanDay = real.getDate();
+  renderAllWithStagger();
 }
 
 function renderTodayStaffPanel(){
-  const base = new Date();
-  const target = new Date(base.getFullYear(), base.getMonth(), base.getDate() + tongQuanDayOffset);
-  const day = target.getDate(), m = target.getMonth()+1, y = target.getFullYear();
-  const isToday = (tongQuanDayOffset === 0);
+  const day = (tongQuanDay != null) ? tongQuanDay : getTongQuanDefaultDay();
+  const m = state.month, y = state.year;
+  const target = new Date(y, m-1, day);
+  const real = new Date();
+  const isToday = (day === real.getDate() && m === real.getMonth()+1 && y === real.getFullYear());
   const wd = VN_SHORT_WEEKDAY[target.getDay()];
 
   const scopeEmps = (state.employees || []).filter(e => {
@@ -4644,7 +4690,7 @@ function renderTodayStaffPanel(){
         <button onclick="shiftTongQuanDay(-1)" title="Ngày trước">‹</button>
         <div class="mval mono" style="min-width:120px;">${wd} ${String(day).padStart(2,'0')}/${String(m).padStart(2,'0')}/${y}${isToday ? ' · Hôm nay' : ''}</div>
         <button onclick="shiftTongQuanDay(1)" title="Ngày sau">›</button>
-        ${!isToday ? `<button onclick="tongQuanDayOffset=0; renderAll();" title="Về hôm nay" style="font-size:11px; padding:0 8px;">Hôm nay</button>` : ''}
+        ${!isToday ? `<button onclick="tongQuanGoToday()" title="Về hôm nay" style="font-size:11px; padding:0 8px;">Hôm nay</button>` : ''}
       </div>
     </h2>
     <div class="kpi-row">
@@ -4858,8 +4904,8 @@ function renderAll(){
   if (pageScrollEl) pageScrollEl.scrollTop = pageScrollTop;
 }
 
-document.getElementById("prevMonth").onclick = () => { state.month = state.month===1?12:state.month-1; if(state.month===12) state.year--; renderAll(); };
-document.getElementById("nextMonth").onclick = () => { state.month = state.month===12?1:state.month+1; if(state.month===1) state.year++; renderAll(); };
+document.getElementById("prevMonth").onclick = () => changeMonth(-1);
+document.getElementById("nextMonth").onclick = () => changeMonth(1);
 
 // ==========================================
 // 🌗 DARK / LIGHT MODE
