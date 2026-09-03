@@ -3883,9 +3883,16 @@ function onEmpDrop(ev){
 
 // ===== THÔNG BÁO IN-APP CÁ NHÂN (bấm OK để xác nhận đã đọc) =====
 // Lưu theo email (lowercase) làm khóa, đồng bộ qua state như mọi dữ liệu khác (cần Admin bấm "Lưu Cloud" để đẩy lên).
+// ⚠️ Firebase Realtime Database CẤM các ký tự . # $ / [ ] trong key (ném lỗi "invalid key" ngay khi .set()).
+// Email luôn có dấu "." (vd: thuthuy.tranthi@spxexpress.com) nên PHẢI đổi key qua dạng an toàn trước khi dùng
+// làm property name trong state.notifications. Dùng chung hàm này ở MỌI nơi đọc/ghi state.notifications
+// để key lúc ghi và lúc đọc luôn khớp nhau.
+function emailToNotifKey(email){
+  return String(email).trim().toLowerCase().replace(/[.#$/\[\]]/g, ",");
+}
 function pushNotificationTo(email, message, meta = {}){
   if(!email) return;
-  const key = String(email).trim().toLowerCase();
+  const key = emailToNotifKey(email);
   if(!state.notifications) state.notifications = {};
   if(!state.notifications[key]) state.notifications[key] = [];
   state.notifications[key].push({ id: uid(), message, createdAt: Date.now(), read: false, ...meta });
@@ -3894,7 +3901,7 @@ function pushNotificationTo(email, message, meta = {}){
 let notificationModalCtx = null;
 function checkAndShowMyNotifications(){
   if(!currentAuthUser || !currentAuthUser.email) return;
-  const key = currentAuthUser.email.trim().toLowerCase();
+  const key = emailToNotifKey(currentAuthUser.email);
   const list = (state.notifications && state.notifications[key]) || [];
   const unread = list.filter(n => !n.read);
   if(unread.length === 0) return;
@@ -3924,7 +3931,7 @@ function updateNotificationBellUI(){
   const badge = document.getElementById("headerBellBadge");
   if(!badge) return;
   if(!currentAuthUser || !currentAuthUser.email){ badge.style.display = "none"; return; }
-  const key = currentAuthUser.email.trim().toLowerCase();
+  const key = emailToNotifKey(currentAuthUser.email);
   const list = (state.notifications && state.notifications[key]) || [];
   const unread = list.filter(n => !n.read).length;
   if(unread > 0){
